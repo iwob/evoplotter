@@ -136,7 +136,7 @@ def plot_fitness_progression_on_benchmarks(props, dim_benchmarks, dim_variants, 
 	nrow = len(dim_benchmarks)
 	ncol = len(dim_variants)
 	figsize = (int(3.5*ncol), int(2.75*nrow))
-	fig, axes = plt.subplots(nrows=nrow, ncols=ncol, figsize=figsize)
+	fig, axes = plt.subplots(nrows=nrow, ncols=ncol, figsize=figsize, facecolor='white')
 
 	# fig.tight_layout()
 	fig.suptitle("Fitness Progression Across Benchmarks", fontsize=16)
@@ -185,7 +185,7 @@ def plot_fitness_progression_on_benchmarks(props, dim_benchmarks, dim_variants, 
 	if savepath is None:
 		name = "fit_progression_runs.pdf" if plot_individual_runs else "fit_progression_avgs.pdf"
 		savepath = OUTPUT_FOLDER + "/" + name
-	fig.savefig(savepath)
+	fig.savefig(savepath, facecolor=fig.get_facecolor(), edgecolor="white")
 	plt.show()
 
 
@@ -196,6 +196,7 @@ def _plot_fitness_progression_on_benchmarks_subplot(fig, axes, i, j, props, benc
 	axes[i,j].margins(0.01)  # Pad margins so that markers don't get clipped by the axes
 	axes[i,j].spines['top'].set_visible(False)
 	axes[i,j].spines['right'].set_visible(False)
+	axes[i,j].set_axis_bgcolor('white')
 	axes[i,j].grid("on")
 
 	if i == 0:
