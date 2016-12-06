@@ -104,3 +104,26 @@ def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="
 
 def latex_table(props, dim_rows, dim_cols, fun, title=None):
 	return text_table(props, dim_rows, dim_cols, fun, title, d_cols=" & ", d_rows="\\\\\n")
+
+
+
+
+
+def decorate_table(table_text, convert_fun, d_cols=" & ", d_rows="\\\\\n"):
+	def process_cell(s):
+		return str(convert_fun(s))
+	if d_cols not in table_text:
+		return table_text
+	splitted = table_text.split(d_cols)
+	new_text = ""
+	for s in splitted:
+		last_in_row = d_rows in s
+		if last_in_row:
+			two_elems = s.split(d_rows)
+			decorated = process_cell(two_elems[0]) + d_rows
+			if len(two_elems) > 1:
+				decorated += process_cell(two_elems[1]) + d_cols
+		else:
+			decorated = convert_fun(s) + d_cols
+		new_text += decorated
+	return new_text
