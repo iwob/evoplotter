@@ -31,6 +31,16 @@ class TestsPrinter(unittest.TestCase):
 	                Config("c1", lambda d: d["c"] == 1),
 	                Config("c2", lambda d: d["c"] == 2)])
 
+	def test_text_table_multichar_seps(self):
+		text = printer.text_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]), d_cols=" && ", d_rows=";\n")
+		self.assertEquals(" && c0 && c1 && c2;\n" + "r0 && 6 && 15 && 24;\n" + "r1 && 36 && 45 && 54;\n", text)
+
+
+	def test_latex_table(self):
+		text = printer.latex_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]))
+		self.assertEquals(r" & c0 & c1 & c2\\" + "\n" + r"r0 & 6 & 15 & 24\\"+"\n" + r"r1 & 36 & 45 & 54\\"+"\n", text)
+
+
 	def test_text_table(self):
 		text = printer.text_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]))
 		self.assertEquals("\tc0\tc1\tc2\n" + "r0\t6\t15\t24\n"  + "r1\t36\t45\t54\n", text)

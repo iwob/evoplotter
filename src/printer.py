@@ -66,7 +66,7 @@ def text_table_row(props_row, config_row, dim_cols, fun, d_cols="\t", d_rows="\n
 		if cell_content is not None:
 			text += str(cell_content)
 		text += d_cols
-	return text[:-1] + d_rows
+	return text[:-len(d_cols)] + d_rows
 
 
 
@@ -91,12 +91,16 @@ def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="
 
 	# Printing header.
 	text += d_cols
-	for c in dim_cols:
-		text += c.get_caption() + d_cols
-	text = text[:-1] + d_rows
+	values = [c.get_caption() for c in dim_cols]
+	text += d_cols.join(values) + d_rows
 
 	# Printing table's rows.
 	for r in dim_rows:
 		filtered_r = r.filter_props(props)
 		text += text_table_row(filtered_r, r, dim_cols, fun, d_cols, d_rows)
 	return text
+
+
+
+def latex_table(props, dim_rows, dim_cols, fun, title=None):
+	return text_table(props, dim_rows, dim_cols, fun, title, d_cols=" & ", d_rows="\\\\\n")
