@@ -69,3 +69,13 @@ def load_properties_dirs(dirs):
 def str2list(s, sep=", "):
 	"""Converts a string representing a list with floats to a Python list object filled with floats."""
 	return [float(x) for x in s.split(sep)]
+
+
+
+def isfloat(value):
+	"""Checks, if the given number is a float."""
+	try:
+		float(value)
+		return True
+	except ValueError:
+		return False

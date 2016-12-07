@@ -1,4 +1,5 @@
 from . import dims
+from . import utils
 
 
 
@@ -103,27 +104,71 @@ def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="
 
 
 def latex_table(props, dim_rows, dim_cols, fun, title=None):
+	"""Returns text of a LaTeX table created from given dimensions."""
 	return text_table(props, dim_rows, dim_cols, fun, title, d_cols=" & ", d_rows="\\\\\n")
 
 
 
-
-
 def decorate_table(table_text, convert_fun, d_cols=" & ", d_rows="\\\\\n"):
+	"""Transforms text of the table by applying converter function to each element of this table.
+
+	:param table_text: (str) text of the table.
+	:param convert_fun: (str => str) a function to be applied to each element of the table.
+	:param d_cols: (str) delimiter between columns.
+	:param d_rows: (str) delimiter between rows.
+	:return: (str) text of the converted table.
+	"""
 	def process_cell(s):
 		return str(convert_fun(s))
 	if d_cols not in table_text:
-		return table_text
+		return table_text # delimiter was not present
+
 	splitted = table_text.split(d_cols)
 	new_text = ""
-	for s in splitted:
+	for i in range(0,len(splitted)):
+		s = splitted[i]
 		last_in_row = d_rows in s
 		if last_in_row:
 			two_elems = s.split(d_rows)
 			decorated = process_cell(two_elems[0]) + d_rows
-			if len(two_elems) > 1:
-				decorated += process_cell(two_elems[1]) + d_cols
+			if len(two_elems) > 1 and two_elems[1] != '':
+				decorated += process_cell(two_elems[1])
 		else:
-			decorated = convert_fun(s) + d_cols
+			decorated = convert_fun(s)
+
 		new_text += decorated
+		if i < len(splitted)-1:
+			new_text += d_cols
 	return new_text
+
+
+
+def table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor, MidColor, MaxColor):
+	"""Creates a table with cells colored depending on their values ("color map"). Colored will be only cells containing numbers.
+
+	:param text: (str) text of the table.
+	:param MinNumber: (float) below or equal to this value everything will be colored fully with MinColor. Higher values will be gradiented towards MidColor.
+	:param MidNumber: (float) middle point. Values above go towards MaxColor, and values below towards MinColor.
+	:param MaxNumber: (float) above or equal to this value everything will be colored fully with MaxColor. Lower values will be gradiented towards MidColor.
+	:param MinColor: (str) name of the LaTeX color representing the lowest value.
+	:param MidColor: (str) name of the LaTeX color representing the middle value. This color is also used for gradient, that is
+	 closer a given cell value is to the MidNumber, more MidColor'ed it becomes.
+	:param MaxColor: (str) name of the LaTeX color representing the highest value.
+	:return: (str) text of the table with added \cellcolor commands with appropriate colors as arguments.
+	"""
+	def color_cell(s):
+		if s == "-" or s == "-" or not utils.isfloat(s.strip()):
+			return s
+		else:
+			# Computing color gradient.
+			val = float(s.strip())
+			if val > MidNumber:
+				PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber-MidNumber), 100.0), 0.0)
+				color = "{0}!{1}!{2}".format(MaxColor, str(PercentColor), MidColor)
+			else:
+				PercentColor = max(min(100.0 * (MidNumber - val) / (MidNumber - MinNumber), 100.0), 0.0)
+				color = "{0}!{1}!{2}".format(MinColor, str(PercentColor), MidColor)
+			return "\cellcolor{" + color + "}" + s
+
+
+	return decorate_table(text, color_cell, d_cols=" & ")

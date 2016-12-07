@@ -54,3 +54,26 @@ class TestsPrinter(unittest.TestCase):
 		text = printer.text_listing(self.data, dim, lambda ds: sum([d["x"] for d in ds]), d_configs="\n\n")
 		self.assertEquals("(*) CONFIG: r0_c0\n6\n\n" + "(*) CONFIG: r0_c1\n15\n\n" + "(*) CONFIG: r0_c2\n24\n\n" +
 		                  "(*) CONFIG: r1_c0\n36\n\n" + "(*) CONFIG: r1_c1\n45\n\n" + "(*) CONFIG: r1_c2\n54\n\n", text)
+
+
+	def test_decorate(self):
+		text = r"""0 & 5 & 10\\
+10 & 5 & 0\\
+"""
+		res = printer.decorate_table(text, lambda x: "#{0}#".format(x), d_cols=" & ", d_rows="\\\\\n")
+		self.assertEquals("#0# & #5# & #10#\\\\\n#10# & #5# & #0#\\\\\n", res)
+
+
+	def test_table_color_map(self):
+		text = r"""0 & 5 & 10\\
+20 & -5 & 0\\
+"""
+		MinNumber = 0
+		MaxNumber = 10
+		MidNumber = 5  # MaxNumber / 2
+		MinColor = "green"
+		MidColor = "yellow"
+		MaxColor = "red"
+		text = printer.table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor, MidColor, MaxColor)
+		self.assertEquals("\cellcolor{green!100.0!yellow}0 & \cellcolor{green!0.0!yellow}5 & \cellcolor{red!100.0!yellow}10\\\\\n"+
+		                  "\cellcolor{red!100.0!yellow}20 & \cellcolor{green!100.0!yellow}-5 & \cellcolor{green!100.0!yellow}0\\\\\n", text)
