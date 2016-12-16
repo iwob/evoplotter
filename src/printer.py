@@ -17,7 +17,7 @@ def text_listing(props, dim, fun, is_fun_single_prop=False, d_configs="\n\n\n", 
 	:param props: (dict) all properties files containing experiment's data.
 	:param dim: (Dim) dimension along which listing will be created.
 	:param fun: (list[dict] => str) function returning text containing processed information (e.g. average) for a config-filtered props.
-	:param is_fun_single_prop: (bool) if true, then to fun will be passed seperately every config-filtered prop (e.g. useful for printing best solutions per config). If false, then to fun will be passed whole set of config-filtered props (e.g. useful for printing statistics).
+	:param is_fun_single_prop: (bool) if true, then to fun will be passed separately every config-filtered prop (e.g. useful for printing best solutions per config). If false, then to fun will be passed whole set of config-filtered props (e.g. useful for printing statistics).
 	:param d_configs: (str) delimiter between configs in the listing.
 	:param fun_config_header: (Config => str) Function which returns text of the header describing a configuration.
 	:return: (str) Text of a listing.
