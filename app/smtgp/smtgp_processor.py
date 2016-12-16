@@ -317,9 +317,20 @@ def print_optimals(props):
 	def print_optimal(p):
 		opt = p["result.best"]
 		optFilled = p["result.best.holesFilled"]
-		# print("Optimal: " + opt)
 		return "Found optimal:\t" + optFilled + "\n"
 	text = printer.text_listing(props, dim, print_optimal)
+	print(text)
+	printer.save_to_file(text, "figures/optimals.txt")
+
+
+def print_optimals_per_benchmark(props):
+	props = [p for p in props if p_optimal(p)]
+	dim_variants = Dim([conf_cv, conf_cv_timed]) + dim_usedHoles_ho * dim_fill
+	dim = dim_benchmark * dim_variants
+	def print_optimal(p):
+		optFilled = p["result.best.holesFilled"]
+		return optFilled + "\n"
+	text = printer.text_listing(props, dim, print_optimal, is_fun_single_prop=True)
 	print(text)
 	printer.save_to_file(text, "figures/optimals.txt")
 
@@ -357,18 +368,19 @@ props = [p for p in props if p_optSolver(p) or p_cv(p)]  #p_cv added because by 
 dim_variants = Dim([conf_cv, conf_cv_timed])
 dim_variants += dim_fill * dim_usedHoles_ho
 print_table(props, dim_variants, dim_benchmark)
-print_table(props, dim_benchmark, dim_variants)
+# print_table(props, dim_benchmark, dim_variants)
 
 
 
 
 # print_opt_mode_stats(props)
 # print_optimals(props)
+print_optimals_per_benchmark(props)
 # search_differing_evals(props)
 
 
 
 
-draw_boxplots(props)
+# draw_boxplots(props)
 # draw_fitness_progression(props, plot_individual_runs=True)
-draw_fitness_progression(props, plot_individual_runs=False)
+# draw_fitness_progression(props, plot_individual_runs=False)
