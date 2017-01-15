@@ -88,17 +88,16 @@ class Config(object):
 
 	Config is defined as a list of filters. Filter is a tuple containing a name and a predicate. Name describes a filter's function/role and is used during drawing of plots, and predicate is used to leave only properties files which were generated in a run under this configuration. If more than one filter is defined, conjunction of all the predicates is considered.
 	"""
-	def __init__(self, filters, arg2=None, arg3=None):
-		if arg2 is not None: # Create tuple and add on filters list.
-			arg1 = filters
-			if arg3 is not None:
-				self.filters = [(arg1, arg2, arg3)]
+	def __init__(self, *filters):
+		if len(filters) == 1:
+			if isinstance(filters[0], list):
+				self.filters = filters[0]
 			else:
-				self.filters = [(arg1, arg2)]
+				self.filters = [filters[0]]
 		else:
-			if not isinstance(filters, list):
-				filters = [filters]
-			self.filters = filters
+			# Create Config with a filter being a tuple of arbitrary length.
+			self.filters = [tuple(filters)]
+		assert len(self.filters) > 0, "Trying to create Config with empty filters list!"
 
 	def __len__(self):
 		return len(self.filters)
