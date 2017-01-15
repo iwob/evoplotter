@@ -11,6 +11,14 @@ def read_lines(path):
 	return f.readlines()
 
 
+def file_extension_ok(f, exts):
+	assert isinstance(exts, list), "Extensions must be provided in the form of a list!"
+	for e in exts:
+		if f.endswith(e):
+			return True
+	return False
+
+
 def load_properties(lines, sep="=", comment_marker="#"):
 	"""Creates a dictionary for properties provided as a list of lines. Split on the first found sep is conducted.
 
@@ -40,29 +48,32 @@ def load_properties_file(path_file):
 	return load_properties(lines)
 
 
-def load_properties_dir(path_dir):
+def load_properties_dir(path_dir, exts=None):
 	"""Creates a dictionary for properties loaded from files in the given directory. All subdirectories will be recursively traversed.
 
 	:param path_dir: (str) path to a directory from which paths will be read.
+	:param exts: (list[str]) list of accepted extensions. None means that all extensions are to be accepted.
 	:return: (list(dict[str,str])) list of dictionaries created for each file in the folder.
 	"""
 	res = []
 	for root, subFolders, files in os.walk(path_dir):
 		for f in files:
-			full_name = os.path.join(root, f)
-			res.append(load_properties_file(full_name))
+			if exts is None or file_extension_ok(f, exts):
+				full_name = os.path.join(root, f)
+				res.append(load_properties_file(full_name))
 	return res
 
 
-def load_properties_dirs(dirs):
+def load_properties_dirs(dirs, exts=None):
 	"""Loads properties files from the specified directories.  All subdirectories will be recursively traversed.
 
 	:param dirs: (list[str]) list of paths to directories.
+	:param exts: (list[str]) list of accepted extensions. None means that all extensions are to be accepted.
 	:return: (list[dict[str,str]]) list of dictionaries created for each file in the specified folders.
 	"""
 	res = []
 	for d in dirs:
-		res.extend(load_properties_dir(d))
+		res.extend(load_properties_dir(d, exts))
 	return res
 
 
