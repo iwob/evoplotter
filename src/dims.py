@@ -63,7 +63,32 @@ class Dim(object):
 		"""Returns properties in which contained are only elements belonging to one of configs in this dimension. Note that dimension values (configs) do not have to cover whole possible space or to be disjoint. This functions allows to remove unnecessary configs and thus may reduce computation time."""
 		return [p for p in props if any([c.filter(p) for c in self.configs])]
 
+	def sort(self):
+		"""Sorts this dimension alphabetically on the names Configs within it."""
+		self.configs.sort()
+		return self
 
+	@classmethod
+	def from_data(cls, props, extr):
+		"""Creates a Dim object by collecting all unique values in the data. Extractor (extr) is used to get values."""
+		s = get_unique_values(props, extr)
+		configs = [Config(el, lambda p, extr=extr, el=el: extr(p) == el) for el in s]
+		return Dim(configs)
+
+
+
+def get_unique_values(data, extr):
+	"""Collects unique values in the data.
+
+	:param data: (list[dict[str]]) list storing all the data.
+	:param extr: (lambda) function for extracting value from a dictionary.
+	:return: (set[str]) a set of unique values.
+	"""
+	assert isinstance(data, list), "Data should be a list!"
+	s = set()
+	for p in data:
+		s.add(extr(p))
+	return s
 
 def generate_configs(dims_list):
 	"""Returns a list of configurations for a dimension."""
@@ -105,6 +130,11 @@ class Config(object):
 	def __iter__(self):
 		for c in self.filters:
 			yield c
+
+	def __lt__(self, other):
+		n_other = "_".join(x[0] for x in other.filters)
+		n_self = "_".join([x[0] for x in self.filters])
+		return n_self < n_other
 
 	def head(self):
 		"""Returns the first filter defined in this config. Convenience function."""
