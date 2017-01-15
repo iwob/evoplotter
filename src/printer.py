@@ -103,9 +103,12 @@ def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="
 
 
 
-def latex_table(props, dim_rows, dim_cols, fun, title=None):
+def latex_table(props, dim_rows, dim_cols, fun, title=None, full_latex_mode=True):
 	"""Returns text of a LaTeX table created from given dimensions."""
-	return text_table(props, dim_rows, dim_cols, fun, title, d_cols=" & ", d_rows="\\\\\n")
+	text = text_table(props, dim_rows, dim_cols, fun, title, d_cols=" & ", d_rows="\\\\\n")
+	if full_latex_mode:
+		text = text.replace("_",r"\_")
+	return text
 
 
 
