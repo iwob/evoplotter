@@ -75,8 +75,8 @@ def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="
 	"""Returns text of the table containing in the cells values from the intersection of configs in row and column. By manipulating delimiters LaTeX table may be produced.
 
 	:param props: (dict) all props gathered in the experiment.
-	:param dim_rows: (Dim) a dimension of rows.
-	:param dim_cols: (Dim) a dimension of columns.
+	:param dim_rows: (Dim) a dimension for rows.
+	:param dim_cols: (Dim) a dimension for columns.
 	:param fun: (list[dict] => str) a function returning a cell's content given a list of props "in" the cell.
 	:param title: (str) a title to be placed before the table. By default there is no title.
 	:param d_cols: (str) delimiter separating columns.
@@ -104,8 +104,22 @@ def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="
 
 
 def latex_table(props, dim_rows, dim_cols, fun, title=None, full_latex_mode=True):
-	"""Returns text of a LaTeX table created from given dimensions."""
-	text = text_table(props, dim_rows, dim_cols, fun, title, d_cols=" & ", d_rows="\\\\\n")
+	"""Returns code of a LaTeX table (tabular environment) created from the given dimensions.
+
+	:param props: (dict) all props gathered in the experiment.
+	:param dim_rows: (Dim) a dimension for rows.
+	:param dim_cols: (Dim) a dimension for columns.
+	:param fun: (list[dict] => str) a function returning a cell's content given a list of props "in" the cell.
+	:param title: (str) a title to be placed before the table. By default there is no title. NOTE: some table configuration commands or descriptions may be passed as a title.
+	:return: (str) code of the LaTeX table.
+	"""
+	assert isinstance(dim_rows, dims.Dim)
+	assert isinstance(dim_cols, dims.Dim)
+
+	numCols = len(dim_cols.configs) + 1
+	text = r"\begin{tabular}{" + ("c"*numCols) + "}\n"
+	text += text_table(props, dim_rows, dim_cols, fun, title, d_cols=" & ", d_rows="\\\\\n")
+	text += r"\end{tabular}" + "\n"
 	if full_latex_mode:
 		text = text.replace("_",r"\_")
 	return text
