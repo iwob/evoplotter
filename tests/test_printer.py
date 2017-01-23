@@ -38,7 +38,9 @@ class TestsPrinter(unittest.TestCase):
 
 	def test_latex_table(self):
 		text = printer.latex_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]))
-		self.assertEquals(r" & c0 & c1 & c2\\" + "\n" + r"r0 & 6 & 15 & 24\\"+"\n" + r"r1 & 36 & 45 & 54\\"+"\n", text)
+		self.assertEquals(r"\begin{tabular}{cccc}" + "\n" + r" & c0 & c1 & c2\\" + "\n" +
+		                  r"r0 & 6 & 15 & 24\\"+"\n" + r"r1 & 36 & 45 & 54\\" + "\n" +
+		                  r"\end{tabular}" + "\n", text)
 
 
 	def test_text_table(self):

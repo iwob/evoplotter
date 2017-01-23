@@ -142,7 +142,7 @@ def decorate_table(table_text, convert_fun, d_cols=" & ", d_rows="\\\\\n"):
 
 	splitted = table_text.split(d_cols)
 	new_text = ""
-	for i in range(0,len(splitted)):
+	for i in range(0, len(splitted)):
 		s = splitted[i]
 		last_in_row = d_rows in s
 		if last_in_row:
