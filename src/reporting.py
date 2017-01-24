@@ -116,23 +116,23 @@ class BlockSubSubSection(BlockSection):
 # By default color schemes color high values and go down to white with lower values.
 # If _r is appended to the color scheme name, then colored are low values instead.
 
-color_scheme_blue = BlockLatex(r"""\definecolor{lightred}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{lightyellow}{rgb}{0.83, 0.89, 0.98} % light blue
-\definecolor{lightgreen}{rgb}{0.63, 0.79, 0.95} % blue
+color_scheme_blue = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
+\definecolor{colorMedium}{rgb}{0.83, 0.89, 0.98} % light blue
+\definecolor{colorHigh}{rgb}{0.63, 0.79, 0.95} % blue
 """)
-color_scheme_green = BlockLatex(r"""\definecolor{lightred}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{lightyellow}{rgb}{0.76, 0.98, 0.76} % lightgreen
-\definecolor{lightgreen}{rgb}{0.66, 0.90, 0.66} % green
+color_scheme_green = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
+\definecolor{colorMedium}{rgb}{0.76, 0.98, 0.76} % colorHigh
+\definecolor{colorHigh}{rgb}{0.66, 0.90, 0.66} % green
 """)
-color_scheme_yellow = BlockLatex(r"""\definecolor{lightred}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{lightyellow}{rgb}{0.98, 0.91, 0.71} % light yellow
-\definecolor{lightgreen}{rgb}{1.0, 0.75, 0.0} % yellow
+color_scheme_yellow = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
+\definecolor{colorMedium}{rgb}{0.98, 0.91, 0.71} % light yellow
+\definecolor{colorHigh}{rgb}{1.0, 0.75, 0.0} % yellow
 """)
-color_scheme_red = BlockLatex(r"""\definecolor{lightred}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{lightyellow}{rgb}{0.95, 0.6, 0.6}
-\definecolor{lightgreen}{rgb}{0.8, 0, 0} % red
+color_scheme_red = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
+\definecolor{colorMedium}{rgb}{0.95, 0.6, 0.6}
+\definecolor{colorHigh}{rgb}{0.8, 0, 0} % red
 """)
-color_scheme_red_r = BlockLatex(r"""\definecolor{lightred}{rgb}{0.8, 0, 0} % red
-\definecolor{lightyellow}{rgb}{0.95, 0.6, 0.6}
-\definecolor{lightgreen}{rgb}{1.0, 1.0, 1.0} % white
+color_scheme_red_r = BlockLatex(r"""\definecolor{colorLow}{rgb}{0.8, 0, 0} % red
+\definecolor{colorMedium}{rgb}{0.95, 0.6, 0.6}
+\definecolor{colorHigh}{rgb}{1.0, 1.0, 1.0} % white
 """)

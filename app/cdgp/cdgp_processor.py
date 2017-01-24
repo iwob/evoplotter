@@ -121,14 +121,14 @@ def get_avg_totalTests(props):
 
 print("STATUS")
 text = printer.latex_table(props, dim_benchmarks.sort(), dim_method*dim_sa, get_num_computed)
-latex_status = printer.table_color_map(text, 0.0, 1, 10.0, "lightred", "lightyellow", "lightgreen")
+latex_status = printer.table_color_map(text, 0.0, 1, 10.0, "colorLow", "colorMedium", "colorHigh")
 print(text)
 print("\n\n")
 
 
 print("SUCCESS RATES")
 text = printer.latex_table(props, dim_benchmarks.sort(), dim_method*dim_sa, fun2)
-latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "lightred", "lightyellow", "lightgreen")
+latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 print(text)
 print("\n\n")
 
@@ -141,14 +141,14 @@ print("\n\n")
 
 print("AVG TOTAL TESTS")
 text = printer.latex_table(props, dim_benchmarks.sort(), dim_method*dim_sa, get_avg_totalTests)
-latex_avgTotalTests = printer.table_color_map(text, 0.0, 1000.0, 2000.0, "lightred", "lightyellow", "lightgreen")
+latex_avgTotalTests = printer.table_color_map(text, 0.0, 1000.0, 2000.0, "colorLow", "colorMedium", "colorHigh")
 print(text)
 print("\n\n")
 
 
 print("AVG SIZES")
 text = printer.latex_table(props, dim_benchmarks.sort(), dim_method*dim_sa, get_stats_size)
-latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "lightred", "lightyellow", "lightgreen")
+latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
 print(text)
 print("\n\n")
 
@@ -163,23 +163,23 @@ print("\n\n")
 report = reporting.ReportPDF()
 section1 = r"""\section{Initial experiments}
 \subsection{Success rates}
-\definecolor{lightred}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{lightyellow}{rgb}{0.76, 0.98, 0.76} % lightgreen
-\definecolor{lightgreen}{rgb}{0.66, 0.90, 0.66} % green
+\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
+\definecolor{colorMedium}{rgb}{0.76, 0.98, 0.76} % colorHigh
+\definecolor{colorHigh}{rgb}{0.66, 0.90, 0.66} % green
 \begin{tabular}{ccccccc}
  & CDGP\_GP & CDGP\_Lexicase & CDGPconservative\_GP & CDGPconservative\_Lexicase & GPR\_GP & GPR\_Lexicase\\
-sygus16/fg\_array\_search\_2.sl & \cellcolor{lightgreen!82.0!lightyellow}0.91 & \cellcolor{lightgreen!100.0!lightyellow}1.00 & \cellcolor{lightred!0.0!lightyellow}0.50 & \cellcolor{lightgreen!100.0!lightyellow}1.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!78.0!lightyellow}0.11\\
-sygus16/fg\_array\_search\_4.sl & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00\\
-sygus16/fg\_array\_search\_6.sl & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00\\
-sygus16/fg\_array\_search\_8.sl & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00\\
-sygus16/fg\_array\_sum\_2\_15.sl & \cellcolor{lightred!80.0!lightyellow}0.10 & \cellcolor{lightgreen!100.0!lightyellow}1.00 & \cellcolor{lightred!78.0!lightyellow}0.11 & \cellcolor{lightred!19.999999999999996!lightyellow}0.40 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00\\
-sygus16/fg\_array\_sum\_4\_15.sl & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00\\
-sygus16/fg\_array\_sum\_6\_15.sl & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00\\
-sygus16/fg\_array\_sum\_8\_15.sl & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00\\
-sygus16/fg\_max2.sl & \cellcolor{lightgreen!100.0!lightyellow}1.00 & \cellcolor{lightgreen!100.0!lightyellow}1.00 & \cellcolor{lightgreen!100.0!lightyellow}1.00 & \cellcolor{lightgreen!100.0!lightyellow}1.00 & \cellcolor{lightgreen!100.0!lightyellow}1.00 & \cellcolor{lightgreen!100.0!lightyellow}1.00\\
-sygus16/fg\_max4.sl & \cellcolor{lightgreen!100.0!lightyellow}1.00 & \cellcolor{lightgreen!100.0!lightyellow}1.00 & \cellcolor{lightred!78.0!lightyellow}0.11 & \cellcolor{lightred!0.0!lightyellow}0.50 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!80.0!lightyellow}0.10\\
-sygus16/fg\_max6.sl & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!14.000000000000002!lightyellow}0.43 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00\\
-sygus16/fg\_max8.sl & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00 & \cellcolor{lightred!100.0!lightyellow}0.00\\
+sygus16/fg\_array\_search\_2.sl & \cellcolor{colorHigh!82.0!colorMedium}0.91 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorLow!0.0!colorMedium}0.50 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!78.0!colorMedium}0.11\\
+sygus16/fg\_array\_search\_4.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
+sygus16/fg\_array\_search\_6.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
+sygus16/fg\_array\_search\_8.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
+sygus16/fg\_array\_sum\_2\_15.sl & \cellcolor{colorLow!80.0!colorMedium}0.10 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorLow!78.0!colorMedium}0.11 & \cellcolor{colorLow!19.999999999999996!colorMedium}0.40 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
+sygus16/fg\_array\_sum\_4\_15.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
+sygus16/fg\_array\_sum\_6\_15.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
+sygus16/fg\_array\_sum\_8\_15.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
+sygus16/fg\_max2.sl & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorHigh!100.0!colorMedium}1.00\\
+sygus16/fg\_max4.sl & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorLow!78.0!colorMedium}0.11 & \cellcolor{colorLow!0.0!colorMedium}0.50 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!80.0!colorMedium}0.10\\
+sygus16/fg\_max6.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!14.000000000000002!colorMedium}0.43 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
+sygus16/fg\_max8.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
 \end{tabular}
 \vspace{1cm}
 
@@ -200,5 +200,5 @@ report.add(section2)
 
 
 print("\n\nREPORT:\n")
-print(report.apply())
+#print(report.apply())
 report.save_and_compile("cdgp_results.tex")
