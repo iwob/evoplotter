@@ -2,8 +2,10 @@ import sys
 from src import utils
 from src import plotter
 from src import printer
+from src import reporting
 from src.dims import *
 import numpy
+
 import argparse
 
 
@@ -68,13 +70,22 @@ def p_cv_timed(p):
          p["smtgp.useInputVarsAsTerminals"] == "true" and \
          "smtgp.holesConsts" not in p and \
          "smtgp.holesVars" not in p and \
-         "maxTime" in p
+         "maxTime" in p and \
+		 p["populationSize"] == "250"
 def p_cv(p):
 	return p["smtgp.useConstantProvider"] == "true" and \
          p["smtgp.useInputVarsAsTerminals"] == "true" and \
          "smtgp.holesConsts" not in p and \
          "smtgp.holesVars" not in p and \
-         "maxTime" not in p
+         "maxTime" not in p and \
+		 p["populationSize"] == "250"
+def p_cv5000(p):
+	return p["smtgp.useConstantProvider"] == "true" and \
+         p["smtgp.useInputVarsAsTerminals"] == "true" and \
+         "smtgp.holesConsts" not in p and \
+         "smtgp.holesVars" not in p and \
+         "maxTime" not in p and \
+		 p["populationSize"] == "5000"
 def p_cV(p):
 	return p["smtgp.useConstantProvider"] == "true" and \
          p["smtgp.useInputVarsAsTerminals"] == "false" and \
@@ -129,6 +140,7 @@ dim_benchmark = Dim([Config(r"\texttt{Keijzer12}", p_bench_keijzer12, 49),
 
 conf_cv = Config(r"$GP$", p_cv)
 conf_cv_timed = Config(r"$GP_T$", p_cv_timed)
+conf_cv_5000 = Config(r"$GP_5000$", p_cv5000)
 
 dim_fill = Dim([Config(r"$EPS$-$L", p_fill),
                 Config(r"$EPS$-$B", p_notFill)])
@@ -195,14 +207,20 @@ def print_stats_filtered(filtered, show_solver_stats = True):
 
 
 def print_table(props, dim_rows, dim_cols):
+	def fun0(filtered):
+		return str(len(filtered))
+	textStatus = printer.latex_table(props, dim_rows, dim_cols, fun0, "Status:")
+	print(textStatus)
+	print("\n\n")
+
 	def fun1(filtered):
 		if len(filtered) == 0:
 			return None
 		num_opt = get_num_optimal(filtered)
 		# return "{0}/{1}".format(str(num_opt), str(len(filtered)))
 		return "{0}".format(str(num_opt))
-	text = printer.text_table(props, dim_rows, dim_cols, fun1, "Num optimal:")
-	print(text)
+	textNumOptimal = printer.latex_table(props, dim_rows, dim_cols, fun1, "Num optimal:")
+	print(textNumOptimal)
 	print("\n\n")
 
 
@@ -211,8 +229,8 @@ def print_table(props, dim_rows, dim_cols):
 			return None
 		avgFit = round(get_stats_fitness(filtered)[0], 2)
 		return "{0}".format(str(avgFit))
-	text = printer.text_table(props, dim_rows, dim_cols, fun2, "Avg fitness:")
-	print(text)
+	textAvgFitness = printer.latex_table(props, dim_rows, dim_cols, fun2, "Avg fitness:")
+	print(textAvgFitness)
 	print("\n\n")
 
 
@@ -221,8 +239,8 @@ def print_table(props, dim_rows, dim_cols):
 			return None
 		avg_time = round(get_stats_duration(filtered)[0], 1)
 		return "{0}".format(str(avg_time))
-	text = printer.text_table(props, dim_rows, dim_cols, fun3, "Avg runtime:")
-	print(text)
+	textAvgRuntime = printer.latex_table(props, dim_rows, dim_cols, fun3, "Avg runtime:")
+	print(textAvgRuntime)
 	print("\n\n")
 
 
@@ -237,9 +255,23 @@ def print_table(props, dim_rows, dim_cols):
 			return str(round(percentUnsuccessful,3))
 		else:
 			return None
-	text = printer.text_table(props, dim_rows, dim_cols, fun4, "Ratio of unknowns:")
-	print(text)
+	textRatioOfUnknowns = printer.latex_table(props, dim_rows, dim_cols, fun4, "Ratio of unknowns:")
+	print(textRatioOfUnknowns)
 	print("\n\n")
+
+	report = reporting.ReportPDF()
+	section1 = reporting.BlockSection("Experiments", [])
+	subsects = [("Status (correctly finished processes)", textStatus, reporting.color_scheme_red_r),
+	            ("Number of optimal solutions (max=100)", textNumOptimal, reporting.color_scheme_green),
+	            ("Average fitness", textAvgFitness, reporting.color_scheme_green),
+	            ("Average runtime", textAvgRuntime, reporting.color_scheme_blue),
+	            ("Ratio of unknowns", textRatioOfUnknowns, reporting.color_scheme_yellow)]
+	for title, table, cs in subsects:
+		sub = reporting.BlockSubSection(title, [cs, reporting.BlockLatex(table + "\n")])
+		section1.add(sub)
+	report.add(section1)
+	report.save_and_compile("eps_results.tex")
+
 
 
 def print_stats_unsuccesful(filtered):
@@ -325,7 +357,7 @@ def print_optimals(props):
 
 def print_optimals_per_benchmark(props):
 	props = [p for p in props if p_optimal(p)]
-	dim_variants = Dim([conf_cv, conf_cv_timed]) + dim_usedHoles_ho * dim_fill
+	dim_variants = Dim([conf_cv, conf_cv_timed, conf_cv_5000]) + dim_usedHoles_ho * dim_fill
 	dim = dim_benchmark * dim_variants
 	def print_optimal(p):
 		optFilled = p["result.best.holesFilled"]
@@ -336,7 +368,7 @@ def print_optimals_per_benchmark(props):
 
 
 def draw_boxplots(props):
-	dim_variants = Dim([conf_cv, conf_cv_timed])
+	dim_variants = Dim([conf_cv, conf_cv_timed, conf_cv_5000])
 	dim_variants += dim_fill * dim_usedHoles_ho
 	plotter.compare_fitness_on_benchmarks(props, dim_benchmark, dim_variants, use_latex=True)
 
@@ -365,17 +397,17 @@ props = [p for p in props if p_optSolver(p) or p_cv(p)]  #p_cv added because by 
 
 
 # Printing a table with results.
-dim_variants = Dim([conf_cv, conf_cv_timed])
+dim_variants = Dim([conf_cv, conf_cv_timed, conf_cv_5000])
 dim_variants += dim_fill * dim_usedHoles_ho
-print_table(props, dim_variants, dim_benchmark)
-# print_table(props, dim_benchmark, dim_variants)
+# print_table(props, dim_variants, dim_benchmark)
+print_table(props, dim_benchmark, dim_variants)
 
 
 
 
 # print_opt_mode_stats(props)
 # print_optimals(props)
-print_optimals_per_benchmark(props)
+# print_optimals_per_benchmark(props)
 # search_differing_evals(props)
 
 
