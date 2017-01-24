@@ -113,6 +113,19 @@ def get_avg_totalTests(props):
 		return "-"  # -1.0, -1.0
 	else:
 		return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
+def get_avg_fitness(props):
+	vals = []
+	for p in props:
+		if p["result.best.eval"] == "-1":
+			vals.append(1.0)
+		elif p["result.best.eval"].isdigit(): # exclude cases like "Vector(1,0)".
+			totalTests = float(p["totalTests"])
+			ratio = (totalTests - float(p["result.best.eval"])) / totalTests
+			vals.append(ratio)
+	if len(vals) == 0:
+		return "-"  # -1.0, -1.0
+	else:
+		return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
 
 
 # text = printer.text_table(props, dim_benchmarks.sort(), dim_method*dim_sa, fun1)
@@ -135,6 +148,13 @@ print("\n\n")
 
 print("SUCCESS RATES (FULL INFO)")
 text = printer.latex_table(props, dim_benchmarks.sort(), dim_method*dim_sa, fun1)
+print(text)
+print("\n\n")
+
+
+print("AVG BEST-OF-RUN FITNESS")
+text = printer.latex_table(props, dim_benchmarks.sort(), dim_method*dim_sa, get_avg_fitness)
+latex_avgBestOfRunFitness = printer.table_color_map(text, 0.6, 0.98, 1.0, "colorLow", "colorMedium", "colorHigh")
 print(text)
 print("\n\n")
 
@@ -190,6 +210,7 @@ report.add(reporting.BlockLatex(section1))
 section2 = reporting.BlockSection("Initial experiments 2", [])
 subsects = [("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
 			("Success rates", latex_successRates, reporting.color_scheme_green),
+			("Average best-of-run fitness", latex_avgBestOfRunFitness, reporting.color_scheme_green),
             ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
             ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow)]
 for title, table, cs in subsects:
