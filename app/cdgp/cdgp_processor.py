@@ -210,7 +210,7 @@ report.add(reporting.BlockLatex(section1))
 section2 = reporting.BlockSection("Initial experiments 2", [])
 subsects = [("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
 			("Success rates", latex_successRates, reporting.color_scheme_green),
-			("Average best-of-run fitness", latex_avgBestOfRunFitness, reporting.color_scheme_green),
+			("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
             ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
             ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow)]
 for title, table, cs in subsects:
