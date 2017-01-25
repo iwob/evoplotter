@@ -10,9 +10,9 @@ import argparse
 
 options = argparse.ArgumentParser(description="Simple parser for the smtgp results.", add_help=True)
 options.add_argument("dirs", type=str, nargs="*", default=None,
-		             help="Name of the file containing ")
-options.add_argument("-f", "--file", type=str, default=None,
-		             help="Name of the file containing ")
+		             help="Paths to directories containing files with results (Initial experiment 2).")
+options.add_argument("dirsExp3", type=str, nargs="*", default=None,
+		             help="Paths to directories containing files with results of the second run (Initial experiment 3).")
 
 
 
@@ -22,31 +22,43 @@ options.add_argument("-f", "--file", type=str, default=None,
 ##################################################
 
 # Checking if the number of arguments is correct.
-if len(sys.argv) == 1:
-	print("No results directory was specified!")
-	exit()
+# if len(sys.argv) == 1:
+# 	print("No results directory was specified!")
+# 	exit()
 
 env = options.parse_args()
 
 
 
-if env.file is None:
-	folders = env.dirs
+if env.dirs is None or len(env.dirs) == 0:
+	folders_exp2 = ["res1_rms", "res1_first", "res1_gprlexss"]
+	folders_exp3 = ["res1_tournDeselection", "res1_tournDeselection_gprNew"]
+	print("Using default results directory names.")
+	print("Experiment 2:")
+	for f in folders_exp2:
+		print(f)
+	print("Experiment 3:")
+	for f in folders_exp3:
+		print(f)
 else:
-	folders = [L.strip() for L in utils.read_lines(env.file)]
-
-props = utils.load_properties_dirs(folders, exts=[".txt"])
-
-# Printing names of files which finished with error status.
-print("Files with error status:")
-props_errors = [p for p in props if p["status"] != "completed" and p["status"] != "initialized"]
-for p in props_errors:
-	print(p["thisFileName"])
+	folders_exp2 = env.dirs
+	folders_exp3 = env.dirsExp3
 
 
-# Filtering props so only correct ones
-props = [p for p in props if "benchmark" in p and ("result.best.eval" in p or "result.successRate" in p)]
 
+
+def load_correct_props(folders):
+	props = utils.load_properties_dirs(folders, exts=[".txt"])
+
+	# Printing names of files which finished with error status.
+	print("\nFiles with error status:")
+	props_errors = [p for p in props if p["status"] != "completed" and p["status"] != "initialized"]
+	for p in props_errors:
+		print(p["thisFileName"])
+
+	# Filtering props so only correct ones
+	props = [p for p in props if "benchmark" in p and ("result.best.eval" in p or "result.successRate" in p)]
+	return props
 
 
 def p_GP(p):
@@ -64,10 +76,16 @@ def p_method1(p):
 def p_method2(p):
 	return p["method"] == "2"
 
-print("\nFiles with > 5000 total tests:")
-props_errors = [p for p in props if p["benchmark"] == "other/CountPositive2.sl" and p["status"] == "completed" and int(p["totalTests"]) > 5000]
-for p in props_errors:
-	print(p["thisFileName"])
+
+
+
+
+# print("\nFiles with > 5000 total tests:")
+# props_errors = [p for p in props if p["benchmark"] == "other/CountPositive2.sl" and p["status"] == "completed" and int(p["totalTests"]) > 5000]
+# for p in props_errors:
+# 	print(p["thisFileName"])
+
+
 
 dim_method = Dim([Config("CDGP", p_method0),
                   Config("CDGPconservative", p_method1),
@@ -76,7 +94,6 @@ dim_sa = Dim([Config("GP", p_GP),
 			  Config("GPSteadyState", p_GPSteadyState),
               Config("Lexicase", p_Lexicase),
               Config("LexicaseSteadyState", p_LexicaseSteadyState)])
-dim_benchmarks = Dim.from_data(props, lambda p: p["benchmark"])
 
 
 
@@ -90,12 +107,12 @@ def get_num_optimal(props):
 
 def get_num_computed(filtered):
 	return len(filtered)
-def fun1(filtered):
+def fun_successRates_full(filtered):
 	if len(filtered) == 0:
-		return None
+		return "-"
 	num_opt = get_num_optimal(filtered)
 	return "{0}/{1}".format(str(num_opt), str(len(filtered)))
-def fun2(filtered):
+def fun_successRates(filtered):
 	if len(filtered) == 0:
 		return None
 	num_opt = get_num_optimal(filtered)
@@ -116,7 +133,10 @@ def get_avg_totalTests(props):
 def get_avg_fitness(props):
 	vals = []
 	for p in props:
-		if p["result.best.eval"] == "-1":
+		if "result.best.passedTestsRatio" in p:
+			ratio = float(p["result.best.passedTestsRatio"])
+			vals.append(ratio)
+		elif p["result.best.eval"] == "-1":
 			vals.append(1.0)
 		elif p["result.best.eval"].isdigit(): # exclude cases like "Vector(1,0)".
 			totalTests = float(p["totalTests"])
@@ -128,49 +148,91 @@ def get_avg_fitness(props):
 		return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
 
 
-# text = printer.text_table(props, dim_benchmarks.sort(), dim_method*dim_sa, fun1)
-# print(text)
-# print("\n\n")
-
-print("STATUS")
-text = printer.latex_table(props, dim_benchmarks.sort(), dim_method*dim_sa, get_num_computed)
-latex_status = printer.table_color_map(text, 0.0, 1, 10.0, "colorLow", "colorMedium", "colorHigh")
-print(text)
-print("\n\n")
 
 
-print("SUCCESS RATES")
-text = printer.latex_table(props, dim_benchmarks.sort(), dim_method*dim_sa, fun2)
-latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-print(text)
-print("\n\n")
+def create_section_with_results(title, desc, props):
+	assert isinstance(title, str)
+	assert isinstance(desc, str)
+	assert isinstance(props, list)
+	# text = printer.text_table(props, dim_benchmarks.sort(), dim_method*dim_sa, fun1)
+	# print(text)
+	# print("\n\n")
+
+	dim_benchmarks = Dim.from_data(props, lambda p: p["benchmark"])
+
+	print("STATUS")
+	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_num_computed)
+	latex_status = printer.table_color_map(text, 0.0, 1, 10.0, "colorLow", "colorMedium", "colorHigh")
+	print(text)
+	print("\n\n")
+
+	print("SUCCESS RATES")
+	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, fun_successRates)
+	latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
+	print(text)
+	print("\n\n")
+
+	print("SUCCESS RATES (FULL INFO)")
+	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, fun_successRates_full)
+	print(text)
+	print("\n\n")
+
+	print("AVG BEST-OF-RUN FITNESS")
+	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_fitness)
+	latex_avgBestOfRunFitness = printer.table_color_map(text, 0.6, 0.98, 1.0, "colorLow", "colorMedium", "colorHigh")
+	print(text)
+	print("\n\n")
+
+	print("AVG TOTAL TESTS")
+	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_totalTests)
+	latex_avgTotalTests = printer.table_color_map(text, 0.0, 1000.0, 2000.0, "colorLow", "colorMedium", "colorHigh")
+	print(text)
+	print("\n\n")
+
+	print("AVG SIZES")
+	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_stats_size)
+	latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
+	print(text)
+	print("\n\n")
+
+	section = reporting.BlockSection(title, [])
+	subsects = [("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
+	            ("Success rates", latex_successRates, reporting.color_scheme_green),
+	            ("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
+	            ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
+	            ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow)]
+	bl_desc = reporting.BlockLatex(desc + "\n")
+	section.add(bl_desc)
+	for title, table, cs in subsects:
+		sub = reporting.BlockSubSection(title, [cs, reporting.BlockLatex(table + "\n")])
+		section.add(sub)
+	section.add(reporting.BlockLatex(r"\vspace{1cm}" + "\n"))
+	return section
 
 
-print("SUCCESS RATES (FULL INFO)")
-text = printer.latex_table(props, dim_benchmarks.sort(), dim_method*dim_sa, fun1)
-print(text)
-print("\n\n")
 
 
-print("AVG BEST-OF-RUN FITNESS")
-text = printer.latex_table(props, dim_benchmarks.sort(), dim_method*dim_sa, get_avg_fitness)
-latex_avgBestOfRunFitness = printer.table_color_map(text, 0.6, 0.98, 1.0, "colorLow", "colorMedium", "colorHigh")
-print(text)
-print("\n\n")
 
 
-print("AVG TOTAL TESTS")
-text = printer.latex_table(props, dim_benchmarks.sort(), dim_method*dim_sa, get_avg_totalTests)
-latex_avgTotalTests = printer.table_color_map(text, 0.0, 1000.0, 2000.0, "colorLow", "colorMedium", "colorHigh")
-print(text)
-print("\n\n")
 
 
-print("AVG SIZES")
-text = printer.latex_table(props, dim_benchmarks.sort(), dim_method*dim_sa, get_stats_size)
-latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
-print(text)
-print("\n\n")
+props_exp2 = load_correct_props(folders_exp2)
+desc_exp2 = ""
+props_exp3 = load_correct_props(folders_exp3)
+desc_exp3 = r"""
+Changes:
+\begin{itemize}
+\item LexicaseSteadyState uses Tournament ($k=7$) deselection.
+\item GPR uses range [-100, 100].
+\item Various improvements in the code.
+\end{itemize}
+"""
+
+
+
+
+
+
 
 
 
@@ -206,17 +268,10 @@ sygus16/fg\_max8.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{co
 """
 report.add(reporting.BlockLatex(section1))
 
-
-section2 = reporting.BlockSection("Initial experiments 2", [])
-subsects = [("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
-			("Success rates", latex_successRates, reporting.color_scheme_green),
-			("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
-            ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
-            ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow)]
-for title, table, cs in subsects:
-	sub = reporting.BlockSubSection(title, [cs, reporting.BlockLatex(table + "\n")])
-	section2.add(sub)
+section2 = create_section_with_results("Initial experiments 2", desc_exp2, props_exp2)
+section3 = create_section_with_results("Initial experiments 3", desc_exp3, props_exp3)
 report.add(section2)
+report.add(section3)
 
 
 
