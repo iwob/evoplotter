@@ -121,11 +121,11 @@ color_scheme_blue = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % 
 \definecolor{colorHigh}{rgb}{0.63, 0.79, 0.95} % blue
 """)
 color_scheme_green = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{colorMedium}{rgb}{0.76, 0.98, 0.76} % colorHigh
+\definecolor{colorMedium}{rgb}{0.76, 0.98, 0.76} % light green
 \definecolor{colorHigh}{rgb}{0.66, 0.90, 0.66} % green
 """)
 color_scheme_green_r = BlockLatex(r"""\definecolor{colorLow}{rgb}{0.66, 0.90, 0.66} % green
-\definecolor{colorMedium}{rgb}{0.76, 0.98, 0.76} % colorHigh
+\definecolor{colorMedium}{rgb}{0.76, 0.98, 0.76} % light green
 \definecolor{colorHigh}{rgb}{1.0, 1.0, 1.0} % white
 """)
 color_scheme_yellow = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
@@ -137,10 +137,10 @@ color_scheme_violet = BlockLatex(r"""\definecolor{lightred}{rgb}{1.0, 1.0, 1.0} 
 \definecolor{lightgreen}{rgb}{0.65, 0.45, 0.85} % violet
 """)
 color_scheme_red = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{colorMedium}{rgb}{0.95, 0.6, 0.6}
+\definecolor{colorMedium}{rgb}{0.95, 0.6, 0.6} % light red
 \definecolor{colorHigh}{rgb}{0.8, 0, 0} % red
 """)
 color_scheme_red_r = BlockLatex(r"""\definecolor{colorLow}{rgb}{0.8, 0, 0} % red
-\definecolor{colorMedium}{rgb}{0.95, 0.6, 0.6}
+\definecolor{colorMedium}{rgb}{0.95, 0.6, 0.6} % light red
 \definecolor{colorHigh}{rgb}{1.0, 1.0, 1.0} % white
 """)
