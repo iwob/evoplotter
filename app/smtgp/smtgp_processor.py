@@ -144,9 +144,9 @@ conf_cv_5000 = Config(r"$GP_{5000}$", p_cv5000)
 
 dim_fill = Dim([Config(r"$EPS$-$L", p_fill),
                 Config(r"$EPS$-$B", p_notFill)])
-dim_usedHoles_ho = Dim([Config( "C$", p_Cv),
-                        Config( "V$", p_cV),
-                        Config( "{CV}$", p_CV)])
+dim_usedHoles_ho = Dim([Config( "c$", p_Cv),
+                        Config( "v$", p_cV),
+                        Config( "{cv}$", p_CV)])
 dim_optMode = Dim([Config("optSolver", p_optSolver),
                    Config("optBisecting", p_optBisecting)])
 
