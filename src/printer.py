@@ -160,7 +160,7 @@ def decorate_table(table_text, convert_fun, d_cols=" & ", d_rows="\\\\\n"):
 
 
 
-def table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor, MidColor, MaxColor):
+def table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor="colorLow", MidColor="colorMedium", MaxColor="colorHigh"):
 	"""Creates a table with cells colored depending on their values ("color map"). Colored will be only cells containing numbers.
 
 	:param text: (str) text of the table.
