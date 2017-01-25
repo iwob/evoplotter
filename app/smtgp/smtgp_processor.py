@@ -140,7 +140,7 @@ dim_benchmark = Dim([Config(r"\texttt{Keijzer12}", p_bench_keijzer12, 49),
 
 conf_cv = Config(r"$GP$", p_cv)
 conf_cv_timed = Config(r"$GP_T$", p_cv_timed)
-conf_cv_5000 = Config(r"$GP_5000$", p_cv5000)
+conf_cv_5000 = Config(r"$GP_{5000}$", p_cv5000)
 
 dim_fill = Dim([Config(r"$EPS$-$L", p_fill),
                 Config(r"$EPS$-$B", p_notFill)])
@@ -209,44 +209,48 @@ def print_stats_filtered(filtered, show_solver_stats = True):
 def print_table(props, dim_rows, dim_cols):
 	def fun0(filtered):
 		return str(len(filtered))
-	textStatus = printer.latex_table(props, dim_rows, dim_cols, fun0, "Status:")
+	textStatus = printer.latex_table(props, dim_rows, dim_cols, fun0, full_latex_mode=False)
+	textStatus = printer.table_color_map(textStatus, 0.0, 50.0, 100.0)
 	print(textStatus)
 	print("\n\n")
 
 	def fun1(filtered):
 		if len(filtered) == 0:
-			return None
+			return "-"
 		num_opt = get_num_optimal(filtered)
 		# return "{0}/{1}".format(str(num_opt), str(len(filtered)))
 		return "{0}".format(str(num_opt))
-	textNumOptimal = printer.latex_table(props, dim_rows, dim_cols, fun1, "Num optimal:")
+	textNumOptimal = printer.latex_table(props, dim_rows, dim_cols, fun1, full_latex_mode=False)
+	textNumOptimal = printer.table_color_map(textNumOptimal, 0.0, 50.0, 100.0)
 	print(textNumOptimal)
 	print("\n\n")
 
 
 	def fun2(filtered):
 		if len(filtered) == 0:
-			return None
+			return "-"
 		avgFit = round(get_stats_fitness(filtered)[0], 2)
 		return "{0}".format(str(avgFit))
-	textAvgFitness = printer.latex_table(props, dim_rows, dim_cols, fun2, "Avg fitness:")
+	textAvgFitness = printer.latex_table(props, dim_rows, dim_cols, fun2, full_latex_mode=False)
+	textAvgFitness = printer.table_color_map(textAvgFitness, 0.0, 25.0, 50.0)
 	print(textAvgFitness)
 	print("\n\n")
 
 
 	def fun3(filtered):
 		if len(filtered) == 0:
-			return None
+			return "-"
 		avg_time = round(get_stats_duration(filtered)[0], 1)
 		return "{0}".format(str(avg_time))
-	textAvgRuntime = printer.latex_table(props, dim_rows, dim_cols, fun3, "Avg runtime:")
+	textAvgRuntime = printer.latex_table(props, dim_rows, dim_cols, fun3, full_latex_mode=False)
+	textAvgRuntime = printer.table_color_map(textAvgRuntime, 0.0, 1000, 10000)
 	print(textAvgRuntime)
 	print("\n\n")
 
 
 	def fun4(filtered):
 		if len(filtered) == 0:
-			return None
+			return "-"
 		evalSolver = get_sum(filtered, "result.stats.evaluatedSolver")
 		evalSolverUnknown = get_sum(filtered, "result.stats.evaluatedSolverUnknown")
 		evalSolverTimeout = get_sum(filtered, "result.stats.evaluatedSolverTimeout")
@@ -254,8 +258,9 @@ def print_table(props, dim_rows, dim_cols):
 			percentUnsuccessful = float(evalSolverTimeout + evalSolverUnknown) / float(evalSolver)
 			return str(round(percentUnsuccessful,3))
 		else:
-			return None
-	textRatioOfUnknowns = printer.latex_table(props, dim_rows, dim_cols, fun4, "Ratio of unknowns:")
+			return "-"
+	textRatioOfUnknowns = printer.latex_table(props, dim_rows, dim_cols, fun4, full_latex_mode=False)
+	textRatioOfUnknowns = printer.table_color_map(textRatioOfUnknowns, 0.0, 0.3, 0.6)
 	print(textRatioOfUnknowns)
 	print("\n\n")
 
@@ -413,6 +418,6 @@ print_table(props, dim_benchmark, dim_variants)
 
 
 
-# draw_boxplots(props)
+draw_boxplots(props)
 # draw_fitness_progression(props, plot_individual_runs=True)
 # draw_fitness_progression(props, plot_individual_runs=False)
