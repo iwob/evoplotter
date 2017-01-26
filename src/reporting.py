@@ -144,3 +144,11 @@ color_scheme_red_r = BlockLatex(r"""\definecolor{colorLow}{rgb}{0.8, 0, 0} % red
 \definecolor{colorMedium}{rgb}{0.95, 0.6, 0.6} % light red
 \definecolor{colorHigh}{rgb}{1.0, 1.0, 1.0} % white
 """)
+color_scheme_red2yellow2green = BlockLatex(r"""\definecolor{colorLow}{rgb}{0.94, 0.5, 0.5} % red
+\definecolor{colorMedium}{rgb}{1.0, 1.0, 0.0} % yellow
+\definecolor{colorHigh}{rgb}{0.56, 0.93, 0.56} % green
+""")
+color_scheme_green2yellow2red = BlockLatex(r"""\definecolor{colorLow}{rgb}{0.56, 0.93, 0.56} % green
+\definecolor{colorMedium}{rgb}{1.0, 1.0, 0.0} % yellow
+\definecolor{colorHigh}{rgb}{0.94, 0.5, 0.5} % red
+""")
