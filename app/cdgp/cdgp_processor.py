@@ -33,25 +33,32 @@ env = options.parse_args()
 if env.dirs is None or len(env.dirs) == 0:
 	folders_exp2 = ["res1_rms", "res1_first", "res1_gprlexss"]
 	folders_exp3 = ["res1_tournDeselection", "res1_tournDeselection_gprNew"]
+	folders_exp4 = ["res1_cdgpOneTest", "res1_gprManyTest"]
 	print("Using default results directory names.")
-	print("Experiment 2:")
+	print("* Experiment 2:")
 	for f in folders_exp2:
 		print(f)
-	print("Experiment 3:")
+	print("* Experiment 3:")
 	for f in folders_exp3:
+		print(f)
+	print("* Experiment 4:")
+	for f in folders_exp4:
 		print(f)
 else:
 	folders_exp2 = env.dirs
 	folders_exp3 = env.dirsExp3
+	folders_exp4 = env.dirsExp4
 
 
 
 
-def load_correct_props(folders):
+def load_correct_props(folders, name = ""):
 	props = utils.load_properties_dirs(folders, exts=[".txt"])
 
+	print("\n*** Loading props: " + name)
+
 	# Printing names of files which finished with error status.
-	print("\nFiles with error status:")
+	print("Files with error status:")
 	props_errors = [p for p in props if p["status"] != "completed" and p["status"] != "initialized"]
 	for p in props_errors:
 		print(p["thisFileName"])
@@ -146,7 +153,12 @@ def get_avg_fitness(props):
 		return "-"  # -1.0, -1.0
 	else:
 		return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
-
+def get_avg_runtime(props):
+	vals = [float(p["result.totalTimeSystem"]) / 1000.0 for p in props]
+	if len(vals) == 0:
+		return "-"  # -1.0, -1.0
+	else:
+		return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
 
 
 
@@ -157,6 +169,8 @@ def create_section_with_results(title, desc, props):
 	# text = printer.text_table(props, dim_benchmarks.sort(), dim_method*dim_sa, fun1)
 	# print(text)
 	# print("\n\n")
+
+	print("\n*** Processing: {0}***".format(title))
 
 	dim_benchmarks = Dim.from_data(props, lambda p: p["benchmark"])
 
@@ -189,6 +203,12 @@ def create_section_with_results(title, desc, props):
 	print(text)
 	print("\n\n")
 
+	print("AVG RUNTIME")
+	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_runtime)
+	latex_avgRuntime = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
+	print(text)
+	print("\n\n")
+
 	print("AVG SIZES")
 	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_stats_size)
 	latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
@@ -200,6 +220,7 @@ def create_section_with_results(title, desc, props):
 	            ("Success rates", latex_successRates, reporting.color_scheme_green),
 	            ("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
 	            ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
+	            ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
 	            ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow)]
 	bl_desc = reporting.BlockLatex(desc + "\n")
 	section.add(bl_desc)
@@ -215,16 +236,28 @@ def create_section_with_results(title, desc, props):
 
 
 
-
-props_exp2 = load_correct_props(folders_exp2)
+name_exp2 = "Initial experiments 2"
+props_exp2 = load_correct_props(folders_exp2, name_exp2)
 desc_exp2 = ""
-props_exp3 = load_correct_props(folders_exp3)
+
+name_exp3 = "Initial experiments 3"
+props_exp3 = load_correct_props(folders_exp3, name_exp3)
 desc_exp3 = r"""
 Changes:
 \begin{itemize}
 \item LexicaseSteadyState uses Tournament ($k=7$) deselection.
 \item GPR uses range [-100, 100].
 \item Various improvements in the code.
+\end{itemize}
+"""
+
+name_exp4 = "Initial experiments 4"
+props_exp4 = load_correct_props(folders_exp4, name_exp4)
+desc_exp4 = r"""
+The same as experiment 3, apart from:
+\begin{itemize}
+\item GPR allowed to add many tests in one iteration.
+\item CDGP limited to only 1 test per iteration.
 \end{itemize}
 """
 
@@ -268,10 +301,11 @@ sygus16/fg\_max8.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{co
 """
 report.add(reporting.BlockLatex(section1))
 
-section2 = create_section_with_results("Initial experiments 2", desc_exp2, props_exp2)
-section3 = create_section_with_results("Initial experiments 3", desc_exp3, props_exp3)
-report.add(section2)
-report.add(section3)
+sects = [create_section_with_results(name_exp2, desc_exp2, props_exp2),
+         create_section_with_results(name_exp3, desc_exp3, props_exp3),
+         create_section_with_results(name_exp4, desc_exp4, props_exp4)]
+for s in sects:
+	report.add(s)
 
 
 
