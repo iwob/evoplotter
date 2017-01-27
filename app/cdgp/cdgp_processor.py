@@ -34,6 +34,7 @@ if env.dirs is None or len(env.dirs) == 0:
 	folders_exp2 = ["res1_rms", "res1_first", "res1_gprlexss"]
 	folders_exp3 = ["res1_tournDeselection", "res1_tournDeselection_gprNew"]
 	folders_exp4 = ["res1_cdgpOneTest", "res1_gprManyTest"]
+	folders_expEvalsFINAL = ["resFinal_GenEvals", "resFinal_SSEvals"]
 	print("Using default results directory names.")
 	print("* Experiment 2:")
 	for f in folders_exp2:
@@ -48,6 +49,7 @@ else:
 	folders_exp2 = env.dirs
 	folders_exp3 = env.dirsExp3
 	folders_exp4 = env.dirsExp4
+	folders_expEvalsFINAL = env.dirsExpEvalsFINAL
 
 
 
@@ -177,43 +179,43 @@ def create_section_with_results(title, desc, props):
 	print("STATUS")
 	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_num_computed)
 	latex_status = printer.table_color_map(text, 0.0, 1, 10.0, "colorLow", "colorMedium", "colorHigh")
-	print(text)
-	print("\n\n")
+	# print(text)
+	# print("\n\n")
 
 	print("SUCCESS RATES")
 	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, fun_successRates)
 	latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-	print(text)
-	print("\n\n")
+	# print(text)
+	# print("\n\n")
 
 	print("SUCCESS RATES (FULL INFO)")
 	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, fun_successRates_full)
-	print(text)
-	print("\n\n")
+	# print(text)
+	# print("\n\n")
 
 	print("AVG BEST-OF-RUN FITNESS")
 	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_fitness)
 	latex_avgBestOfRunFitness = printer.table_color_map(text, 0.6, 0.98, 1.0, "colorLow", "colorMedium", "colorHigh")
-	print(text)
-	print("\n\n")
+	# print(text)
+	# print("\n\n")
 
 	print("AVG TOTAL TESTS")
 	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_totalTests)
 	latex_avgTotalTests = printer.table_color_map(text, 0.0, 1000.0, 2000.0, "colorLow", "colorMedium", "colorHigh")
-	print(text)
-	print("\n\n")
+	# print(text)
+	# print("\n\n")
 
 	print("AVG RUNTIME")
 	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_runtime)
 	latex_avgRuntime = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
-	print(text)
-	print("\n\n")
+	# print(text)
+	# print("\n\n")
 
 	print("AVG SIZES")
 	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_stats_size)
 	latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
-	print(text)
-	print("\n\n")
+	# print(text)
+	# print("\n\n")
 
 	section = reporting.BlockSection(title, [])
 	subsects = [("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
@@ -261,9 +263,18 @@ The same as experiment 3, apart from:
 \end{itemize}
 """
 
-
-
-
+name_expEvalsFINAL = "Final Experiments -- stop: number of iterations"
+props_expEvalsFINAL = load_correct_props(folders_expEvalsFINAL, name_expEvalsFINAL)
+desc_expEvalsFINAL = r"""
+Important information:
+\begin{itemize}
+\item All configurations, unless specified otherwise, has \textbf{population size 500}, and \textbf{number of iterations 100}.
+\item GPR allowed to add many tests in one iteration.
+\item CDGP allowed to add many tests in one iteration.
+\item GPR uses range [-100, 100] and a population size 1000.
+\item LexicaseSteadyState uses Tournament ($k=7$) deselection.
+\end{itemize}
+"""
 
 
 
@@ -303,7 +314,8 @@ report.add(reporting.BlockLatex(section1))
 
 sects = [create_section_with_results(name_exp2, desc_exp2, props_exp2),
          create_section_with_results(name_exp3, desc_exp3, props_exp3),
-         create_section_with_results(name_exp4, desc_exp4, props_exp4)]
+         create_section_with_results(name_exp4, desc_exp4, props_exp4),
+         create_section_with_results(name_expEvalsFINAL, desc_expEvalsFINAL, props_expEvalsFINAL)]
 for s in sects:
 	report.add(s)
 
