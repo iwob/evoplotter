@@ -132,9 +132,9 @@ color_scheme_yellow = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} 
 \definecolor{colorMedium}{rgb}{0.98, 0.91, 0.71} % light yellow
 \definecolor{colorHigh}{rgb}{1.0, 0.75, 0.0} % yellow
 """)
-color_scheme_violet = BlockLatex(r"""\definecolor{lightred}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{lightyellow}{rgb}{0.85, 0.65, 0.92} % light violet
-\definecolor{lightgreen}{rgb}{0.65, 0.45, 0.85} % violet
+color_scheme_violet = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
+\definecolor{colorMedium}{rgb}{0.85, 0.65, 0.92} % light violet
+\definecolor{colorHigh}{rgb}{0.65, 0.45, 0.85} % violet
 """)
 color_scheme_red = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
 \definecolor{colorMedium}{rgb}{0.95, 0.6, 0.6} % light red
