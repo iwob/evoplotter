@@ -61,9 +61,12 @@ def load_correct_props(folders, name = ""):
 
 	# Printing names of files which finished with error status.
 	print("Files with error status:")
-	props_errors = [p for p in props if p["status"] != "completed" and p["status"] != "initialized"]
+	props_errors = [p for p in props if "status" not in p or (p["status"] != "completed" and p["status"] != "initialized")]
 	for p in props_errors:
-		print(p["thisFileName"])
+		if "thisFileName" in p:
+			print(p["thisFileName"])
+		else:
+			print("'thisFileName' not specified! Printing content instead: " + str(p))
 
 	# Filtering props so only correct ones
 	props = [p for p in props if "benchmark" in p and ("result.best.eval" in p or "result.successRate" in p)]
@@ -110,8 +113,8 @@ dim_sa = Dim([Config("GP", p_GP),
 def get_num_optimal(props):
 	def is_eval_correct(e):
 		return e == "-1" or e[:7] == "List(-1" or e[:9] == "Vector(-1"
-	props2 = [p for p in props if ("result.best.eval" in p and is_eval_correct(p["result.best.eval"])) or \
-	                              ("result.successRate" in p and p["result.successRate"] == "1.0")]
+	props2 = [p for p in props if ("result.best.eval" in p and is_eval_correct(p["result.best.eval"]))] #or \
+#("result.successRate" in p and p["result.successRate"] == "1.0")]
 	return len(props2)
 
 def get_num_computed(filtered):
