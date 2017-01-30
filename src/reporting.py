@@ -136,6 +136,14 @@ color_scheme_violet = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} 
 \definecolor{colorMedium}{rgb}{0.85, 0.65, 0.92} % light violet
 \definecolor{colorHigh}{rgb}{0.65, 0.45, 0.85} % violet
 """)
+color_scheme_teal = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
+\definecolor{colorMedium}{rgb}{0.67, 0.87, 0.88} % light teal
+\definecolor{colorHigh}{rgb}{0.47, 0.72, 0.73} % teal
+""")
+color_scheme_brown = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
+\definecolor{colorMedium}{rgb}{0.96, 0.8, 0.62} % light teal
+\definecolor{colorHigh}{rgb}{0.76, 0.6, 0.42} % teal
+""")
 color_scheme_red = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
 \definecolor{colorMedium}{rgb}{0.95, 0.6, 0.6} % light red
 \definecolor{colorHigh}{rgb}{0.8, 0, 0} % red
