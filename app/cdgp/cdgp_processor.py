@@ -34,7 +34,7 @@ if env.dirs is None or len(env.dirs) == 0:
 	folders_exp2 = ["res1_rms", "res1_first", "res1_gprlexss"]
 	folders_exp3 = ["res1_tournDeselection", "res1_tournDeselection_gprNew"]
 	folders_exp4 = ["res1_cdgpOneTest", "res1_gprManyTest"]
-	folders_expEvalsFINAL = ["resFinal_GenEvals", "resFinal_SSEvals"]
+	folders_expEvalsFINAL = ["resFinal_GenEvals", "resFinal_SSEvals", "resFinal_spare_CDGPEvals"]
 	print("Using default results directory names.")
 	print("* Experiment 2:")
 	for f in folders_exp2:
@@ -164,10 +164,29 @@ def get_avg_runtime(props):
 		return "-"  # -1.0, -1.0
 	else:
 		return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
+def get_avg_generation(props):
+	vals = [float(p["result.best.generation"]) for p in props]
+	if len(vals) == 0:
+		return "-"  # -1.0, -1.0
+	else:
+		return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
+def get_avg_runtimePerProgram(props):
+	if len(props) == 0:
+		return "-"  # -1.0, -1.0
+	avgGen = float(get_avg_generation(props))
+	avgRuntime = float(get_avg_runtime(props))
+	populationSize = float(props[0]["populationSize"])
+	if props[0]["searchAlgorithm"] == "GPSteadyState" or \
+	   props[0]["searchAlgorithm"] == "LexicaseSteadyState":
+		approxNumPrograms = populationSize + avgGen
+	else:
+		approxNumPrograms = populationSize * avgGen
+	approxTimePerProgram = avgRuntime / approxNumPrograms
+	return "%0.3f" % approxTimePerProgram
 
 
 
-def create_section_with_results(title, desc, props):
+def create_section_with_results(title, desc, props, numRuns=10):
 	assert isinstance(title, str)
 	assert isinstance(desc, str)
 	assert isinstance(props, list)
@@ -181,7 +200,7 @@ def create_section_with_results(title, desc, props):
 
 	print("STATUS")
 	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_num_computed)
-	latex_status = printer.table_color_map(text, 0.0, 1, 10.0, "colorLow", "colorMedium", "colorHigh")
+	latex_status = printer.table_color_map(text, 0.0, numRuns/2, numRuns, "colorLow", "colorMedium", "colorHigh")
 	# print(text)
 	# print("\n\n")
 
@@ -214,6 +233,18 @@ def create_section_with_results(title, desc, props):
 	# print(text)
 	# print("\n\n")
 
+	print("AVG RUNTIME PER PROGRAM")
+	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_runtimePerProgram)
+	latex_avgRuntimePerProgram = printer.table_color_map(text, 0.01, 1.0, 2.0, "colorLow", "colorMedium", "colorHigh")
+	# print(text)
+	# print("\n\n")
+
+	print("AVG GENERATION")
+	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_generation)
+	latex_avgGeneration = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
+	# print(text)
+	# print("\n\n")
+
 	print("AVG SIZES")
 	text = printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_stats_size)
 	latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
@@ -226,6 +257,8 @@ def create_section_with_results(title, desc, props):
 	            ("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
 	            ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
 	            ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
+	            ("Average generation (optimal and nonoptimal bestOfRuns)", latex_avgGeneration, reporting.color_scheme_teal),
+	            ("Approximate average runtime per program [s]", latex_avgRuntimePerProgram, reporting.color_scheme_brown),
 	            ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow)]
 	bl_desc = reporting.BlockLatex(desc + "\n")
 	section.add(bl_desc)
@@ -278,7 +311,10 @@ Important information:
 \item LexicaseSteadyState uses Tournament ($k=7$) deselection.
 \end{itemize}
 """
-
+print("(***) props_expEvalsFINAL:")
+for p in props_expEvalsFINAL:
+	if p["method"] == "2" and p["searchAlgorithm"] == "LexicaseSteadyState" and p["benchmark"] == "sygus16/fg_array_search_4.sl":
+		print(p["thisFileName"] + ", " + p["benchmark"])
 
 
 
@@ -318,7 +354,7 @@ report.add(reporting.BlockLatex(section1))
 sects = [create_section_with_results(name_exp2, desc_exp2, props_exp2),
          create_section_with_results(name_exp3, desc_exp3, props_exp3),
          create_section_with_results(name_exp4, desc_exp4, props_exp4),
-         create_section_with_results(name_expEvalsFINAL, desc_expEvalsFINAL, props_expEvalsFINAL)]
+         create_section_with_results(name_expEvalsFINAL, desc_expEvalsFINAL, props_expEvalsFINAL, numRuns=30)]
 for s in sects:
 	report.add(s)
 
