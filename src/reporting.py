@@ -7,7 +7,8 @@ class ReportPDF(object):
 	geometry_params = "[paperwidth=65cm, paperheight=40cm, margin=0.3cm]"
 	packages = ["[utf8]{inputenc}",
 	            geometry_params + "{geometry}",
-	            "[table]{xcolor}"]
+	            "[table]{xcolor}",
+	            "{hyperref}"]
 
 	def __init__(self, blocks = None):
 		if blocks is None:

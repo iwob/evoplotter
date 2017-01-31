@@ -64,7 +64,7 @@ class Dim(object):
 		return [p for p in props if any([c.filter(p) for c in self.configs])]
 
 	def sort(self):
-		"""Sorts this dimension alphabetically on the names Configs within it."""
+		"""Sorts this dimension alphabetically on the names of Configs within it."""
 		self.configs.sort()
 		return self
 
