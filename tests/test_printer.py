@@ -60,7 +60,6 @@ class TestsPrinter(unittest.TestCase):
 	def test_latex_table_header_multilayered_2(self):
 		dim = self.dim_rows * self.dim_cols
 		text = printer.latex_table_header_multilayered(dim)
-		print("TEXT2:\n" + text)
 		self.assertEquals(r" & \multicolumn{3}{c}{r0} & \multicolumn{3}{c}{r1}\\" + "\n" +
 		                  r" & c0 & c1 & c2 & c0 & c1 & c2\\" + "\n", text)
 
@@ -74,10 +73,16 @@ class TestsPrinter(unittest.TestCase):
 	def test_latex_table_header_multilayered_3(self):
 		dim = self.dim_z * self.dim_rows * self.dim_cols
 		text = printer.latex_table_header_multilayered(dim)
-		print("TEXT3:\n" + text)
 		self.assertEquals(r" & \multicolumn{6}{c}{z0} & \multicolumn{6}{c}{z1}\\" + "\n" +
 		                  r" & \multicolumn{3}{c}{r0} & \multicolumn{3}{c}{r1} & \multicolumn{3}{c}{r0} & \multicolumn{3}{c}{r1}\\" + "\n" +
 		                  r" & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1 & c2\\" + "\n", text)
+
+		dim = self.dim_z * self.dim_rows * self.dim_cols
+		dim = Dim(dim.configs[:-1])
+		text = printer.latex_table_header_multilayered(dim)
+		self.assertEquals(r" & \multicolumn{6}{c}{z0} & \multicolumn{5}{c}{z1}\\" + "\n" +
+		                  r" & \multicolumn{3}{c}{r0} & \multicolumn{3}{c}{r1} & \multicolumn{3}{c}{r0} & \multicolumn{2}{c}{r1}\\" + "\n" +
+		                  r" & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1\\" + "\n", text)
 
 
 	def test_text_listing(self):
