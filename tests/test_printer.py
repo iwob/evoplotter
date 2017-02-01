@@ -24,16 +24,25 @@ class TestsPrinter(unittest.TestCase):
 	        {r: 1, c: 2, x: 17},
 	        {r: 1, c: 2, x: 18},
 	        {r: 1, c: 2, x: 19}]
-
 	dim_rows = Dim([Config("r0", lambda d: d["r"] == 0),
 	                Config("r1", lambda d: d["r"] == 1)])
 	dim_cols = Dim([Config("c0", lambda d: d["c"] == 0),
 	                Config("c1", lambda d: d["c"] == 1),
 	                Config("c2", lambda d: d["c"] == 2)])
+	dim_z = Dim([Config("z0", lambda d: d["x"] < 5 ),
+	             Config("z1", lambda d: d["x"] >= 5)])
 
 	def test_text_table_multichar_seps(self):
 		text = printer.text_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]), d_cols=" && ", d_rows=";\n")
 		self.assertEquals(" && c0 && c1 && c2;\n" + "r0 && 6 && 15 && 24;\n" + "r1 && 36 && 45 && 54;\n", text)
+
+
+	def test_text_table(self):
+		text = printer.text_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]))
+		self.assertEquals("\tc0\tc1\tc2\n" + "r0\t6\t15\t24\n"  + "r1\t36\t45\t54\n", text)
+
+		text = printer.text_table(self.data, self.dim_cols, self.dim_rows, lambda ds: sum([d["x"] for d in ds]))
+		self.assertEquals("\tr0\tr1\n" + "c0\t6\t36\n" + "c1\t15\t45\n" + "c2\t24\t54\n", text)
 
 
 	def test_latex_table(self):
@@ -43,12 +52,32 @@ class TestsPrinter(unittest.TestCase):
 		                  r"\end{tabular}" + "\n", text)
 
 
-	def test_text_table(self):
-		text = printer.text_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]))
-		self.assertEquals("\tc0\tc1\tc2\n" + "r0\t6\t15\t24\n"  + "r1\t36\t45\t54\n", text)
+	def test_latex_table_header_multilayered_1(self):
+		text = printer.latex_table_header_multilayered(self.dim_cols)
+		self.assertEquals(r" & c0 & c1 & c2\\" + "\n", text)
 
-		text = printer.text_table(self.data, self.dim_cols, self.dim_rows, lambda ds: sum([d["x"] for d in ds]))
-		self.assertEquals("\tr0\tr1\n" + "c0\t6\t36\n" + "c1\t15\t45\n" + "c2\t24\t54\n", text)
+
+	def test_latex_table_header_multilayered_2(self):
+		dim = self.dim_rows * self.dim_cols
+		text = printer.latex_table_header_multilayered(dim)
+		print("TEXT2:\n" + text)
+		self.assertEquals(r" & \multicolumn{3}{c}{r0} & \multicolumn{3}{c}{r1}\\" + "\n" +
+		                  r" & c0 & c1 & c2 & c0 & c1 & c2\\" + "\n", text)
+
+		dim = self.dim_rows * self.dim_cols
+		dim = Dim(dim.configs[:-1])
+		text = printer.latex_table_header_multilayered(dim)
+		self.assertEquals(r" & \multicolumn{3}{c}{r0} & \multicolumn{2}{c}{r1}\\" + "\n" +
+		                  r" & c0 & c1 & c2 & c0 & c1\\" + "\n", text)
+
+
+	def test_latex_table_header_multilayered_3(self):
+		dim = self.dim_z * self.dim_rows * self.dim_cols
+		text = printer.latex_table_header_multilayered(dim)
+		print("TEXT3:\n" + text)
+		self.assertEquals(r" & \multicolumn{6}{c}{z0} & \multicolumn{6}{c}{z1}\\" + "\n" +
+		                  r" & \multicolumn{3}{c}{r0} & \multicolumn{3}{c}{r1} & \multicolumn{3}{c}{r0} & \multicolumn{3}{c}{r1}\\" + "\n" +
+		                  r" & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1 & c2\\" + "\n", text)
 
 
 	def test_text_listing(self):
