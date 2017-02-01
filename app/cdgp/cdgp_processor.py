@@ -35,7 +35,7 @@ if env.dirs is None or len(env.dirs) == 0:
 	folders_exp3 = ["res1_tournDeselection", "res1_tournDeselection_gprNew"]
 	folders_exp4 = ["res1_cdgpOneTest", "res1_gprManyTest"]
 	folders_expEvalsFINAL = ["resFinal_GenEvals", "resFinal_SSEvals", "resFinal_spare_CDGPEvals", "resFinal_myspare"]
-	folders_expTimedFINAL = ["resFinal_GenTimed"]
+	folders_expTimedFINAL = ["resFinal_GenTimed", "resFinal_spare"]
 	print("Using default results directory names.")
 	print("* Experiment 2:")
 	for f in folders_exp2:
@@ -69,6 +69,8 @@ def load_correct_props(folders, name = ""):
 			print(p["thisFileName"])
 		else:
 			print("'thisFileName' not specified! Printing content instead: " + str(p))
+		if "result.totalTimeSystem" in p:
+			print("time: " + str(float(p["result.totalTimeSystem"]) / 1000.0) + " s")
 
 	# Filtering props so only correct ones
 	props = [p for p in props if "benchmark" in p and ("result.best.eval" in p or "result.successRate" in p)]
