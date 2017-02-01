@@ -209,7 +209,7 @@ def print_stats_filtered(filtered, show_solver_stats = True):
 def print_table(props, dim_rows, dim_cols):
 	def fun0(filtered):
 		return str(len(filtered))
-	textStatus = printer.latex_table(props, dim_rows, dim_cols, fun0, full_latex_mode=False)
+	textStatus = printer.latex_table(props, dim_rows, dim_cols, fun0, latexize_underscores=False)
 	textStatus = printer.table_color_map(textStatus, 0.0, 50.0, 100.0)
 	print(textStatus)
 	print("\n\n")
@@ -220,7 +220,7 @@ def print_table(props, dim_rows, dim_cols):
 		num_opt = get_num_optimal(filtered)
 		# return "{0}/{1}".format(str(num_opt), str(len(filtered)))
 		return "{0}".format(str(num_opt))
-	textNumOptimal = printer.latex_table(props, dim_rows, dim_cols, fun1, full_latex_mode=False)
+	textNumOptimal = printer.latex_table(props, dim_rows, dim_cols, fun1, latexize_underscores=False)
 	textNumOptimal = printer.table_color_map(textNumOptimal, 0.0, 50.0, 100.0)
 	print(textNumOptimal)
 	print("\n\n")
@@ -231,7 +231,7 @@ def print_table(props, dim_rows, dim_cols):
 			return "-"
 		avgFit = round(get_stats_fitness(filtered)[0], 2)
 		return "{0}".format(str(avgFit))
-	textAvgFitness = printer.latex_table(props, dim_rows, dim_cols, fun2, full_latex_mode=False)
+	textAvgFitness = printer.latex_table(props, dim_rows, dim_cols, fun2, latexize_underscores=False)
 	textAvgFitness = printer.table_color_map(textAvgFitness, 0.0, 25.0, 50.0)
 	print(textAvgFitness)
 	print("\n\n")
@@ -242,7 +242,7 @@ def print_table(props, dim_rows, dim_cols):
 			return "-"
 		avg_time = round(get_stats_duration(filtered)[0], 1)
 		return "{0}".format(str(avg_time))
-	textAvgRuntime = printer.latex_table(props, dim_rows, dim_cols, fun3, full_latex_mode=False)
+	textAvgRuntime = printer.latex_table(props, dim_rows, dim_cols, fun3, latexize_underscores=False)
 	textAvgRuntime = printer.table_color_map(textAvgRuntime, 0.0, 1000, 10000)
 	print(textAvgRuntime)
 	print("\n\n")
@@ -259,7 +259,7 @@ def print_table(props, dim_rows, dim_cols):
 			return str(round(percentUnsuccessful,3))
 		else:
 			return "-"
-	textRatioOfUnknowns = printer.latex_table(props, dim_rows, dim_cols, fun4, full_latex_mode=False)
+	textRatioOfUnknowns = printer.latex_table(props, dim_rows, dim_cols, fun4, latexize_underscores=False)
 	textRatioOfUnknowns = printer.table_color_map(textRatioOfUnknowns, 0.0, 0.3, 0.6)
 	print(textRatioOfUnknowns)
 	print("\n\n")

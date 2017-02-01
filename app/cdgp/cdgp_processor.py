@@ -219,9 +219,8 @@ def create_section_with_results(title, desc, props, numRuns=10):
 	assert isinstance(title, str)
 	assert isinstance(desc, str)
 	assert isinstance(props, list)
-	# text = printer.text_table(props, dim_benchmarks.sort(), dim_method*dim_sa, fun1)
-	# print(text)
-	# print("\n\n")
+	if props is None or len(props) == 0:
+		return None
 
 	def post(s):
 		return s.replace("{ccc", "{lcc")
@@ -454,7 +453,8 @@ sects = [create_section_with_results(name_exp2, desc_exp2, props_exp2),
          create_section_with_results(name_expEvalsFINAL, desc_expEvalsFINAL, props_expEvalsFINAL, numRuns=30),
          create_section_with_results(name_expTimedFINAL, desc_expTimedFINAL, props_expTimedFINAL, numRuns=30),]
 for s in sects:
-	report.add(s)
+	if s is not None:
+		report.add(s)
 
 
 
