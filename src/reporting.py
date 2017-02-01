@@ -4,20 +4,23 @@ class ReportPDF(object):
 	"""PDF generated from an automatically generated LaTeX source containing results of experiments.
 	Content of the PDF is defined by a template defined by a user.
 	"""
-	geometry_params = "[paperwidth=65cm, paperheight=40cm, margin=0.3cm]"
-	packages = ["[utf8]{inputenc}",
-	            geometry_params + "{geometry}",
-	            "[table]{xcolor}",
-	            "{hyperref}"]
+	GEOM_PARAMS = "[paperwidth=65cm, paperheight=40cm, margin=0.3cm]"
 
-	def __init__(self, blocks = None):
+	def __init__(self, blocks = None, geometry_params=GEOM_PARAMS):
 		if blocks is None:
 			blocks = []
+		self.geometry_params = geometry_params
 		self.blocks = blocks
 		self.blocks.append(self.get_preamble())
 		self.root = BlockEnvironment("document", [])
 		self.blocks.append(self.root)
 
+
+	def get_packages_list(self):
+		return ["[utf8]{inputenc}",
+	            self.geometry_params + "{geometry}",
+	            "[table]{xcolor}",
+	            "{hyperref}"]
 
 	def add(self, block):
 		"""Adds a block inside a document environment."""
@@ -46,7 +49,7 @@ class ReportPDF(object):
 
 	def get_preamble(self):
 		text = r"\documentclass[12pt]{article}" + "\n\n"
-		for p in self.packages:
+		for p in self.get_packages_list():
 			text += r"\usepackage" + p + "\n"
 		text += "\n"
 		text += r"\DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces" + "\n"
