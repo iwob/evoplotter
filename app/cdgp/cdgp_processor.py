@@ -421,7 +421,7 @@ for p in props_expEvalsFINAL:
 # -------- Creating nice LaTeX report of the above results --------
 
 
-report = reporting.ReportPDF()
+report = reporting.ReportPDF(geometry_params = "[paperwidth=45cm, paperheight=40cm, margin=0.3cm]")
 section1 = r"""\section{Initial experiments}
 \subsection{Success rates}
 \definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
