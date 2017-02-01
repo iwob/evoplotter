@@ -41,7 +41,7 @@ class ReportPDF(object):
 		self.save(filename)
 		call(["pdflatex", filename])
 		noext = filename[:filename.rfind('.')]
-		call(["rm", noext+".aux", noext+".log", noext+".bbl", noext+".blg", noext+".out"])
+		call(["rm", "-f", noext+".aux", noext+".log", noext+".bbl", noext+".blg"]) #, noext+".out"
 
 	def get_preamble(self):
 		text = r"\documentclass[12pt]{article}" + "\n\n"

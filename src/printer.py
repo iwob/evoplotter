@@ -70,6 +70,21 @@ def text_table_row(props_row, config_row, dim_cols, fun, d_cols="\t", d_rows="\n
 	return text[:-len(d_cols)] + d_rows
 
 
+def text_table_header(dim_cols, d_cols="\t", d_rows="\n"):
+	text = ""
+	text += d_cols
+	values = [c.get_caption() for c in dim_cols]
+	text += d_cols.join(values) + d_rows
+	return text
+
+
+def text_table_body(props, dim_rows, dim_cols, fun, d_cols="\t", d_rows="\n"):
+	text = ""
+	for r in dim_rows:
+		filtered_r = r.filter_props(props)
+		text += text_table_row(filtered_r, r, dim_cols, fun, d_cols, d_rows)
+	return text
+
 
 def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="\n"):
 	"""Returns text of the table containing in the cells values from the intersection of configs in row and column. By manipulating delimiters LaTeX table may be produced.
@@ -91,19 +106,21 @@ def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="
 		text += title + "\n"
 
 	# Printing header.
-	text += d_cols
-	values = [c.get_caption() for c in dim_cols]
-	text += d_cols.join(values) + d_rows
-
-	# Printing table's rows.
-	for r in dim_rows:
-		filtered_r = r.filter_props(props)
-		text += text_table_row(filtered_r, r, dim_cols, fun, d_cols, d_rows)
+	# text += d_cols
+	# values = [c.get_caption() for c in dim_cols]
+	# text += d_cols.join(values) + d_rows
+	#
+	# # Printing table's rows.
+	# for r in dim_rows:
+	# 	filtered_r = r.filter_props(props)
+	# 	text += text_table_row(filtered_r, r, dim_cols, fun, d_cols, d_rows)
+	text += text_table_header(dim_cols, d_cols=d_cols, d_rows=d_rows)
+	text += text_table_body(props, dim_rows, dim_cols, fun, d_cols=d_cols, d_rows=d_rows)
 	return text
 
 
 
-def latex_table(props, dim_rows, dim_cols, fun, title=None, full_latex_mode=True):
+def latex_table(props, dim_rows, dim_cols, fun, title=None, latexize_underscores=True, layered_headline=False):
 	"""Returns code of a LaTeX table (tabular environment) created from the given dimensions.
 
 	:param props: (dict) all props gathered in the experiment.
@@ -111,6 +128,8 @@ def latex_table(props, dim_rows, dim_cols, fun, title=None, full_latex_mode=True
 	:param dim_cols: (Dim) a dimension for columns.
 	:param fun: (list[dict] => str) a function returning a cell's content given a list of props "in" the cell.
 	:param title: (str) a title to be placed before the table. By default there is no title. NOTE: some table configuration commands or descriptions may be passed as a title.
+	:param latexize_underscores: (bool) if set to to true, every underscore ("_") will be turned into version acceptable by LaTeX ("\_"). This, however, may be undesired if some elements are in math mode and use subscripts.
+	:param layered_headline: (bool) if set to to true, headline will be organized into layers depending on configuration.
 	:return: (str) code of the LaTeX table.
 	"""
 	assert isinstance(dim_rows, dims.Dim)
@@ -118,10 +137,74 @@ def latex_table(props, dim_rows, dim_cols, fun, title=None, full_latex_mode=True
 
 	numCols = len(dim_cols.configs) + 1
 	text = r"\begin{tabular}{" + ("c"*numCols) + "}\n"
-	text += text_table(props, dim_rows, dim_cols, fun, title, d_cols=" & ", d_rows="\\\\\n")
+	# text += text_table(props, dim_rows, dim_cols, fun, title, d_cols=" & ", d_rows="\\\\\n")
+	text += latex_table_header(dim_cols, layered_headline, d_cols=" & ", d_rows="\\\\\n")
+	text += text_table_body(props, dim_rows, dim_cols, fun, d_cols=" & ", d_rows="\\\\\n")
+
 	text += r"\end{tabular}" + "\n"
-	if full_latex_mode:
-		text = text.replace("_",r"\_")
+	if latexize_underscores:
+		text = text.replace("_", r"\_")
+	return text
+
+
+def latex_table_header(dim_cols, layered_headline=False, d_cols=" & ", d_rows="\\\\\n"):
+	"""Produces header for a LaTeX table. In the case of generating layered headline, columns dimension is assumed to contain Configs with the same number of filters and correcponding configs placed on the same positions (this will always be correct, if '*' was used to combine dimensions)."""
+	if layered_headline:
+		return latex_table_header_multilayered(dim_cols, d_cols=d_cols, d_rows=d_rows)
+	else:
+		return text_table_header(dim_cols, d_cols=d_cols, d_rows=d_rows)
+
+
+def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n"):
+	text = ""
+	text += d_cols
+	num_layers = len(dim_cols[0].filters)  # num of layers in the example filter
+	# Going from the highest layer to the lowest.
+	# In each step we must compute number of subconfigs so we know, how many cells we should merge.
+
+	# Steps:
+	# 1) Produce lines.
+	# 2) Merge and return them with d_rows appended.
+
+	def count_occurrences(dimens, f):
+		sum = 0
+		for conf in dimens:
+			if conf.filters.count(f) > 0:
+				sum += 1
+		return sum
+
+	def produce_lines(dimens, layer_no):
+		if layer_no >= num_layers or len(dimens[0]) == 0:
+			return ""
+		text = ""
+		subconfigs_queue = []
+		filters_list = [conf.filters[0] for conf in dimens] # Adding filters from the i'th position.
+		filters_dict = {f:count_occurrences(dimens, f) for f in filters_list} # stores multicolumn widths
+
+		for f in filters_list:
+			fname = f[0]  # name of the filter
+			foccurs = filters_dict[f]
+			text += r"\multicolumn{" + str(foccurs) + "}{c}{" + fname + "}"
+			text += d_cols
+
+		# We need to add subconfigs to the queue
+		# Removing first filter from every config.
+		for conf in dimens:
+			new_filters = conf.filters[1:]
+			subconfigs_queue.append(dims.Config(new_filters))
+
+		text += d_rows
+		text += produce_lines(dims.Dim(subconfigs_queue), layer_no + 1)
+		return text
+
+
+
+	text += produce_lines(dim_cols, 0)
+
+	# \multicolumn{6}{c}{$EPS$}
+
+	values = [c.get_caption() for c in dim_cols]
+	text += d_cols.join(values) + d_rows
 	return text
 
 
