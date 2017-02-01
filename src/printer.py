@@ -157,40 +157,28 @@ def latex_table_header(dim_cols, layered_headline=False, d_cols=" & ", d_rows="\
 
 def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n"):
 	num_layers = len(dim_cols[0].filters)  # num of layers in the example filter
-	# Going from the highest layer to the lowest.
-	def count_occurrences(dimens, f):
-		sum = 0
-		startSeq = False
-		for conf in dimens:
-			if conf.filters.count(f) > 0:
-				startSeq = True
-				sum += 1
-			elif startSeq:
-				break
-		return sum
 
+	# Going from the highest layer to the lowest.
 	def produce_lines(dimens, layer_no):
-		if layer_no >= num_layers:
-			return ""
-		if len(dimens[0]) == 1:
+		if len(dimens[0]) == 1 or layer_no == num_layers -1:
 			# Only a single row, use simplified routine.
 			chead = [ d.get_caption() for d in dimens]
 			return d_cols + d_cols.join(chead) + d_rows
 		text = ""
-		top_filters_list = []
+		top_filters_list = [] # stores tuples (filter, numContiguous)
 		last = None
 		for conf in dimens:
 			if last is None or conf.filters[0] != last:
 				last = conf.filters[0]
-				top_filters_list.append(conf.filters[0])
-		# filters_list = [conf.filters[0] for conf in dimens] # Adding filters from the i'th position.
-		top_filters_dict = {f:count_occurrences(dimens, f) for f in top_filters_list} # stores multicolumn widths
+				top_filters_list.append((conf.filters[0], 1))
+			elif conf.filters[0] == last:
+				filt, numCont = top_filters_list[-1]
+				top_filters_list[-1] = (filt, numCont + 1)
 
 		# Producing top-level header.
 		buffer = []
-		for f in top_filters_list:
+		for f, foccurs in top_filters_list:
 			fname = f[0]  # name of the filter
-			foccurs = top_filters_dict[f]
 			ftext = r"\multicolumn{" + str(foccurs) + "}{c}{" + fname + "}" # \multicolumn{6}{c}{$EPS$}
 			buffer.append(ftext)
 
