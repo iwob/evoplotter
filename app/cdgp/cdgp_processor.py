@@ -100,6 +100,22 @@ def p_sel_lexicase(p):
 def p_sel_gp(p):
 	return p["searchAlgorithm"] == "GPSteadyState" or p["searchAlgorithm"] == "GP"
 
+d1 = "other/"
+d2 = "sygus16/"
+benchmarks_simple_names = {d1 + "ArithmeticSeries3.sl": "IsSeries3",
+                           d1 + "ArithmeticSeries4.sl": "IsSeries4",
+                           d1 + "CountPositive2.sl": "CountPos2",
+                           d1 + "CountPositive3.sl": "CountPos3",
+                           d1 + "Median3.sl": "Median3",
+                           d1 + "Range3.sl": "Range3",
+                           d1 + "SortedAscending4.sl": "IsSorted4",
+                           d2 + "fg_array_search_2.sl": "Search2",
+                           d2 + "fg_array_search_4.sl": "Search4",
+                           d2 + "fg_array_sum_2_15.sl": "Sum2",
+                           d2 + "fg_array_sum_4_15.sl": "Sum4",
+                           d2 + "fg_max2.sl": "Max2",
+                           d2 + "fg_max4.sl": "Max4"}
+
 
 
 
@@ -110,16 +126,16 @@ def p_sel_gp(p):
 
 
 
-dim_method = Dim([Config("CDGP extensive", p_method0),
+dim_method = Dim([Config("CDGP non-conservative", p_method0),
                   Config("CDGP conservative", p_method1),
                   Config("GPR", p_method2)])
 dim_sa = Dim([Config("GP", p_GP),
 			  Config("GPSS", p_GPSteadyState),
               Config("Lex", p_Lexicase),
               Config("LexSS", p_LexicaseSteadyState)])
-dim_ea_type = Dim([Config("Gen.", p_Generational),
-                   Config("SS", p_SteadyState)])
-dim_sel = Dim([Config("$T_{7}$", p_sel_gp),
+dim_ea_type = Dim([Config("Gener.", p_Generational),
+                   Config("SteadySt.", p_SteadyState)])
+dim_sel = Dim([Config("$Tour$", p_sel_gp),
                Config("$Lex$", p_sel_lexicase)])
 # dim_sa = Dim([Config("$CDGP$", p_GP),
 # 			  Config("$CDGP^{ss}$", p_GPSteadyState),
@@ -230,7 +246,7 @@ def get_sum_solverRestarts(props):
 		return str(numpy.sum(vals))
 
 
-def create_section_with_results(title, desc, props, numRuns=10):
+def create_section_with_results(title, desc, props, numRuns=10, use_bench_simple_names=True):
 	assert isinstance(title, str)
 	assert isinstance(desc, str)
 	assert isinstance(props, list)
@@ -243,6 +259,10 @@ def create_section_with_results(title, desc, props, numRuns=10):
 	print("\n*** Processing: {0}***".format(title))
 
 	dim_benchmarks = Dim.from_data(props, lambda p: p["benchmark"])
+	if use_bench_simple_names:
+		configs = [Config(benchmarks_simple_names[c.get_caption()], c.filters[0][1]) for c in dim_benchmarks.configs]
+		dim_benchmarks = Dim(configs)
+		dim_benchmarks.sort()
 	dim_cols = dim_method * dim_ea_type * dim_sel
 	# dim_cols = dim_method * dim_sa
 
