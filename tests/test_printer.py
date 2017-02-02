@@ -47,42 +47,54 @@ class TestsPrinter(unittest.TestCase):
 
 	def test_latex_table(self):
 		text = printer.latex_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]))
-		self.assertEquals(r"\begin{tabular}{cccc}" + "\n" + r" & c0 & c1 & c2\\" + "\n" +
+		text = self.clear_multicols(text)
+		self.assertEquals(r"\begin{tabular}{cccc}" + "\n"
+		                  r"\hline" + "\n" +
+		                  r" & c0 & c1 & c2\\" + "\n" +
+		                  r"\hline" + "\n" +
 		                  r"r0 & 6 & 15 & 24\\"+"\n" + r"r1 & 36 & 45 & 54\\" + "\n" +
+		                  r"\hline" + "\n" +
 		                  r"\end{tabular}" + "\n", text)
 
+	def clear_multicols(self, s):
+		return s.replace("\multicolumn{1}{c}", "").replace("{c0}", "c0").replace("{c1}", "c1").replace("{c2}", "c2")
 
 	def test_latex_table_header_multilayered_1(self):
 		text = printer.latex_table_header_multilayered(self.dim_cols)
-		self.assertEquals(r" & c0 & c1 & c2\\" + "\n", text)
+		text = self.clear_multicols(text)
+		self.assertEquals(r" & c0 & c1 & c2\\" + "\n" + r"\hline" + "\n", text)
 
 
 	def test_latex_table_header_multilayered_2(self):
 		dim = self.dim_rows * self.dim_cols
 		text = printer.latex_table_header_multilayered(dim)
+		text = self.clear_multicols(text)
 		self.assertEquals(r" & \multicolumn{3}{c}{r0} & \multicolumn{3}{c}{r1}\\" + "\n" +
-		                  r" & c0 & c1 & c2 & c0 & c1 & c2\\" + "\n", text)
+		                  r" & c0 & c1 & c2 & c0 & c1 & c2\\" + "\n" + r"\hline" + "\n", text)
 
 		dim = self.dim_rows * self.dim_cols
 		dim = Dim(dim.configs[:-1])
 		text = printer.latex_table_header_multilayered(dim)
+		text = self.clear_multicols(text)
 		self.assertEquals(r" & \multicolumn{3}{c}{r0} & \multicolumn{2}{c}{r1}\\" + "\n" +
-		                  r" & c0 & c1 & c2 & c0 & c1\\" + "\n", text)
+		                  r" & c0 & c1 & c2 & c0 & c1\\" + "\n" + r"\hline" + "\n", text)
 
 
 	def test_latex_table_header_multilayered_3(self):
 		dim = self.dim_z * self.dim_rows * self.dim_cols
 		text = printer.latex_table_header_multilayered(dim)
+		text = self.clear_multicols(text)
 		self.assertEquals(r" & \multicolumn{6}{c}{z0} & \multicolumn{6}{c}{z1}\\" + "\n" +
 		                  r" & \multicolumn{3}{c}{r0} & \multicolumn{3}{c}{r1} & \multicolumn{3}{c}{r0} & \multicolumn{3}{c}{r1}\\" + "\n" +
-		                  r" & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1 & c2\\" + "\n", text)
+		                  r" & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1 & c2\\" + "\n" + r"\hline" + "\n", text)
 
 		dim = self.dim_z * self.dim_rows * self.dim_cols
 		dim = Dim(dim.configs[:-1])
 		text = printer.latex_table_header_multilayered(dim)
+		text = self.clear_multicols(text)
 		self.assertEquals(r" & \multicolumn{6}{c}{z0} & \multicolumn{5}{c}{z1}\\" + "\n" +
 		                  r" & \multicolumn{3}{c}{r0} & \multicolumn{3}{c}{r1} & \multicolumn{3}{c}{r0} & \multicolumn{2}{c}{r1}\\" + "\n" +
-		                  r" & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1\\" + "\n", text)
+		                  r" & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1 & c2 & c0 & c1\\" + "\n" + r"\hline" + "\n", text)
 
 
 	def test_text_listing(self):

@@ -137,10 +137,12 @@ def latex_table(props, dim_rows, dim_cols, fun, title=None, latexize_underscores
 
 	numCols = len(dim_cols.configs) + 1
 	text = r"\begin{tabular}{" + ("c"*numCols) + "}\n"
+	text += r"\hline" + "\n"
 	# text += text_table(props, dim_rows, dim_cols, fun, title, d_cols=" & ", d_rows="\\\\\n")
 	text += latex_table_header(dim_cols, layered_headline, d_cols=" & ", d_rows="\\\\\n")
 	text += text_table_body(props, dim_rows, dim_cols, fun, d_cols=" & ", d_rows="\\\\\n")
 
+	text += r"\hline" + "\n"
 	text += r"\end{tabular}" + "\n"
 	if latexize_underscores:
 		text = text.replace("_", r"\_")
@@ -152,7 +154,13 @@ def latex_table_header(dim_cols, layered_headline=False, d_cols=" & ", d_rows="\
 	if layered_headline:
 		return latex_table_header_multilayered(dim_cols, d_cols=d_cols, d_rows=d_rows)
 	else:
-		return text_table_header(dim_cols, d_cols=d_cols, d_rows=d_rows)
+		# return text_table_header(dim_cols, d_cols=d_cols, d_rows=d_rows)
+		return latex_table_header_one_layer(dim_cols, d_cols=d_cols, d_rows=d_rows)
+
+
+def latex_table_header_one_layer(dim_cols, d_cols=" & ", d_rows="\\\\\n"):
+	chead = [r"\multicolumn{1}{c}{" + d.get_caption() + "}" for d in dim_cols]
+	return d_cols + d_cols.join(chead) + d_rows + r"\hline" + "\n"
 
 
 def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n"):
@@ -162,8 +170,8 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n"):
 	def produce_lines(dimens, layer_no):
 		if len(dimens[0]) == 1 or layer_no == num_layers -1:
 			# Only a single row, use simplified routine.
-			chead = [ d.get_caption() for d in dimens]
-			return d_cols + d_cols.join(chead) + d_rows
+			chead = [r"\multicolumn{1}{c}{" + d.get_caption() + "}" for d in dimens]
+			return d_cols + d_cols.join(chead) + d_rows + r"\hline" + "\n"
 		text = ""
 		top_filters_list = [] # stores tuples (filter, numContiguous)
 		last = None
