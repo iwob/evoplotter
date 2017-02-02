@@ -91,7 +91,14 @@ def p_method1(p):
 	return p["method"] == "1"
 def p_method2(p):
 	return p["method"] == "2"
-
+def p_Generational(p):
+	return p["searchAlgorithm"] == "Lexicase" or  p["searchAlgorithm"] == "GP"
+def p_SteadyState(p):
+	return p["searchAlgorithm"] == "LexicaseSteadyState" or  p["searchAlgorithm"] == "GPSteadyState"
+def p_sel_lexicase(p):
+	return p["searchAlgorithm"] == "LexicaseSteadyState" or p["searchAlgorithm"] == "Lexicase"
+def p_sel_gp(p):
+	return p["searchAlgorithm"] == "GPSteadyState" or p["searchAlgorithm"] == "GP"
 
 
 
@@ -103,13 +110,21 @@ def p_method2(p):
 
 
 
-dim_method = Dim([Config("CDGP", p_method0),
-                  Config("CDGPconservative", p_method1),
+dim_method = Dim([Config("CDGP extensive", p_method0),
+                  Config("CDGP conservative", p_method1),
                   Config("GPR", p_method2)])
 dim_sa = Dim([Config("GP", p_GP),
 			  Config("GPSS", p_GPSteadyState),
-              Config("Lexicase", p_Lexicase),
-              Config("LexicaseSS", p_LexicaseSteadyState)])
+              Config("Lex", p_Lexicase),
+              Config("LexSS", p_LexicaseSteadyState)])
+dim_ea_type = Dim([Config("Gen.", p_Generational),
+                   Config("SS", p_SteadyState)])
+dim_sel = Dim([Config("$T_{7}$", p_sel_gp),
+               Config("$Lex$", p_sel_lexicase)])
+# dim_sa = Dim([Config("$CDGP$", p_GP),
+# 			  Config("$CDGP^{ss}$", p_GPSteadyState),
+#               Config("$CDGP_{lex}$", p_Lexicase),
+#               Config("$CDGP_{lex}^{ss}$", p_LexicaseSteadyState)])
 
 
 def is_optimal_solution(e):
@@ -138,13 +153,13 @@ def get_stats_size(props):
 	if len(vals) == 0:
 		return "-"#-1.0, -1.0
 	else:
-		return "%0.2f" % numpy.mean(vals)#, numpy.std(vals)
+		return "%0.1f" % numpy.mean(vals)#, numpy.std(vals)
 def get_avg_totalTests(props):
 	vals = [float(p["totalTests"]) for p in props]
 	if len(vals) == 0:
 		return "-"  # -1.0, -1.0
 	else:
-		return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
+		return "%0.1f" % numpy.mean(vals)  # , numpy.std(vals)
 def get_avg_fitness(props):
 	vals = []
 	for p in props:
@@ -165,7 +180,7 @@ def get_avg_runtime_helper(vals):
 	if len(vals) == 0:
 		return "-1"  # -1.0, -1.0
 	else:
-		return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
+		return "%0.1f" % numpy.mean(vals)  # , numpy.std(vals)
 def get_avg_runtimeOnlySuccessful(props):
 	if len(props) == 0:
 		return "-"
@@ -182,7 +197,7 @@ def get_avg_generation(props):
 	if len(props) == 0:
 		return "-"
 	vals = [float(p["result.best.generation"]) for p in props]
-	return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
+	return "%0.1f" % numpy.mean(vals)  # , numpy.std(vals)
 def get_avg_generationSuccessful(props):
 	if len(props) == 0:
 		return "-"
@@ -191,7 +206,7 @@ def get_avg_generationSuccessful(props):
 		if len(vals) == 0:
 			return "-1"  # -1.0, -1.0
 		else:
-			return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
+			return "%0.1f" % numpy.mean(vals)  # , numpy.std(vals)
 def get_avg_runtimePerProgram(props):
 	if len(props) == 0:
 		return "-"  # -1.0, -1.0
@@ -223,73 +238,75 @@ def create_section_with_results(title, desc, props, numRuns=10):
 		return None
 
 	def post(s):
-		return s.replace("{ccc", "{lcc")
+		return s.replace("{ccccccccccccc}", "{rrrrrrrrrrrrr}").replace("{rrr", "{lrr").replace(r"\_{lex}", "_{lex}").replace(r"\_{7}", "_{7}").replace("other/", "").replace("sygus16/", "")
 
 	print("\n*** Processing: {0}***".format(title))
 
 	dim_benchmarks = Dim.from_data(props, lambda p: p["benchmark"])
+	dim_cols = dim_method * dim_ea_type * dim_sel
+	# dim_cols = dim_method * dim_sa
 
 	print("STATUS")
-	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_num_computed, layered_headline=True))
+	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_num_computed, layered_headline=True))
 	latex_status = printer.table_color_map(text, 0.0, numRuns/2, numRuns, "colorLow", "colorMedium", "colorHigh")
 	# print(text)
 	# print("\n\n")
 
 	print("SUCCESS RATES")
-	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, fun_successRates, layered_headline=True))
+	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, fun_successRates, layered_headline=True))
 	latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 	# print(text)
 	# print("\n\n")
 
-	print("SUCCESS RATES (FULL INFO)")
-	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, fun_successRates_full, layered_headline=True))
+	# print("SUCCESS RATES (FULL INFO)")
+	# text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, fun_successRates_full, layered_headline=True))
 	# print(text)
 	# print("\n\n")
 
 	print("AVG BEST-OF-RUN FITNESS")
-	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_fitness, layered_headline=True))
+	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_fitness, layered_headline=True))
 	latex_avgBestOfRunFitness = printer.table_color_map(text, 0.6, 0.98, 1.0, "colorLow", "colorMedium", "colorHigh")
 	# print(text)
 	# print("\n\n")
 
 	print("AVG TOTAL TESTS")
-	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_totalTests, layered_headline=True))
+	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_totalTests, layered_headline=True))
 	latex_avgTotalTests = printer.table_color_map(text, 0.0, 1000.0, 2000.0, "colorLow", "colorMedium", "colorHigh")
 	# print(text)
 	# print("\n\n")
 
 	print("AVG RUNTIME")
-	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_runtime, layered_headline=True))
+	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtime, layered_headline=True))
 	latex_avgRuntime = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
 	# print(text)
 	# print("\n\n")
 
 	print("AVG RUNTIME (SUCCESSFUL)")
-	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_runtimeOnlySuccessful, layered_headline=True))
+	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtimeOnlySuccessful, layered_headline=True))
 	latex_avgRuntimeOnlySuccessful = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
 	# print(text)
 	# print("\n\n")
 
 	print("AVG RUNTIME PER PROGRAM")
-	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_runtimePerProgram, layered_headline=True))
+	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtimePerProgram, layered_headline=True))
 	latex_avgRuntimePerProgram = printer.table_color_map(text, 0.01, 1.0, 2.0, "colorLow", "colorMedium", "colorHigh")
 	# print(text)
 	# print("\n\n")
 
 	print("AVG GENERATION")
-	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_generation, layered_headline=True))
+	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_generation, layered_headline=True))
 	latex_avgGeneration = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
 	# print(text)
 	# print("\n\n")
 
 	print("AVG GENERATION (SUCCESSFUL)")
-	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_avg_generationSuccessful, layered_headline=True))
+	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_generationSuccessful, layered_headline=True))
 	latex_avgGenerationSuccessful = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
 	# print(text)
 	# print("\n\n")
 
 	print("AVG SIZES")
-	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_method * dim_sa, get_stats_size, layered_headline=True))
+	text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_size, layered_headline=True))
 	latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
 	# print(text)
 	# print("\n\n")
