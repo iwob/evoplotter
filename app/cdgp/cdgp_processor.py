@@ -1,59 +1,8 @@
-import sys
 from src import utils
-from src import plotter
 from src import printer
 from src import reporting
 from src.dims import *
 import numpy
-import argparse
-
-
-options = argparse.ArgumentParser(description="Simple parser for the smtgp results.", add_help=True)
-options.add_argument("dirs", type=str, nargs="*", default=None,
-                     help="Paths to directories containing files with results (Initial experiment 2).")
-options.add_argument("dirsExp3", type=str, nargs="*", default=None,
-                     help="Paths to directories containing files with results of the second run (Initial experiment 3).")
-
-
-
-
-##################################################
-#                      MAIN
-##################################################
-
-# Checking if the number of arguments is correct.
-# if len(sys.argv) == 1:
-# 	print("No results directory was specified!")
-# 	exit()
-
-env = options.parse_args()
-
-
-
-if env.dirs is None or len(env.dirs) == 0:
-    folders_exp2 = ["res1_rms", "res1_first", "res1_gprlexss"]
-    folders_exp3 = ["res1_tournDeselection", "res1_tournDeselection_gprNew"]
-    folders_exp4 = ["res1_cdgpOneTest", "res1_gprManyTest"]
-    folders_expEvalsFINAL = ["resFinal_GenEvals", "resFinal_SSEvals", "resFinal_spare_CDGPEvals", "resFinal_myspare"]
-    folders_expTimedFINAL = ["resFinal_GenTimed", "resFinal_spare"]
-    print("Using default results directory names.")
-    print("* Experiment 2:")
-    for f in folders_exp2:
-        print(f)
-    print("* Experiment 3:")
-    for f in folders_exp3:
-        print(f)
-    print("* Experiment 4:")
-    for f in folders_exp4:
-        print(f)
-else:
-    folders_exp2 = env.dirs
-    folders_exp3 = env.dirsExp3
-    folders_exp4 = env.dirsExp4
-    folders_expEvalsFINAL = env.dirsExpEvalsFINAL
-    folders_expTimedFINAL = env.dirsExpTimedFINAL
-
-
 
 
 def load_correct_props(folders, name = ""):
@@ -69,8 +18,6 @@ def load_correct_props(folders, name = ""):
             print(p["thisFileName"])
         else:
             print("'thisFileName' not specified! Printing content instead: " + str(p))
-        if "result.totalTimeSystem" in p:
-            print("time: " + str(float(p["result.totalTimeSystem"]) / 1000.0) + " s")
 
     # Filtering props so only correct ones
     props = [p for p in props if "benchmark" in p and ("result.best.eval" in p or "result.successRate" in p)]
@@ -100,6 +47,7 @@ def p_sel_lexicase(p):
 def p_sel_gp(p):
     return p["searchAlgorithm"] == "GPSteadyState" or p["searchAlgorithm"] == "GP"
 
+
 d1 = "other/"
 d2 = "sygus16/"
 benchmarks_simple_names = {d1 + "ArithmeticSeries3.sl": "IsSeries3",
@@ -117,15 +65,6 @@ benchmarks_simple_names = {d1 + "ArithmeticSeries3.sl": "IsSeries3",
                            d2 + "fg_max4.sl": "Max4"}
 
 
-
-
-# print("\nFiles with > 5000 total tests:")
-# props_errors = [p for p in props if p["benchmark"] == "other/CountPositive2.sl" and p["status"] == "completed" and int(p["totalTests"]) > 5000]
-# for p in props_errors:
-# 	print(p["thisFileName"])
-
-
-
 dim_method = Dim([Config("CDGP non-conservative", p_method0),
                   Config("CDGP conservative", p_method1),
                   Config("GPR", p_method2)])
@@ -138,7 +77,7 @@ dim_ea_type = Dim([Config("Gener.", p_Generational),
 dim_sel = Dim([Config("$Tour$", p_sel_gp),
                Config("$Lex$", p_sel_lexicase)])
 # dim_sa = Dim([Config("$CDGP$", p_GP),
-# 			  Config("$CDGP^{ss}$", p_GPSteadyState),
+# 			    Config("$CDGP^{ss}$", p_GPSteadyState),
 #               Config("$CDGP_{lex}$", p_Lexicase),
 #               Config("$CDGP_{lex}^{ss}$", p_LexicaseSteadyState)])
 
@@ -246,17 +185,21 @@ def get_sum_solverRestarts(props):
         return str(numpy.sum(vals))
 
 
-def create_section_with_results(title, desc, props, numRuns=10, use_bench_simple_names=True):
+def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simple_names=True):
     assert isinstance(title, str)
     assert isinstance(desc, str)
-    assert isinstance(props, list)
-    if props is None or len(props) == 0:
+    assert isinstance(folders, list)
+    print("\n*** Processing: {0}***".format(title))
+    for f in folders:
+        print(f)
+    if folders is None or len(folders) == 0:
         return None
+
+    props = load_correct_props(folders, name=title)
 
     def post(s):
         return s.replace("{ccccccccccccc}", "{rrrrrrrrrrrrr}").replace("{rrr", "{lrr").replace(r"\_{lex}", "_{lex}").replace(r"\_{7}", "_{7}").replace("other/", "").replace("sygus16/", "")
 
-    print("\n*** Processing: {0}***".format(title))
 
     dim_benchmarks = Dim.from_data(props, lambda p: p["benchmark"])
     if use_bench_simple_names:
@@ -269,67 +212,56 @@ def create_section_with_results(title, desc, props, numRuns=10, use_bench_simple
     print("STATUS")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_num_computed, layered_headline=True))
     latex_status = printer.table_color_map(text, 0.0, numRuns/2, numRuns, "colorLow", "colorMedium", "colorHigh")
-    # print(text)
-    # print("\n\n")
+    # print(text + "\n\n")
 
     print("SUCCESS RATES")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, fun_successRates, layered_headline=True))
     latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text)
-    # print("\n\n")
+    # print(text + "\n\n")
 
     # print("SUCCESS RATES (FULL INFO)")
     # text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, fun_successRates_full, layered_headline=True))
-    # print(text)
-    # print("\n\n")
+    # print(text + "\n\n")
 
     print("AVG BEST-OF-RUN FITNESS")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_fitness, layered_headline=True))
     latex_avgBestOfRunFitness = printer.table_color_map(text, 0.6, 0.98, 1.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text)
-    # print("\n\n")
+    # print(text + "\n\n")
 
     print("AVG TOTAL TESTS")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_totalTests, layered_headline=True))
     latex_avgTotalTests = printer.table_color_map(text, 0.0, 1000.0, 2000.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text)
-    # print("\n\n")
+    # print(text + "\n\n")
 
     print("AVG RUNTIME")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtime, layered_headline=True))
     latex_avgRuntime = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text)
-    # print("\n\n")
+    # print(text + "\n\n")
 
     print("AVG RUNTIME (SUCCESSFUL)")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtimeOnlySuccessful, layered_headline=True))
     latex_avgRuntimeOnlySuccessful = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text)
-    # print("\n\n")
+    # print(text + "\n\n")
 
     print("AVG RUNTIME PER PROGRAM")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtimePerProgram, layered_headline=True))
     latex_avgRuntimePerProgram = printer.table_color_map(text, 0.01, 1.0, 2.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text)
-    # print("\n\n")
+    # print(text + "\n\n")
 
     print("AVG GENERATION")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_generation, layered_headline=True))
     latex_avgGeneration = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text)
-    # print("\n\n")
+    # print(text + "\n\n")
 
     print("AVG GENERATION (SUCCESSFUL)")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_generationSuccessful, layered_headline=True))
     latex_avgGenerationSuccessful = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text)
-    # print("\n\n")
+    # print(text + "\n\n")
 
     print("AVG SIZES")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_size, layered_headline=True))
     latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text)
-    # print("\n\n")
+    # print(text + "\n\n")
 
     section = reporting.BlockSection(title, [])
     subsects = [("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
@@ -377,12 +309,20 @@ def print_time_bounds_for_benchmarks(props):
 
 
 
+
+folders_exp2 = ["res1_rms", "res1_first", "res1_gprlexss"]
+folders_exp3 = ["res1_tournDeselection", "res1_tournDeselection_gprNew"]
+folders_exp4 = ["res1_cdgpOneTest", "res1_gprManyTest"]
+folders_expEvalsFINAL = ["resFinal_GenEvals", "resFinal_SSEvals", "resFinal_spare_CDGPEvals", "resFinal_myspare"]
+folders_expTimedFINAL = ["resFinal_GenTimed", "resFinal_spare"]
+folders_expEvalsFINAL2 = ["resFinal2_evals"]
+folders_expTimedFINAL2 = ["resFinal2_timed"]
+
+
 name_exp2 = "Initial experiments 2"
-props_exp2 = load_correct_props(folders_exp2, name_exp2)
 desc_exp2 = ""
 
 name_exp3 = "Initial experiments 3"
-props_exp3 = load_correct_props(folders_exp3, name_exp3)
 desc_exp3 = r"""
 Changes:
 \begin{itemize}
@@ -393,7 +333,6 @@ Changes:
 """
 
 name_exp4 = "Initial experiments 4"
-props_exp4 = load_correct_props(folders_exp4, name_exp4)
 desc_exp4 = r"""
 The same as experiment 3, apart from:
 \begin{itemize}
@@ -403,7 +342,6 @@ The same as experiment 3, apart from:
 """
 
 name_expEvalsFINAL = "Final Experiments (stop: number of iterations)"
-props_expEvalsFINAL = load_correct_props(folders_expEvalsFINAL, name_expEvalsFINAL)
 desc_expEvalsFINAL = r"""
 Important information:
 \begin{itemize}
@@ -416,7 +354,6 @@ Important information:
 """
 
 name_expTimedFINAL = "Final Experiments (stop: time limit)"
-props_expTimedFINAL = load_correct_props(folders_expTimedFINAL, name_expTimedFINAL)
 desc_expTimedFINAL = r"""
 Important information:
 \begin{itemize}
@@ -442,12 +379,25 @@ sygus16/fg\_max4.sl: & 971 	&	[4, 971, 47556]\\
 \end{itemize}
 """
 
+name_expEvalsFINAL2 = "Final Experiments (stop: number of iterations), better solver interactions"
+desc_expEvalsFINAL2 = r"""
+This configation is the same as Final Experiments (stop: number of iterations), only with
+better mechanism of finding correct outputs of test cases.
+"""
+
+name_expTimedFINAL2 = "Final Experiments (stop: time limit)"
+desc_expTimedFINAL2 = r"""
+This configation is the same as Final Experiments (stop: time limit), only with
+better mechanism of finding correct outputs of test cases.
+"""
+
 # print_time_bounds_for_benchmarks(props_expEvalsFINAL)
 
-print("(***) props_expEvalsFINAL:")
-for p in props_expEvalsFINAL:
-    if p["method"] == "2" and p["searchAlgorithm"] == "LexicaseSteadyState" and p["benchmark"] == "sygus16/fg_array_search_4.sl":
-        print(p["thisFileName"] + ", " + p["benchmark"])
+# Uncomment this to print names of files with results of a certain configuration
+# print("(***) props_expEvalsFINAL:")
+# for p in props_expEvalsFINAL:
+#     if p["method"] == "2" and p["searchAlgorithm"] == "LexicaseSteadyState" and p["benchmark"] == "sygus16/fg_array_search_4.sl":
+#         print(p["thisFileName"] + ", " + p["benchmark"])
 
 
 
@@ -482,19 +432,20 @@ sygus16/fg\_max8.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{co
 \vspace{1cm}
 
 """
-report.add(reporting.BlockLatex(section1))
+# report.add(reporting.BlockLatex(section1))
 
-sects = [create_section_with_results(name_exp2, desc_exp2, props_exp2),
-         create_section_with_results(name_exp3, desc_exp3, props_exp3),
-         create_section_with_results(name_exp4, desc_exp4, props_exp4),
-         create_section_with_results(name_expEvalsFINAL, desc_expEvalsFINAL, props_expEvalsFINAL, numRuns=30),
-         create_section_with_results(name_expTimedFINAL, desc_expTimedFINAL, props_expTimedFINAL, numRuns=30),]
+sects = [#create_section_with_results(name_exp2, desc_exp2, folders_exp2),
+         #create_section_with_results(name_exp3, desc_exp3, folders_exp3),
+         #create_section_with_results(name_exp4, desc_exp4, folders_exp4),
+         create_section_with_results(name_expEvalsFINAL, desc_expEvalsFINAL, folders_expEvalsFINAL, numRuns=30),
+         create_section_with_results(name_expTimedFINAL, desc_expTimedFINAL, folders_expTimedFINAL, numRuns=30),
+         create_section_with_results(name_expEvalsFINAL2, desc_expEvalsFINAL2, folders_expEvalsFINAL2, numRuns=15),
+         create_section_with_results(name_expTimedFINAL2, desc_expTimedFINAL2, folders_expTimedFINAL2, numRuns=15)]
 for s in sects:
     if s is not None:
         report.add(s)
 
 
 
-print("\n\nREPORT:\n")
-# print(report.apply())
+print("\n\nGenerating PDF report ...")
 report.save_and_compile("cdgp_results.tex")
