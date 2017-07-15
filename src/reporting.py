@@ -1,3 +1,4 @@
+import os
 from subprocess import call
 
 class ReportPDF(object):
@@ -42,8 +43,13 @@ class ReportPDF(object):
     def save_and_compile(self, filename):
         """Saves LaTeX source file under the given name and compiles it using pdflatex."""
         self.save(filename)
-        call(["pdflatex", filename])
-        call(["pdflatex", filename]) # for index to catch up
+        FNULL = open(os.devnull, 'w')
+        retcode1 = call(["pdflatex", filename], stdout=FNULL)
+        retcode2 = call(["pdflatex", filename], stdout=FNULL) # for index to catch up
+        if retcode1 != 0 or retcode2 != 0:
+            print("Error during generation of PDF report, exit codes: {0}, {1}.".format(retcode1, retcode2))
+        else:
+            print("PDF report successfully generated.")
         noext = filename[:filename.rfind('.')]
         call(["rm", "-f", noext+".aux", noext+".log", noext+".bbl", noext+".blg", noext+".out"])
 
