@@ -1,119 +1,119 @@
 from subprocess import call
 
 class ReportPDF(object):
-	"""PDF generated from an automatically generated LaTeX source containing results of experiments.
-	Content of the PDF is defined by a template defined by a user.
-	"""
-	GEOM_PARAMS = "[paperwidth=65cm, paperheight=40cm, margin=0.3cm]"
+    """PDF generated from an automatically generated LaTeX source containing results of experiments.
+    Content of the PDF is defined by a template defined by a user.
+    """
+    GEOM_PARAMS = "[paperwidth=65cm, paperheight=40cm, margin=0.3cm]"
 
-	def __init__(self, blocks = None, geometry_params=GEOM_PARAMS):
-		if blocks is None:
-			blocks = []
-		self.geometry_params = geometry_params
-		self.blocks = blocks
-		self.blocks.append(self.get_preamble())
-		self.root = BlockEnvironment("document", [])
-		self.blocks.append(self.root)
+    def __init__(self, blocks = None, geometry_params=GEOM_PARAMS):
+        if blocks is None:
+            blocks = []
+        self.geometry_params = geometry_params
+        self.blocks = blocks
+        self.blocks.append(self.get_preamble())
+        self.root = BlockEnvironment("document", [])
+        self.blocks.append(self.root)
 
 
-	def get_packages_list(self):
-		return ["[utf8]{inputenc}",
-	            self.geometry_params + "{geometry}",
-	            "[table]{xcolor}",
-	            "{hyperref}"]
+    def get_packages_list(self):
+        return ["[utf8]{inputenc}",
+                self.geometry_params + "{geometry}",
+                "[table]{xcolor}",
+                "{hyperref}"]
 
-	def add(self, block):
-		"""Adds a block inside a document environment."""
-		self.root.append(block)
+    def add(self, block):
+        """Adds a block inside a document environment."""
+        self.root.append(block)
 
-	def apply(self):
-		"""Creates report for the data and returns its LaTeX code."""
-		text = ""
-		for b in self.blocks:
-			text += b.get_text()
-		return text
+    def apply(self):
+        """Creates report for the data and returns its LaTeX code."""
+        text = ""
+        for b in self.blocks:
+            text += b.get_text()
+        return text
 
-	def save(self, filename):
-		"""Saves LaTeX source file under the given name."""
-		file_ = open(filename, 'w')
-		file_.write(self.apply())
-		file_.close()
+    def save(self, filename):
+        """Saves LaTeX source file under the given name."""
+        file_ = open(filename, 'w')
+        file_.write(self.apply())
+        file_.close()
 
-	def save_and_compile(self, filename):
-		"""Saves LaTeX source file under the given name and compiles it using pdflatex."""
-		self.save(filename)
-		call(["pdflatex", filename])
-		call(["pdflatex", filename]) # for index to catch up
-		noext = filename[:filename.rfind('.')]
-		call(["rm", "-f", noext+".aux", noext+".log", noext+".bbl", noext+".blg", noext+".out"])
+    def save_and_compile(self, filename):
+        """Saves LaTeX source file under the given name and compiles it using pdflatex."""
+        self.save(filename)
+        call(["pdflatex", filename])
+        call(["pdflatex", filename]) # for index to catch up
+        noext = filename[:filename.rfind('.')]
+        call(["rm", "-f", noext+".aux", noext+".log", noext+".bbl", noext+".blg", noext+".out"])
 
-	def get_preamble(self):
-		text = r"\documentclass[12pt]{article}" + "\n\n"
-		for p in self.get_packages_list():
-			text += r"\usepackage" + p + "\n"
-		text += "\n"
-		text += r"\DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces" + "\n"
-		text += r"\setlength{\tabcolsep}{10pt}" + "\n"
-		text += "\n\n"
-		return BlockLatex(text)
+    def get_preamble(self):
+        text = r"\documentclass[12pt]{article}" + "\n\n"
+        for p in self.get_packages_list():
+            text += r"\usepackage" + p + "\n"
+        text += "\n"
+        text += r"\DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces" + "\n"
+        text += r"\setlength{\tabcolsep}{10pt}" + "\n"
+        text += "\n\n"
+        return BlockLatex(text)
 
 
 
 class BlockBundle(object):
-	"""Simply stores several blocks in a collection."""
-	def __init__(self, contents):
-		self.contents = contents
-	def get_text(self):
-		text = ""
-		for b in self.contents:
-			text += b.get_text()
-		return text
-	def add(self, b):
-		self.contents.append(b)
+    """Simply stores several blocks in a collection."""
+    def __init__(self, contents):
+        self.contents = contents
+    def get_text(self):
+        text = ""
+        for b in self.contents:
+            text += b.get_text()
+        return text
+    def add(self, b):
+        self.contents.append(b)
 
 
 class BlockLatex(object):
-	"""Simply stores as a single string blob several LaTeX instructions or whole text paragraphs."""
-	def __init__(self, text):
-		self.text = text
-	def get_text(self):
-		return self.text
+    """Simply stores as a single string blob several LaTeX instructions or whole text paragraphs."""
+    def __init__(self, text):
+        self.text = text
+    def get_text(self):
+        return self.text
 
 
 class BlockEnvironment(object):
-	def __init__(self, name, contents):
-		assert isinstance(contents, list)
-		self.name = name
-		self.contents = contents
-	def get_text(self):
-		text = r"\begin{" + self.name + "}\n\n"
-		for b in self.contents:
-			text += b.get_text()
-		text += r"\end{" + self.name + "}\n"
-		return text
-	def append(self, block):
-		self.contents.append(block)
+    def __init__(self, name, contents):
+        assert isinstance(contents, list)
+        self.name = name
+        self.contents = contents
+    def get_text(self):
+        text = r"\begin{" + self.name + "}\n\n"
+        for b in self.contents:
+            text += b.get_text()
+        text += r"\end{" + self.name + "}\n"
+        return text
+    def append(self, block):
+        self.contents.append(block)
 
 
 class BlockSection(BlockBundle):
-	def __init__(self, title, contents):
-		self.title = title
-		BlockBundle.__init__(self, contents)
-		self.cmd = "section"
-	def get_text(self):
-		text = "\\" + self.cmd + "{" + self.title + "}\n"
-		text += super(BlockSection, self).get_text()
-		return text
+    def __init__(self, title, contents):
+        self.title = title
+        BlockBundle.__init__(self, contents)
+        self.cmd = "section"
+    def get_text(self):
+        text = "\\" + self.cmd + "{" + self.title + "}\n"
+        text += super(BlockSection, self).get_text()
+        return text
 
 class BlockSubSection(BlockSection):
-	def __init__(self, title, contents):
-		BlockSection.__init__(self, title, contents)
-		self.cmd = "subsection"
+    def __init__(self, title, contents):
+        BlockSection.__init__(self, title, contents)
+        self.cmd = "subsection"
 
 class BlockSubSubSection(BlockSection):
-	def __init__(self, title, contents):
-		BlockSection.__init__(self, title, contents)
-		self.cmd = "subsubsection"
+    def __init__(self, title, contents):
+        BlockSection.__init__(self, title, contents)
+        self.cmd = "subsubsection"
 
 
 
