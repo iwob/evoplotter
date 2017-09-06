@@ -44,8 +44,8 @@ class ReportPDF(object):
         """Saves LaTeX source file under the given name and compiles it using pdflatex."""
         self.save(filename)
         FNULL = open(os.devnull, 'w')
-        retcode1 = call(["pdflatex", filename], stdout=FNULL)
-        retcode2 = call(["pdflatex", filename], stdout=FNULL) # for index to catch up
+        retcode1 = call(["pdflatex", "-interaction=nonstopmode", filename], stdout=FNULL)
+        retcode2 = call(["pdflatex", "-interaction=nonstopmode", filename], stdout=FNULL) # for index to catch up
         if retcode1 != 0 or retcode2 != 0:
             print("Error during generation of PDF report, exit codes: {0}, {1}.".format(retcode1, retcode2))
         else:
