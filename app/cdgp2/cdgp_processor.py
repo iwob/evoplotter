@@ -6,21 +6,25 @@ import numpy
 
 
 def load_correct_props(folders, name = ""):
-    props = utils.load_properties_dirs(folders, exts=[".txt"])
+    props = utils.load_properties_dirs(folders, exts=[".txt.cdgp"])
 
-    print("\n*** Loading props: " + name)
+    print("\n****** Loading props: " + name)
 
-    # Printing names of files which finished with error status.
+    def is_correct(p):
+        return "status" in p and (p["status"] == "completed" or p["status"] == "initialized") and\
+               "result.best.eval" in p and "benchmark" in p
+
+    # Printing names of files which finished with error status or are incomplete.
     print("Files with error status:")
-    props_errors = [p for p in props if "status" not in p or (p["status"] != "completed" and p["status"] != "initialized")]
+    props_errors = [p for p in props if not is_correct(p)]
     for p in props_errors:
         if "thisFileName" in p:
             print(p["thisFileName"])
         else:
             print("'thisFileName' not specified! Printing content instead: " + str(p))
 
-    # Filtering props so only correct ones
-    props = [p for p in props if "benchmark" in p and ("result.best.eval" in p or "result.successRate" in p)]
+    # Filtering props so only correct ones are left
+    props = [p for p in props if is_correct(p)]
     return props
 
 
@@ -33,23 +37,23 @@ def p_Lexicase(p):
 def p_LexicaseSteadyState(p):
     return p["searchAlgorithm"] == "LexicaseSteadyState"
 def p_method0(p):
-    return p["method"] == "0"
+    return p["method"] == "CDGP"
 def p_method1(p):
-    return p["method"] == "1"
+    return p["method"] == "CDGPcons"
 def p_method2(p):
-    return p["method"] == "2"
+    return p["method"] == "GPR"
 def p_Generational(p):
     return p["searchAlgorithm"] == "Lexicase" or  p["searchAlgorithm"] == "GP"
 def p_SteadyState(p):
     return p["searchAlgorithm"] == "LexicaseSteadyState" or  p["searchAlgorithm"] == "GPSteadyState"
 def p_sel_lexicase(p):
     return p["searchAlgorithm"] == "LexicaseSteadyState" or p["searchAlgorithm"] == "Lexicase"
-def p_sel_gp(p):
+def p_sel_tourn(p):
     return p["searchAlgorithm"] == "GPSteadyState" or p["searchAlgorithm"] == "GP"
 
 
-d1 = "other/"
-d2 = "sygus16/"
+d1 = "benchmarks/LIA/cdgp_gecco17/other/"
+d2 = "benchmarks/LIA/cdgp_gecco17/"
 benchmarks_simple_names = {d1 + "ArithmeticSeries3.sl": "IsSeries3",
                            d1 + "ArithmeticSeries4.sl": "IsSeries4",
                            d1 + "CountPositive2.sl": "CountPos2",
@@ -74,7 +78,7 @@ dim_sa = Dim([Config("GP", p_GP),
               Config("LexSS", p_LexicaseSteadyState)])
 dim_ea_type = Dim([Config("Gener.", p_Generational),
                    Config("SteadySt.", p_SteadyState)])
-dim_sel = Dim([Config("$Tour$", p_sel_gp),
+dim_sel = Dim([Config("$Tour$", p_sel_tourn),
                Config("$Lex$", p_sel_lexicase)])
 # dim_sa = Dim([Config("$CDGP$", p_GP),
 # 			    Config("$CDGP^{ss}$", p_GPSteadyState),
@@ -82,12 +86,11 @@ dim_sel = Dim([Config("$Tour$", p_sel_gp),
 #               Config("$CDGP_{lex}^{ss}$", p_LexicaseSteadyState)])
 
 
-def is_optimal_solution(e):
-    return e == "-1" or e[:7] == "List(-1" or e[:9] == "Vector(-1"
+def is_optimal_solution(p):
+    return "result.best.isOptimal" in p and p["result.best.isOptimal"] == "true"
 
 def get_num_optimal(props):
-    props2 = [p for p in props if ("result.best.eval" in p and is_optimal_solution(p["result.best.eval"]))] #or \
-#("result.successRate" in p and p["result.successRate"] == "1.0")]
+    props2 = [p for p in props if is_optimal_solution(p)]
     return len(props2)
 
 def get_num_computed(filtered):
@@ -109,8 +112,17 @@ def get_stats_size(props):
         return "-"#-1.0, -1.0
     else:
         return "%0.1f" % numpy.mean(vals)#, numpy.std(vals)
+def get_stats_maxSolverTime(props):
+    if len(props) == 0:
+        return "-"
+    times = []
+    for p in props:
+        timesMap = p["cdgp.solverAllTimesCountMap"]
+        parts = timesMap.split(", ")[-1].split(",")
+        times.append(float(parts[0].replace("(", "")))
+    return max(times)
 def get_avg_totalTests(props):
-    vals = [float(p["totalTests"]) for p in props]
+    vals = [float(p["cdgp.totalTests"]) for p in props]
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
     else:
@@ -121,12 +133,8 @@ def get_avg_fitness(props):
         if "result.best.passedTestsRatio" in p:
             ratio = float(p["result.best.passedTestsRatio"])
             vals.append(ratio)
-        elif p["result.best.eval"] == "-1":
-            vals.append(1.0)
-        elif p["result.best.eval"].isdigit(): # exclude cases like "Vector(1,0)".
-            totalTests = float(p["totalTests"])
-            ratio = (totalTests - float(p["result.best.eval"])) / totalTests
-            vals.append(ratio)
+        else:
+            raise Exception("Information about fitness is unavailable!")
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
     else:
@@ -140,7 +148,7 @@ def get_avg_runtimeOnlySuccessful(props):
     if len(props) == 0:
         return "-"
     else:
-        vals = [float(p["result.totalTimeSystem"]) / 1000.0 for p in props if is_optimal_solution(p["result.best.eval"])]
+        vals = [float(p["result.totalTimeSystem"]) / 1000.0 for p in props if is_optimal_solution(p)]
         return get_avg_runtime_helper(vals)
 def get_avg_runtime(props):
     if len(props) == 0:
@@ -157,7 +165,7 @@ def get_avg_generationSuccessful(props):
     if len(props) == 0:
         return "-"
     else:
-        vals = [float(p["result.best.generation"]) for p in props if is_optimal_solution(p["result.best.eval"])]
+        vals = [float(p["result.best.generation"]) for p in props if is_optimal_solution(p)]
         if len(vals) == 0:
             return "-1"  # -1.0, -1.0
         else:
@@ -165,12 +173,12 @@ def get_avg_generationSuccessful(props):
 def get_avg_runtimePerProgram(props):
     if len(props) == 0:
         return "-"  # -1.0, -1.0
-    avgGen = float(get_avg_generation(props))
-    avgRuntime = float(get_avg_runtime(props))
+    avgGen = float(get_avg_generation(props))  # avg number of generations in all runs
+    avgRuntime = float(get_avg_runtime(props))  # avg runtime of all runs
     populationSize = float(props[0]["populationSize"])
     if props[0]["searchAlgorithm"] == "GPSteadyState" or \
        props[0]["searchAlgorithm"] == "LexicaseSteadyState":
-        approxNumPrograms = populationSize + avgGen
+        approxNumPrograms = populationSize + avgGen  # in steady state we have many generations, but in each of them created is one new program
     else:
         approxNumPrograms = populationSize * avgGen
     approxTimePerProgram = avgRuntime / approxNumPrograms
@@ -178,7 +186,9 @@ def get_avg_runtimePerProgram(props):
 def get_sum_solverRestarts(props):
     if len(props) == 0:
         return "-"
-    vals = [int(p["doneSolverRetries"]) for p in props if "doneSolverRetries" in p]
+    vals = [int(p["cdgp.solverTotalRestarts"]) for p in props if "cdgp.solverTotalRestarts" in p]
+    if len(vals) != len(props):
+        print("WARNING: cdgp.solverTotalRestarts was not present in all files.")
     if len(vals) == 0:
         return "0"
     else:
@@ -263,6 +273,11 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
+    print("MAX SOLVER TIME")
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_maxSolverTime, layered_headline=True))
+    latex_maxSolverTimes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
+    # print(text + "\n\n")
+
     section = reporting.BlockSection(title, [])
     subsects = [("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
                 ("Success rates", latex_successRates, reporting.color_scheme_green),
@@ -291,7 +306,7 @@ def print_time_bounds_for_benchmarks(props):
     scalaMapEntries = []
     for conf in dim_benchmarks:
         filtered = conf.filter_props(props)
-        vals = [float(p["result.totalTimeSystem"]) / 1000.0 for p in filtered if is_optimal_solution(p["result.best.eval"])]
+        vals = [float(p["result.totalTimeSystem"]) / 1000.0 for p in filtered if is_optimal_solution(p)]
         if len(vals) == 0:
             result = "No optimal solutions!"
             suggestion = 1800
@@ -309,87 +324,21 @@ def print_time_bounds_for_benchmarks(props):
 
 
 
-
-folders_exp2 = ["res1_rms", "res1_first", "res1_gprlexss"]
-folders_exp3 = ["res1_tournDeselection", "res1_tournDeselection_gprNew"]
-folders_exp4 = ["res1_cdgpOneTest", "res1_gprManyTest"]
-folders_expEvalsFINAL = ["resFinal_GenEvals", "resFinal_SSEvals", "resFinal_spare_CDGPEvals", "resFinal_myspare"]
-folders_expTimedFINAL = ["resFinal_GenTimed", "resFinal_spare"]
-folders_expEvalsFINAL2 = ["resFinal2_evals"]
-folders_expTimedFINAL2 = ["resFinal2_timed"]
-
-
-name_exp2 = "Initial experiments 2"
-desc_exp2 = ""
-
-name_exp3 = "Initial experiments 3"
-desc_exp3 = r"""
-Changes:
-\begin{itemize}
-\item LexicaseSteadyState uses Tournament ($k=7$) deselection.
-\item GPR uses range [-100, 100].
-\item Various improvements in the code.
-\end{itemize}
-"""
-
-name_exp4 = "Initial experiments 4"
-desc_exp4 = r"""
-The same as experiment 3, apart from:
-\begin{itemize}
-\item GPR allowed to add many tests in one iteration.
-\item CDGP limited to only 1 test per iteration.
-\end{itemize}
-"""
-
-name_expEvalsFINAL = "Final Experiments (stop: number of iterations)"
-desc_expEvalsFINAL = r"""
+folders_exp1FINAL = ["exp1"]
+name_exp1FINAL = "Final Experiments (stop: number of iterations)"
+desc_exp1FINAL = r"""
 Important information:
 \begin{itemize}
 \item All configurations, unless specified otherwise, has \textbf{population size 500}, and \textbf{number of iterations 100}.
 \item GPR allowed to add many tests in one iteration.
 \item CDGP allowed to add many tests in one iteration.
 \item GPR uses range [-100, 100] and a population size 1000.
-\item LexicaseSteadyState uses Tournament ($k=7$) deselection.
+\item SteadyState configurations has population\_size * 100 number of iterations, so that the total number
+ of generated solutions is the same. 
+\item SteadyState configurations use Tournament ($k=7$) deselection.
 \end{itemize}
 """
 
-name_expTimedFINAL = "Final Experiments (stop: time limit)"
-desc_expTimedFINAL = r"""
-Important information:
-\begin{itemize}
-\item Experiments have time limits according to the following table:\\\\
-\begin{tabular}{lcc}
-\hline
-Benchmark & Time limit & [min, avg, max] for optimal solutions\\
-\hline
-other/ArithmeticSeries3.sl & 1639 	&	[2, 1639, 71529]\\
-other/CountPositive2.sl & 531 	&	[2, 531, 15863]\\
-other/CountPositive3.sl & 1800 &		[6, 2034, 66430]\\
-other/Median3.sl & 953 	&	[5, 953, 29819]\\
-other/Range3.sl & 1800 	&	[5, 2234, 38703]\\
-other/SortedAscending4.sl & 1800 	&	[5, 2835, 74128]\\
-sygus16/fg\_array\_search\_2.sl & 1800 	&	[4, 1951, 51400]\\
-sygus16/fg\_array\_search\_4.sl & 1800 	&	[No optimal solutions!]\\
-sygus16/fg\_array\_sum\_2\_15.sl & 1800 	&	[7, 3068, 72045]\\
-sygus16/fg\_array\_sum\_4\_15.sl & 1800 	&	[6069, 22675, 50260]\\
-sygus16/fg\_max2.sl: & 158 	&	[1, 158, 1692]\\
-sygus16/fg\_max4.sl: & 971 	&	[4, 971, 47556]\\
-\hline
-\end{tabular}
-\end{itemize}
-"""
-
-name_expEvalsFINAL2 = "Final Experiments (stop: number of iterations), better solver interactions"
-desc_expEvalsFINAL2 = r"""
-This configation is the same as Final Experiments (stop: number of iterations), only with
-better mechanism of finding correct outputs of test cases.
-"""
-
-name_expTimedFINAL2 = "Final Experiments (stop: time limit)"
-desc_expTimedFINAL2 = r"""
-This configation is the same as Final Experiments (stop: time limit), only with
-better mechanism of finding correct outputs of test cases.
-"""
 
 # print_time_bounds_for_benchmarks(props_expEvalsFINAL)
 
@@ -409,38 +358,11 @@ better mechanism of finding correct outputs of test cases.
 
 
 report = reporting.ReportPDF(geometry_params = "[paperwidth=45cm, paperheight=40cm, margin=0.3cm]")
-section1 = r"""\section{Initial experiments}
-\subsection{Success rates}
-\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{colorMedium}{rgb}{0.76, 0.98, 0.76} % colorHigh
-\definecolor{colorHigh}{rgb}{0.66, 0.90, 0.66} % green
-\begin{tabular}{lcccccc}
- & CDGP\_GP & CDGP\_Lexicase & CDGPconservative\_GP & CDGPconservative\_Lexicase & GPR\_GP & GPR\_Lexicase\\
-sygus16/fg\_array\_search\_2.sl & \cellcolor{colorHigh!82.0!colorMedium}0.91 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorLow!0.0!colorMedium}0.50 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!78.0!colorMedium}0.11\\
-sygus16/fg\_array\_search\_4.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
-sygus16/fg\_array\_search\_6.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
-sygus16/fg\_array\_search\_8.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
-sygus16/fg\_array\_sum\_2\_15.sl & \cellcolor{colorLow!80.0!colorMedium}0.10 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorLow!78.0!colorMedium}0.11 & \cellcolor{colorLow!19.999999999999996!colorMedium}0.40 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
-sygus16/fg\_array\_sum\_4\_15.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
-sygus16/fg\_array\_sum\_6\_15.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
-sygus16/fg\_array\_sum\_8\_15.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
-sygus16/fg\_max2.sl & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorHigh!100.0!colorMedium}1.00\\
-sygus16/fg\_max4.sl & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorHigh!100.0!colorMedium}1.00 & \cellcolor{colorLow!78.0!colorMedium}0.11 & \cellcolor{colorLow!0.0!colorMedium}0.50 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!80.0!colorMedium}0.10\\
-sygus16/fg\_max6.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!14.000000000000002!colorMedium}0.43 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
-sygus16/fg\_max8.sl & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00 & \cellcolor{colorLow!100.0!colorMedium}0.00\\
-\end{tabular}
-\vspace{1cm}
 
-"""
-# report.add(reporting.BlockLatex(section1))
-
-sects = [#create_section_with_results(name_exp2, desc_exp2, folders_exp2),
-         #create_section_with_results(name_exp3, desc_exp3, folders_exp3),
-         #create_section_with_results(name_exp4, desc_exp4, folders_exp4),
-         #create_section_with_results(name_expEvalsFINAL, desc_expEvalsFINAL, folders_expEvalsFINAL, numRuns=30),
-         #create_section_with_results(name_expTimedFINAL, desc_expTimedFINAL, folders_expTimedFINAL, numRuns=30),
-         create_section_with_results(name_expEvalsFINAL2, desc_expEvalsFINAL2, folders_expEvalsFINAL2, numRuns=15),
-         create_section_with_results(name_expTimedFINAL2, desc_expTimedFINAL2, folders_expTimedFINAL2, numRuns=15)]
+sects = [
+    create_section_with_results(name_exp1FINAL, desc_exp1FINAL, folders_exp1FINAL, numRuns=15),
+    #create_section_with_results(name_expTimedFINAL, desc_expTimedFINAL, folders_expTimedFINAL, numRuns=15)
+]
 for s in sects:
     if s is not None:
         report.add(s)

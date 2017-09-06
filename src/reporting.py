@@ -1,6 +1,7 @@
 import os
 from subprocess import call
 
+
 class ReportPDF(object):
     """PDF generated from an automatically generated LaTeX source containing results of experiments.
     Content of the PDF is defined by a template defined by a user.
