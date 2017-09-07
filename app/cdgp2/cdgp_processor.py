@@ -31,6 +31,18 @@ def load_correct_props(folders, name = ""):
     return props
 
 
+def produce_status_matrix(grid, props):
+    text = "["
+    for config in grid:
+        numRuns = len(config.filter_props(props))
+        benchmark = config.stored_values["benchmark"]
+        method = config.stored_values["method"]
+        sa = config.stored_values["searchAlgorithm"]
+        text += "('{0}', '{1}', '{2}', {3}), ".format(benchmark, method, sa, numRuns)
+    return text + "]"
+
+
+
 def p_GP(p):
     return p["searchAlgorithm"] == "GP"
 def p_GPSteadyState(p):
@@ -72,13 +84,13 @@ benchmarks_simple_names = {d1 + "ArithmeticSeries3.sl": "IsSeries3",
                            d2 + "fg_max4.sl": "Max4"}
 
 
-dim_method = Dim([Config("CDGP non-conservative", p_method0),
-                  Config("CDGP conservative", p_method1),
-                  Config("GPR", p_method2)])
-dim_sa = Dim([Config("GP", p_GP),
-              Config("GPSS", p_GPSteadyState),
-              Config("Lex", p_Lexicase),
-              Config("LexSS", p_LexicaseSteadyState)])
+dim_method = Dim([Config("CDGP non-conservative", p_method0, method="CDGP"),
+                  Config("CDGP conservative", p_method1, method="CDGPcons"),
+                  Config("GPR", p_method2, method="GPR")])
+dim_sa = Dim([Config("GP", p_GP, searchAlgorithm="GP"),
+              Config("GPSS", p_GPSteadyState, searchAlgorithm="GPSteadyState"),
+              Config("Lex", p_Lexicase, searchAlgorithm="Lexicase"),
+              Config("LexSS", p_LexicaseSteadyState, searchAlgorithm="LexicaseSteadyState")])
 dim_ea_type = Dim([Config("Gener.", p_Generational),
                    Config("SteadySt.", p_SteadyState)])
 dim_sel = Dim([Config("$Tour$", p_sel_tourn),
@@ -225,7 +237,7 @@ def get_sum_solverRestarts(props):
         return str(numpy.sum(vals))
 
 
-def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simple_names=True):
+def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simple_names=True, print_status_matrix=True):
     assert isinstance(title, str)
     assert isinstance(desc, str)
     assert isinstance(folders, list)
@@ -241,7 +253,13 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
         return s.replace("{ccccccccccccc}", "{rrrrrrrrrrrrr}").replace("{rrr", "{lrr").replace(r"\_{lex}", "_{lex}").replace(r"\_{7}", "_{7}").replace("other/", "").replace("sygus16/", "")
 
 
-    dim_benchmarks = Dim.from_data(props, lambda p: p["benchmark"])
+    dim_benchmarks = Dim.from_dict(props, "benchmark")
+    if print_status_matrix:
+        grid = dim_benchmarks * dim_method * dim_sa
+        matrix = produce_status_matrix(grid, props)
+        print("\n****** Status matrix:")
+        print(matrix + "\n")
+
     if use_bench_simple_names:
         configs = [Config(benchmarks_simple_names[c.get_caption()], c.filters[0][1]) for c in dim_benchmarks.configs]
         dim_benchmarks = Dim(configs)
