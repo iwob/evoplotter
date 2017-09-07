@@ -1,5 +1,5 @@
-import os
-from subprocess import call
+import subprocess
+from subprocess import call, STDOUT
 
 
 class ReportPDF(object):
@@ -44,13 +44,11 @@ class ReportPDF(object):
     def save_and_compile(self, filename):
         """Saves LaTeX source file under the given name and compiles it using pdflatex."""
         self.save(filename)
-        FNULL = open(os.devnull, 'w')
-        retcode1 = call(["pdflatex", "-interaction=nonstopmode", filename], stdout=FNULL)
-        retcode2 = call(["pdflatex", "-interaction=nonstopmode", filename], stdout=FNULL) # for index to catch up
-        if retcode1 != 0 or retcode2 != 0:
-            print("Error during generation of PDF report, exit codes: {0}, {1}.".format(retcode1, retcode2))
-        else:
-            print("PDF report successfully generated.")
+        try:
+            subprocess.check_output(["pdflatex", "-interaction=nonstopmode", filename], stderr=STDOUT, universal_newlines=True)
+            subprocess.check_output(["pdflatex", "-interaction=nonstopmode", filename], stderr=STDOUT, universal_newlines=True) # for index to catch up
+        except subprocess.CalledProcessError as exc:
+            print("Status: FAIL, return code: {0}, msg: {1}".format(exc.returncode, exc.output.replace("\\n", "\n")))
         noext = filename[:filename.rfind('.')]
         call(["rm", "-f", noext+".aux", noext+".log", noext+".bbl", noext+".blg", noext+".out"])
 
