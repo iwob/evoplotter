@@ -6,7 +6,8 @@ import numpy
 
 
 def load_correct_props(folders, name = ""):
-    props = utils.load_properties_dirs(folders, exts=[".txt.cdgp"])
+    props0 = utils.load_properties_dirs(folders, exts=[".txt.cdgp"])
+    all_logs = utils.load_properties_dirs(folders, exts=[".txt.cdgp", ".txt"])
 
     print("\n****** Loading props: " + name)
 
@@ -15,8 +16,9 @@ def load_correct_props(folders, name = ""):
                "result.best.eval" in p and "benchmark" in p
 
     # Printing names of files which finished with error status or are incomplete.
-    print("Files with error status:")
-    props_errors = [p for p in props if not is_correct(p)]
+    props_errors = [p for p in props0 if not is_correct(p)]
+    if len(props_errors) > 0:
+        print("Files with error status:")
     for p in props_errors:
         if "thisFileName" in p:
             print(p["thisFileName"])
@@ -24,7 +26,8 @@ def load_correct_props(folders, name = ""):
             print("'thisFileName' not specified! Printing content instead: " + str(p))
 
     # Filtering props so only correct ones are left
-    props = [p for p in props if is_correct(p)]
+    props = [p for p in props0 if is_correct(p)]
+    print("Loaded: {0} correct property files, {1} incorrect; All log files: {2}".format(len(props), len(props_errors), len(all_logs)))
     return props
 
 
@@ -121,12 +124,39 @@ def get_stats_maxSolverTime(props):
         parts = timesMap.split(", ")[-1].split(",")
         times.append(float(parts[0].replace("(", "")))
     return max(times)
+def get_stats_avgSolverTime(props):
+    if len(props) == 0:
+        return "-"
+    sum = 0.0
+    sumWeights = 0.0
+    for p in props:
+        timesMap = p["cdgp.solverAllTimesCountMap"]
+        pairs = timesMap.split(", ")
+        if len(pairs) == 0:
+            continue
+        for x in pairs:
+            time = float(x.split(",")[0].replace("(", ""))
+            weight = float(x.split(",")[1].replace(")", ""))
+            sum += time * weight
+            sumWeights += weight
+    if sumWeights == 0.0:
+        return "%0.3f" % 0.0
+    else:
+        return "%0.3f" % (sum / sumWeights)
+def get_avgSolverTotalCalls(props):
+    if len(props) == 0:
+        return "-"
+    vals = [float(p["cdgp.solverTotalCalls"]) for p in props]
+    return "%d" % round(numpy.mean(vals))
 def get_avg_totalTests(props):
     vals = [float(p["cdgp.totalTests"]) for p in props]
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
     else:
-        return "%0.1f" % numpy.mean(vals)  # , numpy.std(vals)
+        x = numpy.mean(vals)
+        if x < 1e-5:
+            x = 0.0
+        return "%0.1f" % x
 def get_avg_fitness(props):
     vals = []
     for p in props:
@@ -275,20 +305,38 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
 
     print("MAX SOLVER TIME")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_maxSolverTime, layered_headline=True))
-    latex_maxSolverTimes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
+    latex_maxSolverTimes = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
+    # print(text + "\n\n")
+
+    print("AVG SOLVER TIME")
+    text = post(
+        printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_avgSolverTime, layered_headline=True))
+    latex_avgSolverTimes = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
+    # print(text + "\n\n")
+
+    print("AVG NUM SOLVER CALLS")
+    text = post(
+        printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avgSolverTotalCalls, layered_headline=True))
+    latex_avgSolverTotalCalls = printer.table_color_map(text, 1e3, 1e5, 5e6, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     section = reporting.BlockSection(title, [])
-    subsects = [("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
-                ("Success rates", latex_successRates, reporting.color_scheme_green),
-                ("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
-                ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
-                ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
-                ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
-                ("Average generation (optimal and nonoptimal bestOfRuns)", latex_avgGeneration, reporting.color_scheme_teal),
-                ("Average generation (only optimal bestOfRuns)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
-                ("Approximate average runtime per program [s]", latex_avgRuntimePerProgram, reporting.color_scheme_brown),
-                ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow)]
+    subsects = [
+        ("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
+        ("Success rates", latex_successRates, reporting.color_scheme_green),
+        ("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
+        ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
+        ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
+        ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
+        ("Average generation (optimal and nonoptimal bestOfRuns)", latex_avgGeneration, reporting.color_scheme_teal),
+        ("Average generation (only optimal bestOfRuns)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
+        ("Approximate average runtime per program [s]", latex_avgRuntimePerProgram, reporting.color_scheme_brown),
+        ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow),
+        ("Max solver time per query [s]", latex_maxSolverTimes, reporting.color_scheme_violet),
+        ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_violet),
+        ("Avg number of solver calls", latex_avgSolverTotalCalls, reporting.color_scheme_blue)
+
+    ]
     bl_desc = reporting.BlockLatex(desc + "\n")
     section.add(bl_desc)
     for title, table, cs in subsects:
