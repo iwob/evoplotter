@@ -3,22 +3,35 @@
 class Dim(object):
     """Stores a list of configurations used during the experiment.
 
-    For example, lets say that we want to compare variants of GP with different probability of mutation and also
-    at the same time with different tournament sizes. One of the dimensions would be the probability
-    of mutation. We will define this dimension with list of possible configurations, e.g.:
+    For example, lets say that we want to compare variants of GP with different
+    probability of mutation and also at the same time with different tournament sizes.
+    The first dimension would be the probability of mutation. We will define this
+    dimension with a list of possible configurations, e.g.:
         Config('mut0.2', pred_mut02), Config('mut0.5', pred_mut05), ...
     The other dimension would be a list of tuples describing possible tournament sizes, e.g.:
         Config('k4', pred_k4), Config('k7', pred_k7), ...
 
-    Dimensions may be combined with each other to generate concrete "real" configurations of the experiment.
-    This is done by means of a Cartesian product between them. This is realized with * operator, and in this case would lead to the following configurations of newly create "aggregate" dimension:
-    Config([('mut0.2', pred_mut02), ('k4', pred_k4)]), ....., Config([('mut0.5', pred_mut05), ('k7', pred_k7)])
+    Dimensions may be combined with each other to generate concrete "real" configurations
+    of the experiment. This is done by means of a Cartesian product between them. This
+    is realized with * operator, and in this case it would lead to the following
+    configurations of a newly created "aggregate" dimension:
 
-    Simpler example: dim1 = [A1, A2, A3], dim2 = [B1, B2]. By combining those two dimensions (Dim1 * Dim2)
-    we obtain a single dimension defined as: Dim3 = [(A1,B1), (A1,B2), ..., (A3,B1), (A3,B2)]. In such
-    a case experiment logs will be filtered by successive applications of predicates.
+        Config([('mut0.2', pred_mut02), ('k4', pred_k4)]),
+        .....,
+        Config([('mut0.5', pred_mut05), ('k7', pred_k7)])
 
-    Operator + may be used to add a configuration to already existing dimension. This may be useful for instance for the control random algorithm, which is a single complete configuration.
+
+    A simpler example:
+        dim1 = [A1, A2, A3], dim2 = [B1, B2].
+
+    By combining those two dimensions (Dim1 * Dim2) we obtain a single dimension defined as:
+        dim3 = [(A1,B1), (A1,B2), ..., (A3,B1), (A3,B2)].
+
+    In such a case experiment logs will be filtered by successive applications of predicates.
+
+    Operator + may be used to add a configuration to already existing dimension. This
+    may be useful for instance for the control random algorithm, which is a single
+    complete configuration (not dependent on any considered parameters).
     """
 
     def __init__(self, configs):
@@ -60,7 +73,11 @@ class Dim(object):
     __rmul__ = __mul__
 
     def filter_out_outsiders(self, props):
-        """Returns properties in which contained are only elements belonging to one of configs in this dimension. Note that dimension values (configs) do not have to cover whole possible space or to be disjoint. This functions allows to remove unnecessary configs and thus may reduce computation time."""
+        """Returns properties in which contained are only elements belonging to one of
+        configs in this dimension. Note that dimension values (configs) do not have to
+        cover the whole possible space or to be disjoint. This functions allows to remove
+        unnecessary configs and thus may reduce computation time.
+        """
         return [p for p in props if any([c.filter(p) for c in self.configs])]
 
     def sort(self):
@@ -70,7 +87,8 @@ class Dim(object):
 
     @classmethod
     def from_data(cls, props, extr):
-        """Creates a Dim object by collecting all unique values in the data. Extractor (extr) is used to get values."""
+        """Creates a Dim object by collecting all unique values in the data.
+        Extractor (extr) is used to get values."""
         s = get_unique_values(props, extr)
         configs = [Config(el, lambda p, extr=extr, el=el: extr(p) == el) for el in s]
         return Dim(configs)
@@ -109,9 +127,16 @@ def _generate_filters_helper(cur_dims, cur_filters, final_filters):
 
 
 class Config(object):
-    """Defines a single configuration of the experiment. Config may be partial or complete. Complete config fully describes a variant of the experiment. Partial config may leave some of its aspects unspecified (note: partial configs are useful for aggregating results).
+    """Defines a single configuration of the experiment. Config may be partial or
+    complete. Complete config fully describes a variant of the experiment. Partial
+    config may leave some of its aspects unspecified (note: partial configs are
+    useful for aggregating results).
 
-    Config is defined as a list of filters. Filter is a tuple containing a name and a predicate. Name describes a filter's function/role and is used during drawing of plots, and predicate is used to leave only properties files which were generated in a run under this configuration. If more than one filter is defined, conjunction of all the predicates is considered.
+    Config is defined as a list of filters. Filter is a tuple containing a name
+    and a predicate. Name describes a filter's function/role and is used during
+    drawing of plots, and predicate is used to leave only properties files which
+    were generated in a run under this configuration. If more than one filter is
+    defined, conjunction of all the predicates is considered.
     """
     def __init__(self, *filters):
         if len(filters) == 1:
@@ -141,7 +166,8 @@ class Config(object):
         return self.filters[0]
 
     def get_caption(self, sep="_"):
-        """Returns a merged name of this Config. This name is generated by merging names of filters which constitute it."""
+        """Returns a merged name of this Config. This name is generated by merging
+        names of filters which constitute it."""
         return sep.join([str(f[0]) for f in self.filters])
 
     def contains_filter(self, otherFilt):
