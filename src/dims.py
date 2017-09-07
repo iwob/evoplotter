@@ -93,6 +93,17 @@ class Dim(object):
         configs = [Config(el, lambda p, extr=extr, el=el: extr(p) == el) for el in s]
         return Dim(configs)
 
+    @classmethod
+    def from_dict(cls, props, key):
+        """Creates a Dim object by collecting all unique values under the specified
+        key in the dictionaries."""
+        s = get_unique_values(props, lambda p: p[key])
+        configs = []
+        for el in s:
+            kwargs = {key: el}
+            configs.append(Config(el, lambda p, key=key, el=el: p[key] == el, **kwargs))
+        return Dim(configs)
+
 
 
 def get_unique_values(data, extr):
