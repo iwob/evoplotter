@@ -259,10 +259,10 @@ def table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor="colorLow", 
             val = float(s.strip())
             if val > MidNumber:
                 PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber-MidNumber), 100.0), 0.0)
-                color = "{0}!{1:.4f}!{2}".format(MaxColor, PercentColor, MidColor)
+                color = "{0}!{1:.1f}!{2}".format(MaxColor, PercentColor, MidColor)
             else:
                 PercentColor = max(min(100.0 * (MidNumber - val) / (MidNumber - MinNumber), 100.0), 0.0)
-                color = "{0}!{1:.4f}!{2}".format(MinColor, PercentColor, MidColor)
+                color = "{0}!{1:.1f}!{2}".format(MinColor, PercentColor, MidColor)
             return "\cellcolor{" + color + "}" + s
 
 

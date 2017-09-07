@@ -111,17 +111,23 @@ def get_unique_values(data, extr):
 def generate_configs(dims_list):
     """Returns a list of configurations for a dimension."""
     final_filters = []
-    _generate_filters_helper(dims_list, [], final_filters)
-    return [Config(flist) for flist in final_filters]
+    final_values = []
+    _generate_filters_helper(dims_list, [], {}, final_filters, final_values)
+    return [Config(flist, **values) for flist, values in zip(final_filters, final_values)]
 
-def _generate_filters_helper(cur_dims, cur_filters, final_filters):
+def _generate_filters_helper(cur_dims, cur_filters, cur_values, final_filters, final_values):
+    assert isinstance(cur_filters, list)
+    assert isinstance(cur_values, dict)
     if len(cur_dims) == 0:
         final_filters.append(cur_filters)
+        final_values.append(cur_values)
     else:
         for config in cur_dims[0]:
             new_filters = cur_filters[:]
             new_filters.extend(config.filters)
-            _generate_filters_helper(cur_dims[1:], new_filters, final_filters)
+            new_values = cur_values.copy()
+            new_values.update(config.stored_values)
+            _generate_filters_helper(cur_dims[1:], new_filters, new_values, final_filters, final_values)
 
 
 
@@ -138,7 +144,8 @@ class Config(object):
     were generated in a run under this configuration. If more than one filter is
     defined, conjunction of all the predicates is considered.
     """
-    def __init__(self, *filters):
+    def __init__(self, *filters, **kwargs):
+        self.stored_values = kwargs
         if len(filters) == 1:
             if isinstance(filters[0], list):
                 self.filters = filters[0]
