@@ -200,7 +200,7 @@ def get_avg_fitness(props):
         return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
 def get_avg_runtime_helper(vals):
     if len(vals) == 0:
-        return "-1"  # -1.0, -1.0
+        return "n/a"  # -1.0, -1.0
     else:
         return "%0.1f" % numpy.mean(vals)  # , numpy.std(vals)
 def get_avg_runtimeOnlySuccessful(props):
@@ -226,7 +226,7 @@ def get_avg_generationSuccessful(props):
     else:
         vals = [float(p["result.best.generation"]) for p in props if is_optimal_solution(p)]
         if len(vals) == 0:
-            return "-1"  # -1.0, -1.0
+            return "n/a"  # -1.0, -1.0
         else:
             return "%0.1f" % numpy.mean(vals)  # , numpy.std(vals)
 def get_avg_runtimePerProgram(props):
@@ -369,8 +369,8 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
         ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
         ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
-        ("Average generation (optimal and nonoptimal bestOfRuns)", latex_avgGeneration, reporting.color_scheme_teal),
-        ("Average generation (only optimal bestOfRuns)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
+        ("Average generation (all)", latex_avgGeneration, reporting.color_scheme_teal),
+        ("Average generation (only successful)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
         ("Approximate average runtime per program [s]", latex_avgRuntimePerProgram, reporting.color_scheme_brown),
         ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow),
         ("Max solver time per query [s]", latex_maxSolverTimes, reporting.color_scheme_violet),
@@ -413,7 +413,7 @@ def print_time_bounds_for_benchmarks(props):
 
 
 
-folders_exp1FINAL = ["exp1"]
+folders_exp1FINAL = ["exp1", "exp1_fix1"]
 name_exp1FINAL = "Final Experiments (stop: number of iterations)"
 desc_exp1FINAL = r"""
 Important information:
