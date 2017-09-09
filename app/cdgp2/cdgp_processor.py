@@ -160,6 +160,23 @@ def get_avgSolverTotalCalls(props):
         return "-"
     vals = [float(p["cdgp.solverTotalCalls"]) for p in props]
     return "%d" % round(numpy.mean(vals))
+def get_numSolverCallsOverXs(props):
+    if len(props) == 0:
+        return "-"
+    TRESHOLD = 0.5
+    sum = 0
+    for p in props:
+        timesMap = p["cdgp.solverAllTimesCountMap"]
+        pairs = timesMap.split(", ")
+        if len(pairs) == 0:
+            continue
+        for x in pairs:
+            time = float(x.split(",")[0].replace("(", ""))
+            if time > TRESHOLD:
+                # print("Name of file: " + p["thisFileName"])
+                weight = int(x.split(",")[1].replace(")", ""))
+                sum += weight
+    return sum
 def get_avg_totalTests(props):
     vals = [float(p["cdgp.totalTests"]) for p in props]
     if len(vals) == 0:
@@ -338,6 +355,12 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     latex_avgSolverTotalCalls = printer.table_color_map(text, 1e3, 1e5, 5e6, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
+    print("NUM SOLVER CALLS > 0.5s")
+    text = post(
+        printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_numSolverCallsOverXs, layered_headline=True))
+    latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 1e4, 1e6, "colorLow", "colorMedium", "colorHigh")
+    # print(text + "\n\n")
+
     section = reporting.BlockSection(title, [])
     subsects = [
         ("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
@@ -352,8 +375,8 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
         ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow),
         ("Max solver time per query [s]", latex_maxSolverTimes, reporting.color_scheme_violet),
         ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_violet),
-        ("Avg number of solver calls", latex_avgSolverTotalCalls, reporting.color_scheme_blue)
-
+        ("Avg number of solver calls", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
+        ("Number of solver calls $>$ 0.5s", latex_numSolverCallsOverXs, reporting.color_scheme_blue),
     ]
     bl_desc = reporting.BlockLatex(desc + "\n")
     section.add(bl_desc)
