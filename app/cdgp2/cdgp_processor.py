@@ -413,7 +413,7 @@ def print_time_bounds_for_benchmarks(props):
 
 
 
-folders_exp1FINAL = ["exp1", "exp1_fix1"]
+folders_exp1FINAL = ["exp1", "exp1_fix1", "exp1_fix2"]
 name_exp1FINAL = "Final Experiments (stop: number of iterations)"
 desc_exp1FINAL = r"""
 Important information:
