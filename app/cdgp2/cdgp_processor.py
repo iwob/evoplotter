@@ -15,6 +15,10 @@ def load_correct_props(folders, name = ""):
         return "status" in p and (p["status"] == "completed" or p["status"] == "initialized") and\
                "result.best.eval" in p and "benchmark" in p
 
+    def is_obsolete(p):
+        return False #p["searchAlgorithm"].endswith("SteadyState") and\
+               #"info.steadyStateWithZeroInitialTests" not in p
+
     # Printing names of files which finished with error status or are incomplete.
     props_errors = [p for p in props0 if not is_correct(p)]
     if len(props_errors) > 0:
@@ -26,7 +30,7 @@ def load_correct_props(folders, name = ""):
             print("'thisFileName' not specified! Printing content instead: " + str(p))
 
     # Filtering props so only correct ones are left
-    props = [p for p in props0 if is_correct(p)]
+    props = [p for p in props0 if is_correct(p) and not is_obsolete(p)]
     print("Loaded: {0} correct property files, {1} incorrect; All log files: {2}".format(len(props), len(props_errors), len(all_logs)))
     return props
 
@@ -95,6 +99,9 @@ dim_ea_type = Dim([Config("Gener.", p_Generational),
                    Config("SteadySt.", p_SteadyState)])
 dim_sel = Dim([Config("$Tour$", p_sel_tourn),
                Config("$Lex$", p_sel_lexicase)])
+dim_sa_ss = Dim([
+              Config("GPSS", p_GPSteadyState, searchAlgorithm="GPSteadyState"),
+              Config("LexSS", p_LexicaseSteadyState, searchAlgorithm="LexicaseSteadyState")])
 # dim_sa = Dim([Config("$CDGP$", p_GP),
 # 			    Config("$CDGP^{ss}$", p_GPSteadyState),
 #               Config("$CDGP_{lex}$", p_Lexicase),
@@ -276,6 +283,10 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
         matrix = produce_status_matrix(grid, props)
         print("\n****** Status matrix:")
         print(matrix + "\n")
+        grid = dim_benchmarks * dim_method * dim_sa_ss
+        matrix = produce_status_matrix(grid, props)
+        print("\n****** Status matrix SS:")
+        print(matrix + "\n")
 
     if use_bench_simple_names:
         configs = [Config(benchmarks_simple_names[c.get_caption()], c.filters[0][1]) for c in dim_benchmarks.configs]
@@ -429,6 +440,11 @@ Important information:
 """
 
 
+folders_exp2 = ["exp1_newSS"]
+name_exp2 = "Experiments with new steady state (stop: number of iterations)"
+desc_exp2 = r""""""
+
+
 # print_time_bounds_for_benchmarks(props_expEvalsFINAL)
 
 # Uncomment this to print names of files with results of a certain configuration
@@ -450,7 +466,7 @@ report = reporting.ReportPDF(geometry_params = "[paperwidth=45cm, paperheight=40
 
 sects = [
     create_section_with_results(name_exp1FINAL, desc_exp1FINAL, folders_exp1FINAL, numRuns=15),
-    #create_section_with_results(name_expTimedFINAL, desc_expTimedFINAL, folders_expTimedFINAL, numRuns=15)
+    create_section_with_results(name_exp2, desc_exp2, folders_exp2, numRuns=15),
 ]
 for s in sects:
     if s is not None:
