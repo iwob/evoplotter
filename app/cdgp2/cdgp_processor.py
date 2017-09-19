@@ -124,7 +124,7 @@ def fun_successRates_full(filtered):
     return "{0}/{1}".format(str(num_opt), str(len(filtered)))
 def fun_successRates(filtered):
     if len(filtered) == 0:
-        return None
+        return "-"
     num_opt = get_num_optimal(filtered)
     sr = float(num_opt) / float(len(filtered))
     return "{0}".format("%0.2f" % sr)
