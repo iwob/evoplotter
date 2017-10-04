@@ -38,15 +38,18 @@ def load_correct_props(folders, name = ""):
     return props
 
 
-def produce_status_matrix(grid, props):
-    # TODO: Add information about test ratio
+def produce_status_matrix(dim, props):
+    """Generates a status data in the form of a python list. It can be
+    later used to retry missing runs.
+    
+    :param dim: (Dimension) dimensions no which data are to be divided.
+    :param props: (dict[str,str]) properties files.
+    :return: (str) Python code of a list containing specified data.
+    """
     text = "["
-    for config in grid:
+    for config in dim:
         numRuns = len(config.filter_props(props))
-        benchmark = config.stored_values["benchmark"]
-        method = config.stored_values["method"]
-        sa = config.stored_values["searchAlgorithm"]
-        text += "('{0}', '{1}', '{2}', {3}), ".format(benchmark, method, sa, numRuns)
+        text += "({0}, {1}),\n".format(config.stored_values, numRuns)
     return text + "]"
 
 
@@ -84,7 +87,6 @@ def p_sel_tourn(p):
 
 d1 = "benchmarks/LIA/cdgp_paper17/other/"
 d2 = "benchmarks/LIA/cdgp_paper17/"
-# TODO: give correct prefixes and short names
 benchmarks_simple_names = {d1 + "ArithmeticSeries3.sl": "IsSeries3",
                            d1 + "ArithmeticSeries4.sl": "IsSeries4",
                            d1 + "CountPositive2.sl": "CountPos2",
@@ -93,11 +95,12 @@ benchmarks_simple_names = {d1 + "ArithmeticSeries3.sl": "IsSeries3",
                            d1 + "Median3.sl": "Median3",
                            d1 + "Range3.sl": "Range3",
                            d1 + "SortedAscending4.sl": "IsSorted4",
-                           # d1 + "SortedAscending5.sl": "IsSorted5",
+                           d1 + "SortedAscending5.sl": "IsSorted5",
                            d2 + "fg_array_search_2.sl": "Search2",
-                           d2 + "fg array search 3.sl": "Search3",
+                           d2 + "fg_array_search_3.sl": "Search3",
                            d2 + "fg_array_search_4.sl": "Search4",
                            d2 + "fg_array_sum_2_15.sl": "Sum2",
+                           d2 + "fg_array_sum_3_15.sl": "Sum3",
                            d2 + "fg_array_sum_4_15.sl": "Sum4",
                            d2 + "fg_max2.sl": "Max2",
                            d2 + "fg_max4.sl": "Max4"}
@@ -300,23 +303,17 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     props = load_correct_props(folders, name=title)
 
     def post(s):
-        return s.replace("{ccccccccccccc}", "{rrrrrrrrrrrrr}").replace("{rrr", "{lrr").replace(r"\_{lex}", "_{lex}").replace(r"\_{7}", "_{7}").replace("other/", "").replace("sygus16/", "")
+        return s.replace("{ccccccccccccc}", "{rrrrrrrrrrrrr}").replace("{rrr", "{lrr").replace(r"\_{lex}", "_{lex}").replace(r"\_{", "_{")
 
 
     dim_benchmarks = Dim.from_dict(props, "benchmark")
     if print_status_matrix:
-        grid = dim_benchmarks * dim_method * dim_sa
-        matrix = produce_status_matrix(grid, props)
+        d = dim_benchmarks * dim_method * dim_testsRatio * dim_sa
+        matrix = produce_status_matrix(d, props)
         print("\n****** Status matrix:")
-        print(matrix + "\n")
-        grid = dim_benchmarks * dim_method * dim_sa_ss
-        matrix = produce_status_matrix(grid, props)
-        print("\n****** Status matrix SS:")
         print(matrix + "\n")
 
     if use_bench_simple_names:
-        for c in dim_benchmarks.configs:
-            print("asd: " + benchmarks_simple_names.get(c.get_caption(), c.get_caption()))
         configs = [Config(benchmarks_simple_names.get(c.get_caption(), c.get_caption()), c.filters[0][1]) for c in dim_benchmarks.configs]
         dim_benchmarks = Dim(configs)
         dim_benchmarks.sort()
