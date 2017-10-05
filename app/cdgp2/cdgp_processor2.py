@@ -49,7 +49,7 @@ def produce_status_matrix(dim, props):
     text = "["
     for config in dim:
         numRuns = len(config.filter_props(props))
-        text += "({0}, {1}),\n".format(config.stored_values, numRuns)
+        text += "({0}, {1}), ".format(config.stored_values, numRuns)
     return text + "]"
 
 
@@ -302,6 +302,13 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
 
     props = load_correct_props(folders, name=title)
 
+    # Uncomment this to print names of files with results of a certain configuration
+    print("(** {0} **) props_meeting the property:".format(title[:15]))
+    for p in props:
+        if float(p["cdgp.solverTimeMaxSec"]) >= 2.0:
+            print(p["thisFileName"] + ", " + p["cdgp.solverTimeMaxSec"])
+
+
     def post(s):
         return s.replace("{ccccccccccccc}", "{rrrrrrrrrrrrr}").replace("{rrr", "{lrr").replace(r"\_{lex}", "_{lex}").replace(r"\_{", "_{")
 
@@ -472,12 +479,6 @@ if __name__ == "__main__":
 
 
     # print_time_bounds_for_benchmarks(props_expEvalsFINAL)
-
-    # Uncomment this to print names of files with results of a certain configuration
-    # print("(***) props_expEvalsFINAL:")
-    # for p in props_expEvalsFINAL:
-    #     if p["method"] == "2" and p["searchAlgorithm"] == "LexicaseSteadyState" and p["benchmark"] == "sygus16/fg_array_search_4.sl":
-    #         print(p["thisFileName"] + ", " + p["benchmark"])
 
 
 
