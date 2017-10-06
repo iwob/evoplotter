@@ -88,7 +88,7 @@ class Dim(object):
     @classmethod
     def from_data(cls, props, extr):
         """Creates a Dim object by collecting all unique values in the data.
-        Extractor (extr) is used to get values."""
+        Extractor (extr) is a function used to get values."""
         s = get_unique_values(props, extr)
         configs = [Config(el, lambda p, extr=extr, el=el: extr(p) == el) for el in s]
         return Dim(configs)

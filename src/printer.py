@@ -4,7 +4,8 @@ from . import utils
 
 
 def text_listing(props, dim, fun, is_fun_single_prop=False, d_configs="\n\n\n", fun_config_header=None):
-    """Returns a text listing of values computed for the specified configs. By default follows a format similar to the presented below:
+    """Returns a text listing of values computed for the specified configs. By default follows a format
+    similar to the presented below:
 
     (*) CONFIG: c1
     vals_c1
@@ -16,8 +17,11 @@ def text_listing(props, dim, fun, is_fun_single_prop=False, d_configs="\n\n\n", 
 
     :param props: (dict) all properties files containing experiment's data.
     :param dim: (Dim) dimension along which listing will be created.
-    :param fun: (list[dict] => str) function returning text containing processed information (e.g. average) for a config-filtered props.
-    :param is_fun_single_prop: (bool) if true, then to fun will be passed separately every config-filtered prop (e.g. useful for printing best solutions per config). If false, then to fun will be passed whole set of config-filtered props (e.g. useful for printing statistics).
+    :param fun: (list[dict] => str) function returning text containing processed information (e.g. average)
+     for a config-filtered props.
+    :param is_fun_single_prop: (bool) if true, then to fun will be passed separately every config-filtered
+     prop (e.g. useful for printing best solutions per config). If false, then to fun will be passed whole
+     set of config-filtered props (e.g. useful for printing statistics).
     :param d_configs: (str) delimiter between configs in the listing.
     :param fun_config_header: (Config => str) Function which returns text of the header describing a configuration.
     :return: (str) Text of a listing.
@@ -52,7 +56,8 @@ def text_table_row(props_row, config_row, dim_cols, fun, d_cols="\t", d_rows="\n
     :param props_row: (dict) all props which applies to the given row.
     :param config_row: (Config) a concrete configuration defined as a list of filters.
     :param dim_cols: (Dim) a dimension, defined as a list of configurations.
-    :param fun: (list[dict] => str) function returning a cell's content given a list of dicts representing relevant data.
+    :param fun: (list[dict] => str) function returning a cell's content given a list
+     of dicts representing relevant data.
     :param d_cols: (str) delimiter separating columns.
     :param d_rows: (str) delimiter separating rows.
     :return: (str) text of the table's row.
@@ -87,7 +92,8 @@ def text_table_body(props, dim_rows, dim_cols, fun, d_cols="\t", d_rows="\n"):
 
 
 def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="\n"):
-    """Returns text of the table containing in the cells values from the intersection of configs in row and column. By manipulating delimiters LaTeX table may be produced.
+    """Returns text of the table containing in the cells values from the intersection of configs
+    in row and column. By manipulating delimiters LaTeX table may be produced.
 
     :param props: (dict) all props gathered in the experiment.
     :param dim_rows: (Dim) a dimension for rows.
@@ -120,26 +126,37 @@ def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="
 
 
 
-def latex_table(props, dim_rows, dim_cols, fun, title=None, latexize_underscores=True, layered_headline=False):
+def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layered_headline=False,
+                vertical_border=1):
     """Returns code of a LaTeX table (tabular environment) created from the given dimensions.
 
     :param props: (dict) all props gathered in the experiment.
     :param dim_rows: (Dim) a dimension for rows.
     :param dim_cols: (Dim) a dimension for columns.
-    :param fun: (list[dict] => str) a function returning a cell's content given a list of props "in" the cell.
-    :param title: (str) a title to be placed before the table. By default there is no title. NOTE: some table configuration commands or descriptions may be passed as a title.
-    :param latexize_underscores: (bool) if set to to true, every underscore ("_") will be turned into version acceptable by LaTeX ("\_"). This, however, may be undesired if some elements are in math mode and use subscripts.
-    :param layered_headline: (bool) if set to to true, headline will be organized into layers depending on configuration.
+    :param fun: (list[dict] => str) a function returning a cell's content given a list of
+     props "in" the cell.
+    :param latexize_underscores: (bool) if set to to true, every underscore ("_") will be
+     turned into version acceptable by LaTeX ("\_"). This, however, may be undesired if
+     some elements are in math mode and use subscripts.
+    :param layered_headline: (bool) if set to to true, headline will be organized into layers
+     depending on the configuration.
+    :param vertical_border: (int) mode of the vertical borders in the table. Bigger the number,
+     more dense the vertical borders. Range of values: 0 - 2.
     :return: (str) code of the LaTeX table.
     """
     assert isinstance(dim_rows, dims.Dim)
     assert isinstance(dim_cols, dims.Dim)
 
     numCols = len(dim_cols.configs) + 1
-    text = r"\begin{tabular}{" + ("c"*numCols) + "}\n"
+    if vertical_border >= 2:
+        alignments = "|" + "|".join("c"*numCols) + "|"  # and not layered_headline
+    elif vertical_border == 1:
+        alignments = "|c|" + ("c" * (numCols-1)) + "|"
+    else:
+        alignments = "c"*numCols
+    text = r"\begin{tabular}{" + alignments + "}\n"
     text += r"\hline" + "\n"
-    # text += text_table(props, dim_rows, dim_cols, fun, title, d_cols=" & ", d_rows="\\\\\n")
-    text += latex_table_header(dim_cols, layered_headline, d_cols=" & ", d_rows="\\\\\n")
+    text += latex_table_header(dim_cols, layered_headline, d_cols=" & ", d_rows="\\\\\n", vertical_border=vertical_border)
     text += text_table_body(props, dim_rows, dim_cols, fun, d_cols=" & ", d_rows="\\\\\n")
 
     text += r"\hline" + "\n"
@@ -149,28 +166,37 @@ def latex_table(props, dim_rows, dim_cols, fun, title=None, latexize_underscores
     return text
 
 
-def latex_table_header(dim_cols, layered_headline=False, d_cols=" & ", d_rows="\\\\\n"):
-    """Produces header for a LaTeX table. In the case of generating layered headline, columns dimension is assumed to contain Configs with the same number of filters and correcponding configs placed on the same positions (this will always be correct, if '*' was used to combine dimensions)."""
+def latex_table_header(dim_cols, layered_headline=False, d_cols=" & ", d_rows="\\\\\n",
+                       vertical_border=0):
+    """Produces header for a LaTeX table. In the case of generating layered headline, columns
+    dimension is assumed to contain Configs with the same number of filters and corresponding
+    configs placed on the same positions (this will always be correct, if '*' was used to
+    combine dimensions).
+    """
     if layered_headline:
-        return latex_table_header_multilayered(dim_cols, d_cols=d_cols, d_rows=d_rows)
+        return latex_table_header_multilayered(dim_cols, d_cols=d_cols, d_rows=d_rows,
+                                               vertical_border=vertical_border)
     else:
-        # return text_table_header(dim_cols, d_cols=d_cols, d_rows=d_rows)
-        return latex_table_header_one_layer(dim_cols, d_cols=d_cols, d_rows=d_rows)
+        return latex_table_header_one_layer(dim_cols, d_cols=d_cols, d_rows=d_rows,
+                                            vertical_border=vertical_border)
 
 
-def latex_table_header_one_layer(dim_cols, d_cols=" & ", d_rows="\\\\\n"):
+def latex_table_header_one_layer(dim_cols, d_cols=" & ", d_rows="\\\\\n", vertical_border=0):
     chead = [r"\multicolumn{1}{c}{" + d.get_caption() + "}" for d in dim_cols]
     return d_cols + d_cols.join(chead) + d_rows + r"\hline" + "\n"
 
 
-def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n"):
+def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", vertical_border=0):
     num_layers = len(dim_cols[0].filters)  # num of layers in the example filter
 
     # Going from the highest layer to the lowest.
     def produce_lines(dimens, layer_no):
         if len(dimens[0]) == 1 or layer_no == num_layers -1:
             # Only a single row, use simplified routine.
-            chead = [r"\multicolumn{1}{c}{" + d.get_caption() + "}" for d in dimens]
+            align = "c|" if vertical_border >= 1 else "c"
+            chead = [r"\multicolumn{1}{" + align + "}{" + d.get_caption() + "}" for d in dimens]
+            # if vertical_border >= 1:  # this is currently by | in tabular arg
+            #     chead[0] = chead[0].replace("{c", "{|c")
             return d_cols + d_cols.join(chead) + d_rows + r"\hline" + "\n"
         text = ""
         top_filters_list = [] # stores tuples (filter, numContiguous)
@@ -185,9 +211,15 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n"):
 
         # Producing top-level header.
         buffer = []
-        for f, foccurs in top_filters_list:
+        for i in range(len(top_filters_list)):
+            f, foccurs = top_filters_list[i]
             fname = f[0]  # name of the filter
-            ftext = r"\multicolumn{" + str(foccurs) + "}{c}{" + fname + "}" # \multicolumn{6}{c}{$EPS$}
+            align = "c"
+            if vertical_border >= 1:
+                align += "|"
+                # if i == 0:  # this is currently by | in tabular arg
+                #     align = "|" + align
+            ftext = r"\multicolumn{" + str(foccurs) + "}{" + align + "}{" + fname + "}" # \multicolumn{6}{c}{$EPS$}
             buffer.append(ftext)
 
         # We need to add subconfigs to the queue. Removing first filter from every config.
@@ -238,16 +270,20 @@ def decorate_table(table_text, convert_fun, d_cols=" & ", d_rows="\\\\\n"):
 
 
 
-def table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor="colorLow", MidColor="colorMedium", MaxColor="colorHigh"):
-    """Creates a table with cells colored depending on their values ("color map"). Colored will be only cells containing numbers.
+def table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor="colorLow", MidColor="colorMedium",
+                    MaxColor="colorHigh"):
+    """Creates a table with cells colored depending on their values ("color map"). Colored will be only
+    cells containing numbers.
 
     :param text: (str) text of the table.
-    :param MinNumber: (float) below or equal to this value everything will be colored fully with MinColor. Higher values will be gradiented towards MidColor.
+    :param MinNumber: (float) below or equal to this value everything will be colored fully with MinColor.
+     Higher values will be gradiented towards MidColor.
     :param MidNumber: (float) middle point. Values above go towards MaxColor, and values below towards MinColor.
-    :param MaxNumber: (float) above or equal to this value everything will be colored fully with MaxColor. Lower values will be gradiented towards MidColor.
+    :param MaxNumber: (float) above or equal to this value everything will be colored fully with MaxColor.
+     Lower values will be gradiented towards MidColor.
     :param MinColor: (str) name of the LaTeX color representing the lowest value.
-    :param MidColor: (str) name of the LaTeX color representing the middle value. This color is also used for gradient, that is
-     closer a given cell value is to the MidNumber, more MidColor'ed it becomes.
+    :param MidColor: (str) name of the LaTeX color representing the middle value. This color is also used for
+     gradient, that is closer a given cell value is to the MidNumber, more MidColor'ed it becomes.
     :param MaxColor: (str) name of the LaTeX color representing the highest value.
     :return: (str) text of the table with added \cellcolor commands with appropriate colors as arguments.
     """

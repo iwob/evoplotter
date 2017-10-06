@@ -330,80 +330,82 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     # dim_cols = dim_method * dim_sa
     # -------------------------------------------
 
+    vb = 1  # vertical border
+
     print("STATUS")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_num_computed, layered_headline=True))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_num_computed, layered_headline=True, vertical_border=vb))
     latex_status = printer.table_color_map(text, 0.0, numRuns/2, numRuns, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("SUCCESS RATES")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, fun_successRates, layered_headline=True))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, fun_successRates, layered_headline=True, vertical_border=vb))
     latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     # print("SUCCESS RATES (FULL INFO)")
-    # text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, fun_successRates_full, layered_headline=True))
+    # text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, fun_successRates_full, layered_headline=True, vertical_border=vb))
     # print(text + "\n\n")
 
     print("AVG BEST-OF-RUN FITNESS")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_fitness, layered_headline=True))
-    latex_avgBestOfRunFitness = printer.table_color_map(text, 0.6, 0.98, 1.0, "colorLow", "colorMedium", "colorHigh")
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_fitness, layered_headline=True, vertical_border=vb))
+    latex_avgBestOfRunFitness = printer.table_color_map(text, 0.5, 0.75, 1.0, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("AVG TOTAL TESTS")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_totalTests, layered_headline=True))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_totalTests, layered_headline=True, vertical_border=vb))
     latex_avgTotalTests = printer.table_color_map(text, 0.0, 1000.0, 2000.0, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("AVG RUNTIME")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtime, layered_headline=True))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtime, layered_headline=True, vertical_border=vb))
     latex_avgRuntime = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("AVG RUNTIME (SUCCESSFUL)")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtimeOnlySuccessful, layered_headline=True))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtimeOnlySuccessful, layered_headline=True, vertical_border=vb))
     latex_avgRuntimeOnlySuccessful = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("AVG RUNTIME PER PROGRAM")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtimePerProgram, layered_headline=True))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtimePerProgram, layered_headline=True, vertical_border=vb))
     latex_avgRuntimePerProgram = printer.table_color_map(text, 0.01, 1.0, 2.0, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("AVG GENERATION")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_generation, layered_headline=True))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_generation, layered_headline=True, vertical_border=vb))
     latex_avgGeneration = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("AVG GENERATION (SUCCESSFUL)")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_generationSuccessful, layered_headline=True))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_generationSuccessful, layered_headline=True, vertical_border=vb))
     latex_avgGenerationSuccessful = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("AVG SIZES")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_size, layered_headline=True))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_size, layered_headline=True, vertical_border=vb))
     latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("MAX SOLVER TIME")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_maxSolverTime, layered_headline=True))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_maxSolverTime, layered_headline=True, vertical_border=vb))
     latex_maxSolverTimes = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("AVG SOLVER TIME")
     text = post(
-        printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_avgSolverTime, layered_headline=True))
+        printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_avgSolverTime, layered_headline=True, vertical_border=vb))
     latex_avgSolverTimes = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("AVG NUM SOLVER CALLS")
     text = post(
-        printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avgSolverTotalCalls, layered_headline=True))
+        printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avgSolverTotalCalls, layered_headline=True, vertical_border=vb))
     latex_avgSolverTotalCalls = printer.table_color_map(text, 1e3, 1e5, 5e6, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("NUM SOLVER CALLS > 0.5s")
     text = post(
-        printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_numSolverCallsOverXs, layered_headline=True))
+        printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_numSolverCallsOverXs, layered_headline=True, vertical_border=vb))
     latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 1e4, 1e6, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
@@ -464,7 +466,7 @@ def print_time_bounds_for_benchmarks(props):
 
 
 if __name__ == "__main__":
-    folders_exp3 = ["exp3"]
+    folders_exp3 = ["exp3", "exp3_fix1"]
     name_exp3 = "Experiments for parametrized CDGP (stop: number of iterations)"
     desc_exp3 = r"""
     Important information:
