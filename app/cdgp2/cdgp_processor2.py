@@ -9,6 +9,7 @@ import numpy
 
 
 def load_correct_props(folders, name = ""):
+    props_cdgpError = utils.load_properties_dirs(folders, exts=[".txt.cdgp.error"])
     props0 = utils.load_properties_dirs(folders, exts=[".txt.cdgp"])
     all_logs = utils.load_properties_dirs(folders, exts=[".txt.cdgp", ".txt"])
 
@@ -35,6 +36,7 @@ def load_correct_props(folders, name = ""):
     # Filtering props so only correct ones are left
     props = [p for p in props0 if is_correct(p) and not is_obsolete(p)]
     print("Loaded: {0} correct property files, {1} incorrect; All log files: {2}".format(len(props), len(props_errors), len(all_logs)))
+    print("Runs that ended with error: {0}".format(len(props_cdgpError)))
     return props
 
 
@@ -303,7 +305,7 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     props = load_correct_props(folders, name=title)
 
     # Uncomment this to print names of files with results of a certain configuration
-    print("(** {0} **) props_meeting the property:".format(title[:15]))
+    print("\n(** {0} **) props_meeting the property:".format(title[:15]))
     for p in props:
         if float(p["cdgp.solverTimeMaxSec"]) >= 2.0:
             print(p["thisFileName"] + ", " + p["cdgp.solverTimeMaxSec"])
@@ -466,7 +468,7 @@ def print_time_bounds_for_benchmarks(props):
 
 
 if __name__ == "__main__":
-    folders_exp3 = ["exp3", "exp3_fix1"]
+    folders_exp3 = ["exp3", "exp3_fix1", "exp3_fix2", "exp3_fix3"]
     name_exp3 = "Experiments for parametrized CDGP (stop: number of iterations)"
     desc_exp3 = r"""
     Important information:
