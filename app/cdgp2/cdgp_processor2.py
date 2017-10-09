@@ -173,7 +173,7 @@ def get_stats_maxSolverTime(props):
         timesMap = p["cdgp.solverAllTimesCountMap"]
         parts = timesMap.split(", ")[-1].split(",")
         times.append(float(parts[0].replace("(", "")))
-    return max(times)
+    return "%0.3f" % max(times)
 def get_stats_avgSolverTime(props):
     if len(props) == 0:
         return "-"
@@ -396,7 +396,7 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     print("AVG SOLVER TIME")
     text = post(
         printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_avgSolverTime, layered_headline=True, vertical_border=vb))
-    latex_avgSolverTimes = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
+    latex_avgSolverTimes = printer.table_color_map(text, 0.0, 0.015, 0.03, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
     print("AVG NUM SOLVER CALLS")
@@ -424,7 +424,7 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
         ("Approximate average runtime per program [s]", latex_avgRuntimePerProgram, reporting.color_scheme_brown),
         ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow),
         ("Max solver time per query [s]", latex_maxSolverTimes, reporting.color_scheme_violet),
-        ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_violet),
+        ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_brown),
         ("Avg number of solver calls", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
         ("Number of solver calls $>$ 0.5s", latex_numSolverCallsOverXs, reporting.color_scheme_blue),
     ]
@@ -488,7 +488,7 @@ if __name__ == "__main__":
 
 
     # -------- Creating nice LaTeX report of the above results --------
-    report = reporting.ReportPDF(geometry_params = "[paperwidth=45cm, paperheight=40cm, margin=0.3cm]")
+    report = reporting.ReportPDF(geometry_params = "[paperwidth=50cm, paperheight=40cm, margin=0.3cm]")
     sects = [
         create_section_with_results(name_exp3, desc_exp3, folders_exp3, numRuns=10),
     ]
