@@ -324,7 +324,7 @@ def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=N
 
     series = []
     if series_dim is None: # no dimensions
-        series.append(("All", compute_series(getter_values)))
+        series.append(("All" + "  (total: {0})".format(len(props)), compute_series(getter_values)))
     else:
         for config in series_dim:
             print("Processing Config: " + str(config))
