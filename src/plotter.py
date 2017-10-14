@@ -48,7 +48,7 @@ def plot_single_run(prop, keys, legend=None, title=None, ylabel='Value'):
 
     X axis: generation no.
     Y axis: data series for each key.
-
+   
     TODO: this is work in progress.
     """
     if title is None:
@@ -124,8 +124,13 @@ def plot_fitness_single_run(prop, keys, legend = None, title = None):
 
 
 
-def plot_fitness_progression_on_benchmarks(props, dim_benchmarks, dim_variants, key_avgFits="result.stats.avgFitness", key_maxFits=None, plot_max=True, unify_xaxis=True, unify_xlim=None, plot_individual_runs=False, key_lastGen="result.lastGeneration", markevery=2, errorevry=2, savepath=None):
-    """For each benchmark creates a series of subplots for each configuration of the experiment. On subplots plotted are changes of fitness through time. If plot_individual_runs is set to True, each evolution run will be plotted as a distinct line.
+def plot_fitness_progression_on_benchmarks(props, dim_benchmarks, dim_variants,
+        key_avgFits="result.stats.avgFitness", key_maxFits=None, plot_max=True, unify_xaxis=True,
+        unify_xlim=None, plot_individual_runs=False, key_lastGen="result.lastGeneration",
+        markevery=2, errorevry=2, savepath=None):
+    """For each benchmark creates a series of subplots for each configuration of the experiment.
+    On subplots plotted are changes of fitness through time. If plot_individual_runs is set to
+    True, each evolution run will be plotted as a distinct line.
     """
     assert type(props) == list
     assert isinstance(dim_benchmarks, dims.Dim)
@@ -238,7 +243,6 @@ def _plot_fitness_progression_on_benchmarks_subplot(fig, axes, i, j, props, benc
 
 
 
-
 def compare_fitness_on_benchmarks(props, dim_benchmarks, dim_variants, key_fit="result.best.eval", print_quantities=False, use_latex=False, savepath=None):
     """For each benchmark creates a box-and-wshiskers plot on which boxes are drawn for each configuration of the experiment."""
     assert isinstance(dim_benchmarks, dims.Dim)
@@ -261,7 +265,93 @@ def compare_fitness_on_benchmarks(props, dim_benchmarks, dim_variants, key_fit="
 
 
 
-def _compare_fitness_on_benchmarks_subplot(fig, axes, i, benchmark, props, dim_variants, key_fit, print_quantities=False, use_latex=False):
+
+
+def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=None, savepath=None, xlabel=None, xticks=None,
+                                 title=None, show_plot=1):
+    """Plots percent of solutions meeting the predicate. Percents are on the Y axis. On the X axis are
+    values of the certain attribute on which progression is made (e.g. time to solve).
+    
+    As 100% treated is the total number of elements in props.
+    
+    :param props: (list[dict[str, str]]) Dictionaries to be analyzed.
+    :param getter: (lambda) Function used to obtain from dict a property plotted on the X axis.
+    :param predicate: (lambda) Predicate used to count number of dicts which should be counted to the ratio.
+     Predicate takes two parameters: A, B, where A is always value of a property assigned to a dict, and
+     B is value of the same property iterated by plotter.
+     
+     Assume we have d={"atr1":12}, and we are checking atr1 values from 0 to 100 with step 25. In the first
+     step A=12, B=0, and predicate (assume simple <=) checks, if A<=B, which translates in this case to
+     12 <= 0. Predicate is not met, so dict does not count for this point. Next is B=25, and this time
+     dict will be taken into the ratio.
+    :param series_dim: (Dim) a dimension used to generate series.
+    """
+    fig = plt.figure(figsize=(15, 8))
+    plt.subplot()
+    plt.margins(0.01)  # Pad margins so that markers don't get clipped by the axes
+    ax1 = fig.add_subplot(111)
+    ax1.set_ylabel('Ratio')
+    if xlabel is not None:
+        # xlabel = "X"
+        ax1.set_xlabel(xlabel)
+    if title is not None:
+        ax1.set_title(title)
+    ax1.grid('on')
+    if xticks is not None:
+        ax1.set_xticks(xticks)
+    else:
+        ax1.set_xticks(xs)
+    ax1.set_yticks(np.arange(0.0, 1.01, 0.1))
+
+    getter_values = [getter(p) for p in props]
+    if xs is None:
+        N = 10  # number of points per plot line
+        # compute range based on values present in the dicts
+        r = (min(getter_values), max(getter_values))
+        xs = np.linspace(r[0], r[1], N)
+    print("xs: " + str(xs))
+
+    def compute_series(getter_values):
+        ys = []
+        for x in xs:
+            count = 0
+            for value in getter_values:
+                if predicate(value, x):  # e.g. peform check on the values
+                    count += 1
+            ys.append(float(count) / len(getter_values))
+        return xs, ys
+
+
+    series = []
+    if series_dim is None: # no dimensions
+        series.append(("All", compute_series(getter_values)))
+    else:
+        for config in series_dim:
+            print("Processing Config: " + str(config))
+            f_props = config.filter_props(props)
+            if len(f_props) > 0:
+                gv = [getter(p) for p in f_props]
+                data = compute_series(gv)
+                series.append((config.get_caption() + "  (total: {0})".format(len(f_props)), data))
+
+
+    for s in series:
+        name, data = s
+        ax1.plot(data[0], data[1], ".-", label=name)  # label=label
+
+    lgd = ax1.legend(loc='lower right', bbox_transform=plt.gcf().transFigure)
+    if savepath is not None:
+        print("Saving figure: " + savepath)
+        fig.savefig(savepath, bbox_extra_artists=(lgd,), bbox_inches='tight')
+    if show_plot:
+        plt.show()
+
+
+
+
+
+def _compare_fitness_on_benchmarks_subplot(fig, axes, i, benchmark, props, dim_variants, key_fit,
+        print_quantities=False, use_latex=False):
     """Draws a subplot containing box-and-wshiskers plot for all variants on a single benchmark."""
     assert isinstance(benchmark, dims.Config) and len(benchmark) == 1 # only one filter function for benchmark.
     all_data = []
