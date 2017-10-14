@@ -179,6 +179,9 @@ class Config(object):
         n_self = "_".join([x[0] for x in self.filters])
         return n_self < n_other
 
+    def __str__(self):
+        return "Config({0})".format(self.get_caption())
+
     def head(self):
         """Returns the first filter defined in this config. Convenience function."""
         return self.filters[0]
