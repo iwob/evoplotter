@@ -1,8 +1,9 @@
 from src import utils
+from src import plotter
 from src import printer
 from src import reporting
 from src.dims import *
-import numpy
+import numpy as np
 
 
 # This processor is to be used for exp3 onward.
@@ -67,15 +68,15 @@ def p_LexicaseSteadyState(p):
 def p_testsRatioSel(p):
     if p["method"] == "CDGP":
         return p["CDGPtestsRatio"]
-    elif p["method"] == "CDGP":
+    elif p["method"] == "GPR":
         return p["GPRtestsRatio"]
     else:
         raise Exception("Unknown method!")
 def p_testsRatio(value):
     return lambda p, value=value: p_testsRatioSel(p) == value
-def p_method0(p):
+def p_method_cdgp(p):
     return p["method"] == "CDGP"
-def p_method2(p):
+def p_method_gpr(p):
     return p["method"] == "GPR"
 def p_Generational(p):
     return p["searchAlgorithm"] == "Lexicase" or  p["searchAlgorithm"] == "GP"
@@ -105,16 +106,23 @@ benchmarks_simple_names = {d1 + "ArithmeticSeries3.sl": "IsSeries3",
                            d2 + "fg_array_sum_3_15.sl": "Sum3",
                            d2 + "fg_array_sum_4_15.sl": "Sum4",
                            d2 + "fg_max2.sl": "Max2",
-                           d2 + "fg_max4.sl": "Max4"}
-
+                           d2 + "fg_max4.sl": "Max4",
+                           "benchmarks/NIA/rsconf.sl": "rsconf"}
 
 dim_method = Dim([
-    Config("CDGP", p_method0, method="CDGP"),
+    Config("CDGP", p_method_cdgp, method="CDGP"),
+    Config("GPR", p_method_gpr, method="GPR")
+])
+dim_methodCDGP = Dim([
+    Config("CDGP", p_method_cdgp, method="CDGP"),
     #Config("GPR", p_method2, method="GPR")
 ])
+dim_methodGPR = Dim([
+    Config("GPR", p_method_gpr, method="GPR")
+])
 dim_sa = Dim([
-    Config("GP", p_GP, searchAlgorithm="GP"),
-    Config("GPSS", p_GPSteadyState, searchAlgorithm="GPSteadyState"),
+    Config("Tour", p_GP, searchAlgorithm="GP"),
+    Config("TourSS", p_GPSteadyState, searchAlgorithm="GPSteadyState"),
     Config("Lex", p_Lexicase, searchAlgorithm="Lexicase"),
     Config("LexSS", p_LexicaseSteadyState, searchAlgorithm="LexicaseSteadyState")
 ])
@@ -122,6 +130,10 @@ dim_testsRatio = Dim([
     Config("0.0", p_testsRatio("0.0"), testsRatio="0.0"),
     Config("0.25", p_testsRatio("0.25"), testsRatio="0.25"),
     Config("0.5", p_testsRatio("0.5"), testsRatio="0.5"),
+    Config("0.75", p_testsRatio("0.75"), testsRatio="0.75"),
+    Config("1.0", p_testsRatio("1.0"), testsRatio="1.0")
+])
+dim_testsRatioGPR = Dim([
     Config("0.75", p_testsRatio("0.75"), testsRatio="0.75"),
     Config("1.0", p_testsRatio("1.0"), testsRatio="1.0")
 ])
@@ -164,7 +176,7 @@ def get_stats_size(props):
     if len(vals) == 0:
         return "-"#-1.0, -1.0
     else:
-        return "%0.1f" % numpy.mean(vals)#, numpy.std(vals)
+        return "%0.1f" % np.mean(vals)#, np.std(vals)
 def get_stats_maxSolverTime(props):
     if len(props) == 0:
         return "-"
@@ -197,7 +209,7 @@ def get_avgSolverTotalCalls(props):
     if len(props) == 0:
         return "-"
     vals = [float(p["cdgp.solverTotalCalls"]) for p in props]
-    return "%d" % round(numpy.mean(vals))
+    return "%d" % round(np.mean(vals))
 def get_numSolverCallsOverXs(props):
     if len(props) == 0:
         return "-"
@@ -220,7 +232,7 @@ def get_avg_totalTests(props):
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
     else:
-        x = numpy.mean(vals)
+        x = np.mean(vals)
         if x < 1e-5:
             x = 0.0
         return "%0.1f" % x
@@ -235,12 +247,12 @@ def get_avg_fitness(props):
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
     else:
-        return "%0.2f" % numpy.mean(vals)  # , numpy.std(vals)
+        return "%0.2f" % np.mean(vals)  # , np.std(vals)
 def get_avg_runtime_helper(vals):
     if len(vals) == 0:
         return "n/a"  # -1.0, -1.0
     else:
-        return "%0.1f" % numpy.mean(vals)  # , numpy.std(vals)
+        return "%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_runtimeOnlySuccessful(props):
     if len(props) == 0:
         return "-"
@@ -257,7 +269,7 @@ def get_avg_generation(props):
     if len(props) == 0:
         return "-"
     vals = [float(p["result.best.generation"]) for p in props]
-    return "%0.1f" % numpy.mean(vals)  # , numpy.std(vals)
+    return "%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_generationSuccessful(props):
     if len(props) == 0:
         return "-"
@@ -266,7 +278,7 @@ def get_avg_generationSuccessful(props):
         if len(vals) == 0:
             return "n/a"  # -1.0, -1.0
         else:
-            return "%0.1f" % numpy.mean(vals)  # , numpy.std(vals)
+            return "%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_runtimePerProgram(props):
     if len(props) == 0:
         return "-"  # -1.0, -1.0
@@ -289,7 +301,25 @@ def get_sum_solverRestarts(props):
     if len(vals) == 0:
         return "0"
     else:
-        return str(numpy.sum(vals))
+        return str(np.sum(vals))
+
+def print_solved_in_time(props, upper_time):
+    # totalTimeSystem is in miliseconds
+    solved = 0
+    solvedRuns = 0
+    num = 0
+    for p in props:
+        if p["result.best.isOptimal"] == "false":
+            continue
+        num += 1
+        if int(p["result.totalTimeSystem"]) <= upper_time:
+            solved += 1
+
+    for p in props:
+        if int(p["result.totalTimeSystem"]) <= upper_time:
+            solvedRuns += 1
+    print("\nRuns which ended under {0} s:  {1} / {2}  ({3} %)".format(upper_time / 1000.0, solvedRuns, len(props), solvedRuns / len(props)))
+    print("Optimal solutions found under {0} s:  {1} / {2}  ({3} %)\n".format(upper_time / 1000.0, solved, num, solved / num))
 
 
 def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simple_names=True, print_status_matrix=True):
@@ -304,11 +334,34 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
 
     props = load_correct_props(folders, name=title)
 
+    print_solved_in_time(props, 12 * 3600 * 1000)
+    print_solved_in_time(props, 6 * 3600 * 1000)
+    print_solved_in_time(props, 3 * 3600 * 1000)
+    print_solved_in_time(props, 1 * 3600 * 1000)
+    print_solved_in_time(props, 0.5 * 3600 * 1000)
+    print_solved_in_time(props, 0.25 * 3600 * 1000)
+    print_solved_in_time(props, 0.125 * 3600 * 1000)
+    print_solved_in_time(props, 600 * 1000)
+
+    # Plot chart of number of found solutions in time
+    success_props = [p for p in props if p["result.best.isOptimal"] == "true"]
+    getter = lambda p: float(p["result.totalTimeSystem"]) / (3600 * 1000)  # take hours as a unit
+    predicate = lambda v, v_xaxis: v <= v_xaxis
+    xs = np.arange(0.0, 24.0+1e-9, 0.5) # a point every 30 minutes
+    xticks = np.arange(0.0, 24.0+1e-9, 1.0) # a tick every 60 minutes
+    plotter.plot_ratio_meeting_predicate(success_props, getter, predicate,
+                                         xs=xs, xticks=xticks,
+                                         series_dim=dim_method * dim_sa,
+                                         savepath="figures/ratioTotalTimes.pdf",
+                                         title="Ratio of found optimal solutions",
+                                         xlabel="Runtime [hours]")
+
+
     # Uncomment this to print names of files with results of a certain configuration
-    print("\n(** {0} **) props_meeting the property:".format(title[:15]))
-    for p in props:
-        if float(p["cdgp.solverTimeMaxSec"]) >= 2.0:
-            print(p["thisFileName"] + ", " + p["cdgp.solverTimeMaxSec"])
+    # print("\n(** {0} **) props_meeting the property:".format(title[:15]))
+    # for p in props:
+    #     if float(p["cdgp.solverTimeMaxSec"]) >= 2.0:
+    #         print(p["thisFileName"] + ", " + p["cdgp.solverTimeMaxSec"])
 
 
     def post(s):
@@ -317,7 +370,7 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
 
     dim_benchmarks = Dim.from_dict(props, "benchmark")
     if print_status_matrix:
-        d = dim_benchmarks * dim_method * dim_testsRatio * dim_sa
+        d = dim_benchmarks * dim_methodCDGP * dim_testsRatio * dim_sa
         matrix = produce_status_matrix(d, props)
         print("\n****** Status matrix:")
         print(matrix + "\n")
@@ -328,7 +381,7 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
         dim_benchmarks.sort()
 
     # -------------- Dimensions -----------------
-    dim_cols = dim_method * dim_ea_type * dim_sel * dim_testsRatio
+    dim_cols = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio + dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR
     # dim_cols = dim_method * dim_sa
     # -------------------------------------------
 
@@ -451,8 +504,8 @@ def print_time_bounds_for_benchmarks(props):
             suggestion = 1800
         else:
             vals = [p for p in vals if p > 0.0]
-            avg = int(numpy.mean(vals))
-            result = int(numpy.min(vals)), avg, int(numpy.max(vals))
+            avg = int(np.mean(vals))
+            result = int(np.min(vals)), avg, int(np.max(vals))
             result = "{0}, {1}, {2}".format(str(result[0]), str(result[1]), str(result[2]))
             suggestion = avg if avg < 1800 else 1800
         print(conf.get_caption() + ": " + str(suggestion) + " \t\t[{0}]".format(result))
@@ -468,7 +521,7 @@ def print_time_bounds_for_benchmarks(props):
 
 
 if __name__ == "__main__":
-    folders_exp3 = ["exp3", "exp3_fix1", "exp3_fix2", "exp3_fix3"]
+    folders_exp3 = ["exp3", "exp3_fix1", "exp3_fix2", "exp3_fix3", 'rsconf', "exp3gpr"]
     name_exp3 = "Experiments for parametrized CDGP (stop: number of iterations)"
     desc_exp3 = r"""
     Important information:
@@ -488,7 +541,7 @@ if __name__ == "__main__":
 
 
     # -------- Creating nice LaTeX report of the above results --------
-    report = reporting.ReportPDF(geometry_params = "[paperwidth=50cm, paperheight=40cm, margin=0.3cm]")
+    report = reporting.ReportPDF(geometry_params = "[paperwidth=70cm, paperheight=40cm, margin=0.3cm]")
     sects = [
         create_section_with_results(name_exp3, desc_exp3, folders_exp3, numRuns=10),
     ]
