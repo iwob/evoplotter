@@ -355,7 +355,12 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
                                          savepath="figures/ratioTotalTimes.pdf",
                                          title="Ratio of found optimal solutions",
                                          xlabel="Runtime [hours]")
-
+    plotter.plot_ratio_meeting_predicate(success_props, getter, predicate,
+                                         xs=xs, xticks=xticks,
+                                         series_dim=None,
+                                         savepath="figures/ratioAllTotalTimes.pdf",
+                                         title="Ratio of found optimal solutions",
+                                         xlabel="Runtime [hours]")
 
     # Uncomment this to print names of files with results of a certain configuration
     # print("\n(** {0} **) props_meeting the property:".format(title[:15]))
