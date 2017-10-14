@@ -353,14 +353,33 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
                                          xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=dim_method * dim_sa,
                                          savepath="figures/ratioTotalTimes.pdf",
-                                         title="Ratio of found optimal solutions",
+                                         title="Ratio of found correct solutions",
                                          xlabel="Runtime [hours]")
     plotter.plot_ratio_meeting_predicate(success_props, getter, predicate,
                                          xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=None,
                                          savepath="figures/ratioAllTotalTimes.pdf",
-                                         title="Ratio of found optimal solutions",
+                                         title="Ratio of found correct solutions",
                                          xlabel="Runtime [hours]")
+    plotter.plot_ratio_meeting_predicate(props, getter, predicate,
+                                         xs=xs, xticks=xticks, show_plot=0,
+                                         series_dim=dim_method * dim_sa,
+                                         savepath="figures/ratioEndedRuns.pdf",
+                                         title="Ratio of ended runs",
+                                         xlabel="Runtime [hours]")
+    def get_total_evaluated(p):
+        if p["searchAlgorithm"].endswith("SteadyState"):
+            return int(p["result.best.generation"])
+        else:
+            return int(p["result.best.generation"]) * int(p["populationSize"])
+    xticks = np.arange(0.0, 50000.01, 5000)
+    xs = np.arange(0.0, 50000.01, 1250)
+    plotter.plot_ratio_meeting_predicate(success_props, get_total_evaluated, predicate,
+                                         xs=xs, xticks=xticks, show_plot=0,
+                                         series_dim=dim_method * dim_sa,
+                                         savepath="figures/ratioEvaluatedSolutions.pdf",
+                                         title="Ratio of found correct solutions",
+                                         xlabel="Number of evaluated solutions")
 
     # Uncomment this to print names of files with results of a certain configuration
     # print("\n(** {0} **) props_meeting the property:".format(title[:15]))
