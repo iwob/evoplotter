@@ -269,13 +269,14 @@ def compare_fitness_on_benchmarks(props, dim_benchmarks, dim_variants, key_fit="
 
 def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=None, savepath=None, xlabel=None, xticks=None,
                                  title=None, show_plot=1):
-    """Plots percent of solutions meeting the predicate. Percents are on the Y axis. On the X axis are
-    values of the certain attribute on which progression is made (e.g. time to solve).
+    """Plots a ratio of solutions meeting the predicate. Ratios are presented on the Y axis. On the X axis
+    presented are values of a certain attribute on which progression is made (e.g. time to solve). Those
+    values (obtained by getter) are then compared with the dict's value (using the predicate).
     
     As 100% treated is the total number of elements in props.
     
-    :param props: (list[dict[str, str]]) Dictionaries to be analyzed.
-    :param getter: (lambda) Function used to obtain from dict a property plotted on the X axis.
+    :param props: (list[dict[str, str]]) Dictionaries to be processed.
+    :param getter: (lambda) Function used to obtain from the dict a property plotted on the X axis.
     :param predicate: (lambda) Predicate used to count number of dicts which should be counted to the ratio.
      Predicate takes two parameters: A, B, where A is always value of a property assigned to a dict, and
      B is value of the same property iterated by plotter.
@@ -292,7 +293,6 @@ def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=N
     ax1 = fig.add_subplot(111)
     ax1.set_ylabel('Ratio')
     if xlabel is not None:
-        # xlabel = "X"
         ax1.set_xlabel(xlabel)
     if title is not None:
         ax1.set_title(title)
@@ -309,14 +309,13 @@ def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=N
         # compute range based on values present in the dicts
         r = (min(getter_values), max(getter_values))
         xs = np.linspace(r[0], r[1], N)
-    print("xs: " + str(xs))
 
     def compute_series(getter_values):
         ys = []
         for x in xs:
             count = 0
             for value in getter_values:
-                if predicate(value, x):  # e.g. peform check on the values
+                if predicate(value, x):
                     count += 1
             ys.append(float(count) / len(getter_values))
         return xs, ys
@@ -327,7 +326,6 @@ def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=N
         series.append(("All" + "  (total: {0})".format(len(props)), compute_series(getter_values)))
     else:
         for config in series_dim:
-            print("Processing Config: " + str(config))
             f_props = config.filter_props(props)
             if len(f_props) > 0:
                 gv = [getter(p) for p in f_props]
