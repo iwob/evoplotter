@@ -350,13 +350,13 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     xs = np.arange(0.0, 24.0+1e-9, 0.5) # a point every 30 minutes
     xticks = np.arange(0.0, 24.0+1e-9, 1.0) # a tick every 60 minutes
     plotter.plot_ratio_meeting_predicate(success_props, getter, predicate,
-                                         xs=xs, xticks=xticks,
+                                         xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=dim_method * dim_sa,
                                          savepath="figures/ratioTotalTimes.pdf",
                                          title="Ratio of found optimal solutions",
                                          xlabel="Runtime [hours]")
     plotter.plot_ratio_meeting_predicate(success_props, getter, predicate,
-                                         xs=xs, xticks=xticks,
+                                         xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=None,
                                          savepath="figures/ratioAllTotalTimes.pdf",
                                          title="Ratio of found optimal solutions",
