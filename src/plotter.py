@@ -287,7 +287,7 @@ def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=N
      dict will be taken into the ratio.
     :param series_dim: (Dim) a dimension used to generate series.
     """
-    fig = plt.figure(figsize=(15, 8))
+    fig = plt.figure(figsize=(12, 7))
     plt.subplot()
     plt.margins(0.01)  # Pad margins so that markers don't get clipped by the axes
     ax1 = fig.add_subplot(111)
@@ -297,10 +297,6 @@ def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=N
     if title is not None:
         ax1.set_title(title)
     ax1.grid('on')
-    if xticks is not None:
-        ax1.set_xticks(xticks)
-    else:
-        ax1.set_xticks(xs)
     ax1.set_yticks(np.arange(0.0, 1.01, 0.1))
 
     getter_values = [getter(p) for p in props]
@@ -309,6 +305,10 @@ def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=N
         # compute range based on values present in the dicts
         r = (min(getter_values), max(getter_values))
         xs = np.linspace(r[0], r[1], N)
+    if xticks is not None:
+        ax1.set_xticks(xticks)
+    else:
+        ax1.set_xticks(xs)
 
     def compute_series(getter_values):
         ys = []
