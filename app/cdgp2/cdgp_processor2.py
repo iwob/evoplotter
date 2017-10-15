@@ -78,6 +78,8 @@ def p_method_cdgp(p):
     return p["method"] == "CDGP"
 def p_method_gpr(p):
     return p["method"] == "GPR"
+def p_method_for(name):
+    return lambda p, name=name: p["method"] == name
 def p_Generational(p):
     return p["searchAlgorithm"] == "Lexicase" or  p["searchAlgorithm"] == "GP"
 def p_SteadyState(p):
@@ -110,15 +112,20 @@ benchmarks_simple_names = {d1 + "ArithmeticSeries3.sl": "IsSeries3",
                            "benchmarks/NIA/rsconf.sl": "rsconf"}
 
 dim_method = Dim([
-    Config("CDGP", p_method_cdgp, method="CDGP"),
-    Config("GPR", p_method_gpr, method="GPR")
+    Config("CDGP", p_method_for("CDGP"), method="CDGP"),
+    Config("GPR", p_method_for("GPR"), method="GPR")
 ])
 dim_methodCDGP = Dim([
-    Config("CDGP", p_method_cdgp, method="CDGP"),
-    #Config("GPR", p_method2, method="GPR")
+    Config("CDGP", p_method_for("CDGP"), method="CDGP")
 ])
 dim_methodGPR = Dim([
-    Config("GPR", p_method_gpr, method="GPR")
+    Config("GPR", p_method_for("GPR"), method="GPR")
+])
+dim_methodFormal = Dim([
+    Config("EUSOLVER", p_method_for("eusolver"), method="eusolver"),
+    Config("CVC4_head", p_method_for("cvc4_head"), method="cvc4_head"),
+    Config("CVC4_head_cegqi", p_method_for("cvc4_head_cegqi"), method="cvc4_head_cegqi"),
+    Config("CVC4_cegqi", p_method_for("cvc4_cegqi"), method="cvc4_cegqi"),
 ])
 dim_sa = Dim([
     Config("Tour", p_GP, searchAlgorithm="GP"),
@@ -405,7 +412,9 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
         dim_benchmarks.sort()
 
     # -------------- Dimensions -----------------
-    dim_cols = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio + dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR
+    dim_cols = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio +\
+               dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR + \
+               dim_methodFormal
     # dim_cols = dim_method * dim_sa
     # -------------------------------------------
 
