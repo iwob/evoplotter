@@ -192,7 +192,7 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
     # Going from the highest layer to the lowest.
     def produce_lines(dimens, layer_no):
         if len(dimens[0]) == 1 or layer_no == num_layers -1:
-            # Only a single row, use simplified routine.
+            # Only a single row, use a simplified routine.
             align = "c|" if vertical_border >= 1 else "c"
             chead = [r"\multicolumn{1}{" + align + "}{" + d.get_caption() + "}" for d in dimens]
             # if vertical_border >= 1:  # this is currently by | in tabular arg
@@ -213,7 +213,7 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
         buffer = []
         for i in range(len(top_filters_list)):
             f, foccurs = top_filters_list[i]
-            fname = f[0]  # name of the filter
+            fname = str(f[0])  # name of the filter
             align = "c"
             if vertical_border >= 1:
                 align += "|"
@@ -226,7 +226,11 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
         subconfigs_queue = []
         for conf in dimens:
             new_filters = conf.filters[1:]
-            subconfigs_queue.append(dims.Config(new_filters))
+            if len(new_filters) > 0:
+                subconfigs_queue.append(dims.Config(new_filters))
+            else:
+                # Add dummy config; multiline header needs to know that column's border needs to continue
+                subconfigs_queue.append(dims.Config("", lambda p: False))
 
         text += d_cols + d_cols.join(buffer) + d_rows
         text += produce_lines(dims.Dim(subconfigs_queue), layer_no + 1)
