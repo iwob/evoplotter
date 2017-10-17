@@ -374,7 +374,7 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 1e4, 1e6, "colorLow", "colorMedium", "colorHigh")
     # print(text + "\n\n")
 
-    section = reporting.BlockSection(title, [])
+    section = reporting.Section(title, [])
     subsects = [
         ("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
         ("Success rates", latex_successRates, reporting.color_scheme_green),
@@ -394,7 +394,7 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     bl_desc = reporting.BlockLatex(desc + "\n")
     section.add(bl_desc)
     for title, table, cs in subsects:
-        sub = reporting.BlockSubSection(title, [cs, reporting.BlockLatex(table + "\n")])
+        sub = reporting.Subsection(title, [cs, reporting.BlockLatex(table + "\n")])
         section.add(sub)
     section.add(reporting.BlockLatex(r"\vspace{1cm}" + "\n"))
     return section

@@ -10,19 +10,14 @@ import numpy as np
 
 
 def load_correct_props(folders, name = ""):
-    props_cdgpError = utils.load_properties_dirs(folders, exts=[".txt.cdgp.error"])
-    props0 = utils.load_properties_dirs(folders, exts=[".txt.cdgp"])
-    all_logs = utils.load_properties_dirs(folders, exts=[".txt.cdgp", ".txt"])
+    props_cdgpError = utils.load_properties_dirs(folders, exts=[".cdgp.error"])
+    props0 = utils.load_properties_dirs(folders, exts=[".cdgp", ".cvc4_head_cegqi", ".cvc4_cegqi", ".eusolver"])
+    all_logs = utils.load_properties_dirs(folders, exts=[".cdgp", ".txt", ".cvc4_head_cegqi", ".cvc4_cegqi", ".eusolver"])
 
-    print("\n****** Loading props: " + name)
+    print("\nLoading props: " + name)
 
     def is_correct(p):
-        return "status" in p and (p["status"] == "completed" or p["status"] == "initialized") and\
-               "result.best.eval" in p and "benchmark" in p
-
-    def is_obsolete(p):
-        return False #p["searchAlgorithm"].endswith("SteadyState") and\
-               #"info.steadyStateWithZeroInitialTests" not in p
+        return "status" in p and (p["status"] == "completed" or p["status"] == "initialized") and "benchmark" in p
 
     # Printing names of files which finished with error status or are incomplete.
     props_errors = [p for p in props0 if not is_correct(p)]
@@ -35,7 +30,7 @@ def load_correct_props(folders, name = ""):
             print("'thisFileName' not specified! Printing content instead: " + str(p))
 
     # Filtering props so only correct ones are left
-    props = [p for p in props0 if is_correct(p) and not is_obsolete(p)]
+    props = [p for p in props0 if is_correct(p)]
     print("Loaded: {0} correct property files, {1} incorrect; All log files: {2}".format(len(props), len(props_errors), len(all_logs)))
     print("Runs that ended with error: {0}".format(len(props_cdgpError)))
     return props
@@ -123,9 +118,7 @@ dim_methodGPR = Dim([
 ])
 dim_methodFormal = Dim([
     Config("EUSOLVER", p_method_for("eusolver"), method="eusolver"),
-    Config("CVC4_head", p_method_for("cvc4_head"), method="cvc4_head"),
-    Config("CVC4_head_cegqi", p_method_for("cvc4_head_cegqi"), method="cvc4_head_cegqi"),
-    Config("CVC4_cegqi", p_method_for("cvc4_cegqi"), method="cvc4_cegqi"),
+    Config("CVC4_cegqi", p_method_for("cvc4_head_cegqi"), method="cvc4_head_cegqi"),
 ])
 dim_sa = Dim([
     Config("Tour", p_GP, searchAlgorithm="GP"),
@@ -185,7 +178,7 @@ def get_stats_size(props):
     else:
         return "%0.1f" % np.mean(vals)#, np.std(vals)
 def get_stats_maxSolverTime(props):
-    if len(props) == 0:
+    if len(props) == 0 or "cdgp.solverAllTimesCountMap" not in props[0]:
         return "-"
     times = []
     for p in props:
@@ -194,7 +187,7 @@ def get_stats_maxSolverTime(props):
         times.append(float(parts[0].replace("(", "")))
     return "%0.3f" % max(times)
 def get_stats_avgSolverTime(props):
-    if len(props) == 0:
+    if len(props) == 0 or "cdgp.solverAllTimesCountMap" not in props[0]:
         return "-"
     sum = 0.0
     sumWeights = 0.0
@@ -213,12 +206,12 @@ def get_stats_avgSolverTime(props):
     else:
         return "%0.3f" % (sum / sumWeights)
 def get_avgSolverTotalCalls(props):
-    if len(props) == 0:
+    if len(props) == 0 or "cdgp.solverTotalCalls" not in props[0]:
         return "-"
     vals = [float(p["cdgp.solverTotalCalls"]) for p in props]
     return "%d" % round(np.mean(vals))
 def get_numSolverCallsOverXs(props):
-    if len(props) == 0:
+    if len(props) == 0 or "cdgp.solverAllTimesCountMap" not in props[0]:
         return "-"
     TRESHOLD = 0.5
     sum = 0
@@ -235,7 +228,7 @@ def get_numSolverCallsOverXs(props):
                 sum += weight
     return sum
 def get_avg_totalTests(props):
-    vals = [float(p["cdgp.totalTests"]) for p in props]
+    vals = [float(p["cdgp.totalTests"]) for p in props if p_method_cdgp(p) or p_method_gpr(p)]
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
     else:
@@ -249,7 +242,7 @@ def get_avg_fitness(props):
         if "result.best.passedTestsRatio" in p:
             ratio = float(p["result.best.passedTestsRatio"])
             vals.append(ratio)
-        else:
+        elif p["method"] == "CDGP" or p["method"] == "GPR":
             raise Exception("Information about fitness is unavailable!")
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
@@ -275,19 +268,23 @@ def get_avg_runtime(props):
 def get_avg_generation(props):
     if len(props) == 0:
         return "-"
-    vals = [float(p["result.best.generation"]) for p in props]
-    return "%0.1f" % np.mean(vals)  # , np.std(vals)
+    vals = [float(p["result.best.generation"]) for p in props if p_method_cdgp(p) or p_method_gpr(p)]
+    if len(vals) == 0:
+        return "-"
+    else:
+        return "%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_generationSuccessful(props):
     if len(props) == 0:
         return "-"
     else:
-        vals = [float(p["result.best.generation"]) for p in props if is_optimal_solution(p)]
+        vals = [float(p["result.best.generation"]) for p in props if is_optimal_solution(p) and
+                (p_method_cdgp(p) or p_method_gpr(p))]
         if len(vals) == 0:
             return "n/a"  # -1.0, -1.0
         else:
             return "%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_runtimePerProgram(props):
-    if len(props) == 0:
+    if len(props) == 0 or not (p_method_cdgp(props[0]) or p_method_gpr(props[0])):
         return "-"  # -1.0, -1.0
     avgGen = float(get_avg_generation(props))  # avg number of generations in all runs
     avgRuntime = float(get_avg_runtime(props))  # avg runtime of all runs
@@ -329,18 +326,7 @@ def print_solved_in_time(props, upper_time):
     print("Optimal solutions found under {0} s:  {1} / {2}  ({3} %)\n".format(upper_time / 1000.0, solved, num, solved / num))
 
 
-def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simple_names=True, print_status_matrix=True):
-    assert isinstance(title, str)
-    assert isinstance(desc, str)
-    assert isinstance(folders, list)
-    print("\n*** Processing: {0}***".format(title))
-    for f in folders:
-        print(f)
-    if folders is None or len(folders) == 0:
-        return None
-
-    props = load_correct_props(folders, name=title)
-
+def plot_figures(props):
     print_solved_in_time(props, 12 * 3600 * 1000)
     print_solved_in_time(props, 6 * 3600 * 1000)
     print_solved_in_time(props, 3 * 3600 * 1000)
@@ -375,7 +361,9 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
                                          title="Ratio of ended runs",
                                          xlabel="Runtime [hours]")
     def get_total_evaluated(p):
-        if p["searchAlgorithm"].endswith("SteadyState"):
+        if "SteadyState" not in p:
+            return None
+        elif p["searchAlgorithm"].endswith("SteadyState"):
             return int(p["result.best.generation"])
         else:
             return int(p["result.best.generation"]) * int(p["populationSize"])
@@ -384,9 +372,37 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     plotter.plot_ratio_meeting_predicate(success_props, get_total_evaluated, predicate,
                                          xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=dim_method * dim_sa,
-                                         savepath="figures/ratioEvaluatedSolutions.pdf",
-                                         title="Ratio of found correct solutions",
+                                         savepath="figures/ratioEvaluated_correctVsAllCorrect.pdf",
+                                         title="Ratio of found correct solutions out of all found correct solutions",
                                          xlabel="Number of evaluated solutions")
+    cond = lambda p: p["result.best.isOptimal"] == "true"
+    plotter.plot_ratio_meeting_predicate(props, get_total_evaluated, predicate,
+                                         condition=cond,
+                                         xs=xs, xticks=xticks, show_plot=0,
+                                         series_dim=dim_method * dim_sa,
+                                         savepath="figures/ratioEvaluated_correctVsAllRuns.pdf",
+                                         title="Ratio of runs which ended with correct solution out of all runs",
+                                         xlabel="Number of evaluated solutions")
+
+
+
+
+def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simple_names=True, print_status_matrix=True):
+    assert isinstance(title, str)
+    assert isinstance(desc, str)
+    assert isinstance(folders, list)
+    print("\n*** Processing: {0}***".format(title))
+    for f in folders:
+        print(f)
+    if folders is None or len(folders) == 0:
+        return None
+
+    props = load_correct_props(folders, name=title)
+
+
+    # Create figures in the appropriate directory
+    plot_figures(props)
+
 
     # Uncomment this to print names of files with results of a certain configuration
     # print("\n(** {0} **) props_meeting the property:".format(title[:15]))
@@ -411,6 +427,9 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
         dim_benchmarks = Dim(configs)
         dim_benchmarks.sort()
 
+
+    # --------------------- Shared stats ---------------------
+
     # -------------- Dimensions -----------------
     dim_cols = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio +\
                dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR + \
@@ -423,102 +442,105 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     print("STATUS")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_num_computed, layered_headline=True, vertical_border=vb))
     latex_status = printer.table_color_map(text, 0.0, numRuns/2, numRuns, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
 
     print("SUCCESS RATES")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, fun_successRates, layered_headline=True, vertical_border=vb))
     latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
-
-    # print("SUCCESS RATES (FULL INFO)")
-    # text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, fun_successRates_full, layered_headline=True, vertical_border=vb))
-    # print(text + "\n\n")
-
-    print("AVG BEST-OF-RUN FITNESS")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_fitness, layered_headline=True, vertical_border=vb))
-    latex_avgBestOfRunFitness = printer.table_color_map(text, 0.5, 0.75, 1.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
-
-    print("AVG TOTAL TESTS")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_totalTests, layered_headline=True, vertical_border=vb))
-    latex_avgTotalTests = printer.table_color_map(text, 0.0, 1000.0, 2000.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
 
     print("AVG RUNTIME")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtime, layered_headline=True, vertical_border=vb))
     latex_avgRuntime = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
 
     print("AVG RUNTIME (SUCCESSFUL)")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtimeOnlySuccessful, layered_headline=True, vertical_border=vb))
-    latex_avgRuntimeOnlySuccessful = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
+    latex_avgRuntimeOnlySuccessful = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium",
+                                                             "colorHigh")
 
-    print("AVG RUNTIME PER PROGRAM")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtimePerProgram, layered_headline=True, vertical_border=vb))
-    latex_avgRuntimePerProgram = printer.table_color_map(text, 0.01, 1.0, 2.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
-
-    print("AVG GENERATION")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_generation, layered_headline=True, vertical_border=vb))
-    latex_avgGeneration = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
-
-    print("AVG GENERATION (SUCCESSFUL)")
-    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_generationSuccessful, layered_headline=True, vertical_border=vb))
-    latex_avgGenerationSuccessful = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
+    # print("SUCCESS RATES (FULL INFO)")
+    # text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, fun_successRates_full, layered_headline=True, vertical_border=vb))
 
     print("AVG SIZES")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_size, layered_headline=True, vertical_border=vb))
     latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
+
+
+
+    # --------------------- CDGP stats ---------------------
+
+    # -------------- Dimensions -----------------
+    dim_cols = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio + \
+               dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR
+    # -------------------------------------------
+    print("AVG BEST-OF-RUN FITNESS")
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_fitness, layered_headline=True, vertical_border=vb))
+    latex_avgBestOfRunFitness = printer.table_color_map(text, 0.5, 0.75, 1.0, "colorLow", "colorMedium", "colorHigh")
+
+    print("AVG TOTAL TESTS")
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_totalTests, layered_headline=True, vertical_border=vb))
+    latex_avgTotalTests = printer.table_color_map(text, 0.0, 1000.0, 2000.0, "colorLow", "colorMedium", "colorHigh")
+
+    print("AVG RUNTIME PER PROGRAM")
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_runtimePerProgram, layered_headline=True, vertical_border=vb))
+    latex_avgRuntimePerProgram = printer.table_color_map(text, 0.01, 1.0, 2.0, "colorLow", "colorMedium", "colorHigh")
+
+    print("AVG GENERATION")
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_generation, layered_headline=True, vertical_border=vb))
+    latex_avgGeneration = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
+
+    print("AVG GENERATION (SUCCESSFUL)")
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avg_generationSuccessful, layered_headline=True, vertical_border=vb))
+    latex_avgGenerationSuccessful = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
 
     print("MAX SOLVER TIME")
     text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_maxSolverTime, layered_headline=True, vertical_border=vb))
     latex_maxSolverTimes = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
 
     print("AVG SOLVER TIME")
-    text = post(
-        printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_avgSolverTime, layered_headline=True, vertical_border=vb))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_stats_avgSolverTime, layered_headline=True, vertical_border=vb))
     latex_avgSolverTimes = printer.table_color_map(text, 0.0, 0.015, 0.03, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
 
     print("AVG NUM SOLVER CALLS")
-    text = post(
-        printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avgSolverTotalCalls, layered_headline=True, vertical_border=vb))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_avgSolverTotalCalls, layered_headline=True, vertical_border=vb))
     latex_avgSolverTotalCalls = printer.table_color_map(text, 1e3, 1e5, 5e6, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
 
     print("NUM SOLVER CALLS > 0.5s")
-    text = post(
-        printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_numSolverCallsOverXs, layered_headline=True, vertical_border=vb))
+    text = post(printer.latex_table(props, dim_benchmarks.sort(), dim_cols, get_numSolverCallsOverXs, layered_headline=True, vertical_border=vb))
     latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 1e4, 1e6, "colorLow", "colorMedium", "colorHigh")
-    # print(text + "\n\n")
 
-    section = reporting.BlockSection(title, [])
-    subsects = [
+
+
+
+    subsects_main = [
         ("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
         ("Success rates", latex_successRates, reporting.color_scheme_green),
-        ("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
-        ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
         ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
         ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
+        ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow),
+    ]
+    subsects_cdgp = [
+        ("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
+        ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
         ("Average generation (all)", latex_avgGeneration, reporting.color_scheme_teal),
         ("Average generation (only successful)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
         ("Approximate average runtime per program [s]", latex_avgRuntimePerProgram, reporting.color_scheme_brown),
-        ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow),
         ("Max solver time per query [s]", latex_maxSolverTimes, reporting.color_scheme_violet),
         ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_brown),
         ("Avg number of solver calls", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
         ("Number of solver calls $>$ 0.5s", latex_numSolverCallsOverXs, reporting.color_scheme_blue),
     ]
-    bl_desc = reporting.BlockLatex(desc + "\n")
-    section.add(bl_desc)
-    for title, table, cs in subsects:
-        sub = reporting.BlockSubSection(title, [cs, reporting.BlockLatex(table + "\n")])
-        section.add(sub)
+
+    def get_content_of_subsections(subsects):
+        content = []
+        vspace = reporting.BlockLatex(r"\vspace{0.75cm}")
+        for title, table, cs in subsects:
+            sub = reporting.SectionRelative(title, contents=[cs, reporting.BlockLatex(table + "\n"), vspace])
+            content.append(sub)
+        return content
+
+    section = reporting.Section(title, [])
+    section.add(reporting.BlockLatex(desc + "\n"))
+    section.add(reporting.Subsection("Shared Statistics", get_content_of_subsections(subsects_main)))
+    section.add(reporting.Subsection("CDGP Statistics", get_content_of_subsections(subsects_cdgp)))
     section.add(reporting.BlockLatex(r"\vspace{1cm}" + "\n"))
     return section
 
@@ -552,9 +574,8 @@ def print_time_bounds_for_benchmarks(props):
 
 
 
-
 if __name__ == "__main__":
-    folders_exp3 = ["exp3", "exp3_fix1", "exp3_fix2", "exp3_fix3", 'rsconf', "exp3gpr"]
+    folders_exp3 = ["exp3", "exp3_fix1", "exp3_fix2", "exp3_fix3", 'rsconf', "exp3gpr", "exp3formal"]
     name_exp3 = "Experiments for parametrized CDGP (stop: number of iterations)"
     desc_exp3 = r"""
     Important information:
@@ -572,9 +593,8 @@ if __name__ == "__main__":
 
 
 
-
     # -------- Creating nice LaTeX report of the above results --------
-    report = reporting.ReportPDF(geometry_params = "[paperwidth=70cm, paperheight=40cm, margin=0.3cm]")
+    report = reporting.ReportPDF(geometry_params = "[paperwidth=75cm, paperheight=40cm, margin=0.3cm]")
     sects = [
         create_section_with_results(name_exp3, desc_exp3, folders_exp3, numRuns=10),
     ]
