@@ -45,8 +45,9 @@ class TestsPrinter(unittest.TestCase):
         self.assertEqual("\tr0\tr1\n" + "c0\t6\t36\n" + "c1\t15\t45\n" + "c2\t24\t54\n", text)
 
 
-    def test_latex_table(self):
-        text = printer.latex_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]))
+    def test_latex_table_vb0(self):
+        text = printer.latex_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]),
+                                   vertical_border=0)
         text = self.clear_multicols(text)
         self.assertEqual(r"\begin{tabular}{cccc}" + "\n"
                          r"\hline" + "\n" +
@@ -56,7 +57,32 @@ class TestsPrinter(unittest.TestCase):
                          r"\hline" + "\n" +
                          r"\end{tabular}" + "\n", text)
 
+    def test_latex_table_vb1(self):
+        text = printer.latex_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]),
+                                   vertical_border=1)
+        text = self.clear_multicols(text)
+        self.assertEqual(r"\begin{tabular}{|c|ccc|}" + "\n"
+                         r"\hline" + "\n" +
+                         r" & c0 & c1 & c2\\" + "\n" +
+                         r"\hline" + "\n" +
+                         r"r0 & 6 & 15 & 24\\"+"\n" + r"r1 & 36 & 45 & 54\\" + "\n" +
+                         r"\hline" + "\n" +
+                         r"\end{tabular}" + "\n", text)
+
+    def test_latex_table_vb2(self):
+        text = printer.latex_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]),
+                                   vertical_border=2)
+        text = self.clear_multicols(text)
+        self.assertEqual(r"\begin{tabular}{|c|c|c|c|}" + "\n"
+                         r"\hline" + "\n" +
+                         r" & c0 & c1 & c2\\" + "\n" +
+                         r"\hline" + "\n" +
+                         r"r0 & 6 & 15 & 24\\"+"\n" + r"r1 & 36 & 45 & 54\\" + "\n" +
+                         r"\hline" + "\n" +
+                         r"\end{tabular}" + "\n", text)
+
     def clear_multicols(self, s):
+        """Replaces \multicolumn markers and places only the content."""
         return s.replace("\multicolumn{1}{c}", "").replace("{c0}", "c0").replace("{c1}", "c1").replace("{c2}", "c2")
 
     def test_latex_table_header_multilayered_1(self):
