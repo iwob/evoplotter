@@ -267,7 +267,7 @@ def compare_fitness_on_benchmarks(props, dim_benchmarks, dim_variants, key_fit="
 
 
 
-def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=None, savepath=None, xlabel=None, xticks=None,
+def plot_ratio_meeting_predicate(props, getter, predicate, condition=None, series_dim=None, xs=None, savepath=None, xlabel=None, xticks=None,
                                  title=None, show_plot=1):
     """Plots a ratio of solutions meeting the predicate. Ratios are presented on the Y axis. On the X axis
     presented are values of a certain attribute on which progression is made (e.g. time to solve). Those
@@ -285,6 +285,9 @@ def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=N
      step A=12, B=0, and predicate (assume simple <=) checks, if A<=B, which translates in this case to
      12 <= 0. Predicate is not met, so dict does not count for this point. Next is B=25, and this time
      dict will be taken into the ratio.
+    :param condition: (lambda) Condition on a dictionary, which determines, if it counted 'positively' into
+     the ratio. Using condition usually will mean that the ratio of 1.0 will not be met for any point on
+     X axis.
     :param series_dim: (Dim) a dimension used to generate series.
     """
     fig = plt.figure(figsize=(12, 7))
@@ -298,6 +301,7 @@ def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=N
         ax1.set_title(title)
     ax1.grid('on')
     ax1.set_yticks(np.arange(0.0, 1.01, 0.1))
+    ax1.set_ylim((0.0, 1.0))
 
     getter_values = [getter(p) for p in props]
     if xs is None:
@@ -310,12 +314,14 @@ def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=N
     else:
         ax1.set_xticks(xs)
 
-    def compute_series(getter_values):
+    def compute_series(getter_values, f_props):
         ys = []
         for x in xs:
             count = 0
-            for value in getter_values:
-                if predicate(value, x):
+            for i, value in enumerate(getter_values):
+                if value is None:
+                    continue
+                if predicate(value, x) and (condition is None or condition(f_props[i])):
                     count += 1
             ys.append(float(count) / len(getter_values))
         return xs, ys
@@ -323,13 +329,13 @@ def plot_ratio_meeting_predicate(props, getter, predicate, series_dim=None, xs=N
 
     series = []
     if series_dim is None: # no dimensions
-        series.append(("All" + "  (total: {0})".format(len(props)), compute_series(getter_values)))
+        series.append(("All" + "  (total: {0})".format(len(props)), compute_series(getter_values, props)))
     else:
         for config in series_dim:
             f_props = config.filter_props(props)
             if len(f_props) > 0:
                 gv = [getter(p) for p in f_props]
-                data = compute_series(gv)
+                data = compute_series(gv, f_props)
                 series.append((config.get_caption() + "  (total: {0})".format(len(f_props)), data))
 
 
