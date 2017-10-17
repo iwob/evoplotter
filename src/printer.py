@@ -2,7 +2,6 @@ from . import dims
 from . import utils
 
 
-
 def text_listing(props, dim, fun, is_fun_single_prop=False, d_configs="\n\n\n", fun_config_header=None):
     """Returns a text listing of values computed for the specified configs. By default follows a format
     similar to the presented below:

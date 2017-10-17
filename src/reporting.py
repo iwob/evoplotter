@@ -8,15 +8,13 @@ class ReportPDF(object):
     """
     GEOM_PARAMS = "[paperwidth=65cm, paperheight=40cm, margin=0.3cm]"
 
-    def __init__(self, blocks = None, geometry_params=GEOM_PARAMS):
-        if blocks is None:
-            blocks = []
+    def __init__(self, contents = None, geometry_params=GEOM_PARAMS):
+        if contents is None:
+            contents = []
+        assert isinstance(contents, list)
         self.geometry_params = geometry_params
-        self.blocks = blocks
-        self.blocks.append(self.get_preamble())
-        self.root = BlockEnvironment("document", [])
-        self.blocks.append(self.root)
-
+        self.root = BlockEnvironment("document", [BlockBundle(contents)])
+        self.blocks = [self.get_preamble(), self.root]
 
     def get_packages_list(self):
         return ["[utf8]{inputenc}",
@@ -32,7 +30,7 @@ class ReportPDF(object):
         """Creates report for the data and returns its LaTeX code."""
         text = ""
         for b in self.blocks:
-            text += b.get_text()
+            text += b.get_text(opts={})
         return text
 
     def save(self, filename):
@@ -67,11 +65,15 @@ class ReportPDF(object):
 class BlockBundle(object):
     """Simply stores several blocks in a collection."""
     def __init__(self, contents):
+        assert isinstance(contents, list)
         self.contents = contents
-    def get_text(self):
+    def get_text(self, opts):
+        return self.merge_items(opts=opts)
+    def merge_items(self, opts):
         text = ""
+        d = opts
         for b in self.contents:
-            text += b.get_text()
+            text += b.get_text(opts=d)
         return text
     def add(self, b):
         self.contents.append(b)
@@ -81,7 +83,7 @@ class BlockLatex(object):
     """Simply stores as a single string blob several LaTeX instructions or whole text paragraphs."""
     def __init__(self, text):
         self.text = text
-    def get_text(self):
+    def get_text(self, opts):
         return self.text
 
 
@@ -90,34 +92,79 @@ class BlockEnvironment(object):
         assert isinstance(contents, list)
         self.name = name
         self.contents = contents
-    def get_text(self):
+
+    def get_text(self, opts):
         text = r"\begin{" + self.name + "}\n\n"
         for b in self.contents:
-            text += b.get_text()
+            text += b.get_text(opts=opts)
         text += r"\end{" + self.name + "}\n"
         return text
+
     def append(self, block):
         self.contents.append(block)
 
 
-class BlockSection(BlockBundle):
-    def __init__(self, title, contents):
-        self.title = title
+class Section(BlockBundle):
+    def __init__(self, title, contents=None):
+        if contents is None:
+            contents = []
+        assert isinstance(contents, list)
         BlockBundle.__init__(self, contents)
+        self.title = title
+        self.level = 0
         self.cmd = "section"
-    def get_text(self):
+
+    def get_text(self, opts):
         text = "\\" + self.cmd + "{" + self.title + "}\n"
-        text += super(BlockSection, self).get_text()
+        opts["section_level"] = self.level + 1 # to pass deeper
+        text += self.merge_items(opts=opts)
+        opts["section_level"] = self.level  # retract for the other cmds on the same level
         return text
 
-class BlockSubSection(BlockSection):
-    def __init__(self, title, contents):
-        BlockSection.__init__(self, title, contents)
+
+class SectionRelative(BlockBundle):
+    """Section which detects the current level of nested sections and posits itself
+    either under the last section or on the same level, depending on user's options.
+    
+    move argument in constructor defines, on which level relative to the current
+    """
+    def __init__(self, title, contents=None, move=0):
+        if contents is None:
+            contents = []
+        assert isinstance(contents, list)
+        BlockBundle.__init__(self, contents)
+        self.title = title
+        self.move = move
+
+    def get_text(self, opts):
+        opts["section_level"] = opts.get("section_level", 0) + self.move
+        sect_level = opts["section_level"]  # remember current section level
+        assert sect_level <= 2, "Latex supports nested sections only up to subsubsection."
+        subs = "sub" * opts["section_level"]
+        text = "\\" + subs + "section{" + self.title + "}\n"
+        opts["section_level"] += 1  # to pass deeper
+        text += self.merge_items(opts)
+        opts["section_level"] = sect_level  # retract for the other cmds on the same level
+        return text
+
+
+class Subsection(Section):
+    def __init__(self, title, contents=None):
+        if contents is None:
+            contents = []
+        assert isinstance(contents, list)
+        Section.__init__(self, title, contents)
+        self.level = 1
         self.cmd = "subsection"
 
-class BlockSubSubSection(BlockSection):
-    def __init__(self, title, contents):
-        BlockSection.__init__(self, title, contents)
+
+class Subsubsection(Section):
+    def __init__(self, title, contents=None):
+        if contents is None:
+            contents = []
+        assert isinstance(contents, list)
+        Section.__init__(self, title, contents)
+        self.level = 2
         self.cmd = "subsubsection"
 
 
