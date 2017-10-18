@@ -417,7 +417,8 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
 
     dim_benchmarks = Dim.from_dict(props, "benchmark")
     if print_status_matrix:
-        d = dim_benchmarks * dim_methodCDGP * dim_testsRatio * dim_sa
+        d = dim_benchmarks * dim_methodCDGP * dim_testsRatio * dim_sa + \
+            dim_benchmarks * dim_methodGPR * dim_testsRatioGPR * dim_sa
         matrix = produce_status_matrix(d, props)
         print("\n****** Status matrix:")
         print(matrix + "\n")
