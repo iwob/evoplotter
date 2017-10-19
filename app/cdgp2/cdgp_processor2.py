@@ -533,7 +533,7 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
 
     def get_content_of_subsections(subsects):
         content = []
-        vspace = reporting.BlockLatex(r"\vspace{0.75cm}")
+        vspace = reporting.BlockLatex(r"\vspace{0.75cm}"+"\n")
         for title, table, cs in subsects:
             sub = reporting.SectionRelative(title, contents=[cs, reporting.BlockLatex(table + "\n"), vspace])
             content.append(sub)
