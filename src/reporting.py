@@ -8,21 +8,26 @@ class ReportPDF(object):
     """
     GEOM_PARAMS = "[paperwidth=65cm, paperheight=40cm, margin=0.3cm]"
 
-    def __init__(self, contents = None, geometry_params=GEOM_PARAMS):
+    def __init__(self, contents = None, packages=None, geometry_params=GEOM_PARAMS):
         if contents is None:
             contents = []
+        if packages is None:
+            packages = []
         assert isinstance(contents, list)
+        assert isinstance(packages, list)
         self.geometry_params = geometry_params
         self.root = BlockEnvironment("document", [BlockBundle(contents)])
+        self.packages = ["[utf8]{inputenc}",
+                         self.geometry_params + "{geometry}",
+                         "[table]{xcolor}",
+                         "{hyperref}",
+                         "{graphicx}",
+                         "{float}"]
+        self.packages.extend(packages)
         self.blocks = [self.get_preamble(), self.root]
 
     def get_packages_list(self):
-        return ["[utf8]{inputenc}",
-                self.geometry_params + "{geometry}",
-                "[table]{xcolor}",
-                "{hyperref}",
-                "{graphicx}",
-                "{float}"]
+        return self.packages
 
     def add(self, block):
         """Adds a block inside a document environment."""
