@@ -20,7 +20,9 @@ class ReportPDF(object):
         return ["[utf8]{inputenc}",
                 self.geometry_params + "{geometry}",
                 "[table]{xcolor}",
-                "{hyperref}"]
+                "{hyperref}",
+                "{graphicx}",
+                "{float}"]
 
     def add(self, block):
         """Adds a block inside a document environment."""
@@ -167,6 +169,24 @@ class Subsubsection(Section):
         self.level = 2
         self.cmd = "subsubsection"
 
+
+class FloatFigure:
+    def __init__(self, path, caption=None, label=None, pos="H", graphics_opts=""):
+        self.path = path
+        self.caption = caption
+        self.label = label
+        self.pos = pos
+        self.graphics_opts = graphics_opts
+
+    def get_text(self, opts):
+        text  = r"\begin{figure}[" + self.pos + "]\n"
+        text += r"\includegraphics[" + self.graphics_opts + "]{" + self.path + "}\n"
+        if self.caption is not None:
+            text += r"\caption{" + self.caption + "}\n"
+        if self.label is not None:
+            text += r"\label{" + self.label + "}\n"
+        text += r"\end{figure}" + "\n\n"
+        return text
 
 
 

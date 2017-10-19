@@ -345,20 +345,14 @@ def plot_figures(props):
     xticks = np.arange(0.0, 24.0+1e-9, 1.0) # a tick every 60 minutes
     plotter.plot_ratio_meeting_predicate(success_props, getter, predicate,
                                          xs=xs, xticks=xticks, show_plot=0,
-                                         series_dim=dim_method * dim_sa,
-                                         savepath="figures/ratioTotalTimes.pdf",
-                                         title="Ratio of found correct solutions",
-                                         xlabel="Runtime [hours]")
-    plotter.plot_ratio_meeting_predicate(success_props, getter, predicate,
-                                         xs=xs, xticks=xticks, show_plot=0,
-                                         series_dim=None,
-                                         savepath="figures/ratioAllTotalTimes.pdf",
-                                         title="Ratio of found correct solutions",
+                                         series_dim=dim_method * dim_sa, # "series_dim=None" for a single line
+                                         savepath="figures/ratioTime_correctVsAllCorrect.pdf",
+                                         title="Ratio of found correct solutions out of all correct solutions",
                                          xlabel="Runtime [hours]")
     plotter.plot_ratio_meeting_predicate(props, getter, predicate,
                                          xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=dim_method * dim_sa,
-                                         savepath="figures/ratioEndedRuns.pdf",
+                                         savepath="figures/ratioTime_endedVsAllEnded.pdf",
                                          title="Ratio of ended runs",
                                          xlabel="Runtime [hours]")
     def get_total_evaluated(p):
@@ -531,6 +525,11 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
         ("Avg number of solver calls", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
         ("Number of solver calls $>$ 0.5s", latex_numSolverCallsOverXs, reporting.color_scheme_blue),
     ]
+    figures_cdgp = [
+        "figures/ratioEvaluated_correctVsAllRuns.pdf",
+        "figures/ratioTime_correctVsAllCorrect.pdf",
+        "figures/ratioTime_endedVsAllEnded.pdf",
+    ]
 
     def get_content_of_subsections(subsects):
         content = []
@@ -544,6 +543,8 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     section.add(reporting.BlockLatex(desc + "\n"))
     section.add(reporting.Subsection("Shared Statistics", get_content_of_subsections(subsects_main)))
     section.add(reporting.Subsection("CDGP Statistics", get_content_of_subsections(subsects_cdgp)))
+    for f in figures_cdgp:
+        section.add(reporting.FloatFigure(f))
     section.add(reporting.BlockLatex(r"\vspace{1cm}" + "\n"))
     return section
 
