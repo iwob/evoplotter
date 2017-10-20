@@ -152,6 +152,12 @@ dim_sa_ss = Dim([
 #               Config("$CDGP_{lex}^{ss}$", p_LexicaseSteadyState)])
 
 
+
+def normalized_total_time(p, max_time=86400000): # by default 24 h (in ms)
+    """If time was longer than max_time, then return max_time, otherwise return time."""
+    v = int(p["result.totalTimeSystem"])
+    return max_time if v > max_time else v
+
 def is_optimal_solution(p):
     return "result.best.isOptimal" in p and p["result.best.isOptimal"] == "true"
 
@@ -258,13 +264,13 @@ def get_avg_runtimeOnlySuccessful(props):
     if len(props) == 0:
         return "-"
     else:
-        vals = [float(p["result.totalTimeSystem"]) / 1000.0 for p in props if is_optimal_solution(p)]
+        vals = [float(normalized_total_time(p)) / 1000.0 for p in props if is_optimal_solution(p)]
         return get_avg_runtime_helper(vals)
 def get_avg_runtime(props):
     if len(props) == 0:
         return "-"
     else:
-        vals = [float(p["result.totalTimeSystem"]) / 1000.0 for p in props]
+        vals = [float(normalized_total_time(p)) / 1000.0 for p in props]
         return get_avg_runtime_helper(vals)
 def get_avg_generation(props):
     if len(props) == 0:
@@ -317,11 +323,11 @@ def print_solved_in_time(props, upper_time):
         if p["result.best.isOptimal"] == "false":
             continue
         num += 1
-        if int(p["result.totalTimeSystem"]) <= upper_time:
+        if int(normalized_total_time(p)) <= upper_time:
             solved += 1
 
     for p in props:
-        if int(p["result.totalTimeSystem"]) <= upper_time:
+        if int(normalized_total_time(p)) <= upper_time:
             solvedRuns += 1
     print("\nRuns which ended under {0} s:  {1} / {2}  ({3} %)".format(upper_time / 1000.0, solvedRuns, len(props), solvedRuns / len(props)))
     print("Optimal solutions found under {0} s:  {1} / {2}  ({3} %)\n".format(upper_time / 1000.0, solved, num, solved / num))
@@ -339,7 +345,7 @@ def plot_figures(props):
 
     # Plot chart of number of found solutions in time
     success_props = [p for p in props if p["result.best.isOptimal"] == "true"]
-    getter = lambda p: float(p["result.totalTimeSystem"]) / (3600 * 1000)  # take hours as a unit
+    getter = lambda p: float(normalized_total_time(p)) / (3600 * 1000)  # take hours as a unit
     predicate = lambda v, v_xaxis: v <= v_xaxis
     xs = np.arange(0.0, 24.0+1e-9, 0.5) # a point every 30 minutes
     xticks = np.arange(0.0, 24.0+1e-9, 1.0) # a tick every 60 minutes
@@ -557,7 +563,7 @@ def print_time_bounds_for_benchmarks(props):
     scalaMapEntries = []
     for conf in dim_benchmarks:
         filtered = conf.filter_props(props)
-        vals = [float(p["result.totalTimeSystem"]) / 1000.0 for p in filtered if is_optimal_solution(p)]
+        vals = [float(normalized_total_time(p)) / 1000.0 for p in filtered if is_optimal_solution(p)]
         if len(vals) == 0:
             result = "No optimal solutions!"
             suggestion = 1800
@@ -580,7 +586,7 @@ def print_time_bounds_for_benchmarks(props):
 
 if __name__ == "__main__":
     folders_exp3 = ["exp3", "exp3_fix1", "exp3_fix2", "exp3_fix3", 'rsconf', "exp3gpr",
-                    "exp3gpr_fix1", "exp3formal"]
+                    "exp3gpr_fix1", "exp3gpr_fix2", "exp3formal"]
     name_exp3 = "Experiments for parametrized CDGP (stop: number of iterations)"
     desc_exp3 = r"""
     Important information:
