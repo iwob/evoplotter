@@ -215,8 +215,8 @@ def get_stats_avgSolverTime(props):
 def get_avgSolverTotalCalls(props):
     if len(props) == 0 or "cdgp.solverTotalCalls" not in props[0]:
         return "-"
-    vals = [float(p["cdgp.solverTotalCalls"]) for p in props]
-    return "%d" % round(np.mean(vals))
+    vals = [float(p["cdgp.solverTotalCalls"]) / 1000.0 for p in props]
+    return "%0.1f" % round(np.mean(vals), 1) # "%d"
 def get_numSolverCallsOverXs(props):
     if len(props) == 0 or "cdgp.solverAllTimesCountMap" not in props[0]:
         return "-"
@@ -504,11 +504,11 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
 
     print("AVG NUM SOLVER CALLS")
     text = post(printer.latex_table(props, dim_rows, dim_cols, get_avgSolverTotalCalls, layered_headline=True, vertical_border=vb))
-    latex_avgSolverTotalCalls = printer.table_color_map(text, 1e3, 1e5, 5e6, "colorLow", "colorMedium", "colorHigh")
+    latex_avgSolverTotalCalls = printer.table_color_map(text, 1e1, 1e2, 1e4, "colorLow", "colorMedium", "colorHigh")
 
     print("NUM SOLVER CALLS > 0.5s")
     text = post(printer.latex_table(props, dim_rows, dim_cols, get_numSolverCallsOverXs, layered_headline=True, vertical_border=vb))
-    latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 1e4, 1e6, "colorLow", "colorMedium", "colorHigh")
+    latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 50, 100, "colorLow", "colorMedium", "colorHigh")
 
 
 
@@ -528,7 +528,7 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
         ("Approximate average runtime per program [s]", latex_avgRuntimePerProgram, reporting.color_scheme_brown),
         ("Max solver time per query [s]", latex_maxSolverTimes, reporting.color_scheme_violet),
         ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_brown),
-        ("Avg number of solver calls", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
+        ("Avg number of solver calls (in thousands; 1=1000)", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
         ("Number of solver calls $>$ 0.5s", latex_numSolverCallsOverXs, reporting.color_scheme_blue),
     ]
     figures_cdgp = [
@@ -586,7 +586,7 @@ def print_time_bounds_for_benchmarks(props):
 
 if __name__ == "__main__":
     folders_exp3 = ["exp3", "exp3_fix1", "exp3_fix2", "exp3_fix3", 'rsconf', "exp3gpr",
-                    "exp3gpr_fix1", "exp3gpr_fix2", "exp3formal"]
+                    "exp3gpr_fix1", "exp3gpr_fix2", "exp3gpr_fix3", "exp3gpr_fix4", "exp3formal"]
     name_exp3 = "Experiments for parametrized CDGP (stop: number of iterations)"
     desc_exp3 = r"""
     Important information:
