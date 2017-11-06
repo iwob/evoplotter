@@ -242,7 +242,7 @@ def get_avg_totalTests(props):
         x = np.mean(vals)
         if x < 1e-5:
             x = 0.0
-        return "%0.1f" % x
+        return str(int(round(x))) #"%0.1f" % x
 def get_avg_fitness(props):
     vals = []
     for p in props:
@@ -259,7 +259,11 @@ def get_avg_runtime_helper(vals):
     if len(vals) == 0:
         return "n/a"  # -1.0, -1.0
     else:
-        return "%0.1f" % np.mean(vals)  # , np.std(vals)
+        x = np.mean(vals)
+        if x >= 10.0:
+            return "%d" % x
+        else:
+            return "%0.1f" % x  # , np.std(vals)
 def get_avg_runtimeOnlySuccessful(props):
     if len(props) == 0:
         return "-"
@@ -279,7 +283,7 @@ def get_avg_generation(props):
     if len(vals) == 0:
         return "-"
     else:
-        return "%0.1f" % np.mean(vals)  # , np.std(vals)
+        return str(int(round(np.mean(vals)))) #"%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_generationSuccessful(props):
     if len(props) == 0:
         return "-"
@@ -289,7 +293,7 @@ def get_avg_generationSuccessful(props):
         if len(vals) == 0:
             return "n/a"  # -1.0, -1.0
         else:
-            return "%0.1f" % np.mean(vals)  # , np.std(vals)
+            return str(int(round(np.mean(vals))))  # "%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_runtimePerProgram(props):
     if len(props) == 0 or not (p_method_cdgp(props[0]) or p_method_gpr(props[0])):
         return "-"  # -1.0, -1.0
