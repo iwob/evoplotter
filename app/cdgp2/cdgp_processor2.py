@@ -183,7 +183,13 @@ def get_stats_size(props):
     if len(vals) == 0:
         return "-"#-1.0, -1.0
     else:
-        return "%0.1f" % np.mean(vals)#, np.std(vals)
+        return str(int(round(np.mean(vals)))) #, np.std(vals)
+def get_stats_sizeOnlySuccessful(props):
+    vals = [float(p["result.best.size"]) for p in props if is_optimal_solution(p)]
+    if len(vals) == 0:
+        return "-"#-1.0, -1.0
+    else:
+        return str(int(round(np.mean(vals)))) #, np.std(vals)
 def get_stats_maxSolverTime(props):
     if len(props) == 0 or "cdgp.solverAllTimesCountMap" not in props[0]:
         return "-"
@@ -460,15 +466,18 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
 
     print("AVG RUNTIME (SUCCESSFUL)")
     text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_runtimeOnlySuccessful, layered_headline=True, vertical_border=vb))
-    latex_avgRuntimeOnlySuccessful = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium",
-                                                             "colorHigh")
+    latex_avgRuntimeOnlySuccessful = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
 
     # print("SUCCESS RATES (FULL INFO)")
     # text = post(printer.latex_table(props, dim_rows, dim_cols, fun_successRates_full, layered_headline=True, vertical_border=vb))
 
-    print("AVG SIZES")
-    text = post(printer.latex_table(props, dim_rows, dim_cols, get_stats_size, layered_headline=True, vertical_border=vb))
-    latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
+    # print("AVG SIZES")
+    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_stats_size, layered_headline=True, vertical_border=vb))
+    # latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
+
+    print("AVG SIZES (SUCCESSFUL)")
+    text = post(printer.latex_table(props, dim_rows, dim_cols, get_stats_sizeOnlySuccessful, layered_headline=True, vertical_border=vb))
+    latex_sizesOnlySuccessful = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
 
 
 
@@ -522,7 +531,8 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
         ("Success rates", latex_successRates, reporting.color_scheme_green),
         ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
         ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
-        ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow),
+        #("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow),
+        ("Average sizes of best of runs (number of nodes) (only successful)", latex_sizesOnlySuccessful, reporting.color_scheme_yellow),
     ]
     subsects_cdgp = [
         ("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
