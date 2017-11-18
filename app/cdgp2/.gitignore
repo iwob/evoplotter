@@ -6,6 +6,5 @@ exp3_fix*
 exp3gpr*
 rsconf*
 
-cdgp_results.tex
-cdgp_results2.tex
+cdgp_*.tex
 *.pdf

@@ -6,7 +6,7 @@ from src.dims import *
 import numpy as np
 
 
-# This processor is to be used for exp3 onward.
+# This processor is to be used for exp4 onward.
 
 
 def load_correct_props(folders):
@@ -395,7 +395,6 @@ def plot_figures(props):
 
 
 
-
 def get_content_of_subsections(subsects):
     content = []
     vspace = reporting.BlockLatex(r"\vspace{0.75cm}"+"\n")
@@ -409,15 +408,15 @@ def post(s):
 
 
 
-def create_section_and_plots(title, desc, props, subsect_shared, subsect_cdgp):
+def create_section_and_plots(title, desc, props, subsects):
     assert isinstance(title, str)
     assert isinstance(desc, str)
     assert isinstance(props, list)
 
     section = reporting.Section(title, [])
     section.add(reporting.BlockLatex(desc + "\n"))
-    section.add(subsect_shared)
-    section.add(subsect_cdgp)
+    for s in subsects:
+        section.add(s)
 
     # Create figures in the appropriate directory
     plot_figures(props)
@@ -431,64 +430,6 @@ def create_section_and_plots(title, desc, props, subsect_shared, subsect_cdgp):
     section.add(reporting.BlockLatex(r"\vspace{1cm}" + "\n"))
     return section
 
-
-
-def create_section_with_results(title, desc, props, dim_rows, dim_cols, numRuns=10, use_bench_simple_names=True, print_status_matrix=True):
-    assert isinstance(title, str)
-    assert isinstance(desc, str)
-    assert isinstance(props, list)
-
-    # Create figures in the appropriate directory
-    plot_figures(props)
-
-    # Uncomment this to print names of files with results of a certain configuration
-    # print("\n(** {0} **) props_meeting the property:".format(title[:15]))
-    # for p in props:
-    #     if float(p["cdgp.solverTimeMaxSec"]) >= 2.0:
-    #         print(p["thisFileName"] + ", " + p["cdgp.solverTimeMaxSec"])
-
-
-
-    dim_benchmarks = Dim.from_dict(props, "benchmark")
-    if print_status_matrix:
-        d = dim_benchmarks * dim_methodCDGP * dim_testsRatio * dim_sa + \
-            dim_benchmarks * dim_methodGPR * dim_testsRatioGPR * dim_sa
-        matrix = produce_status_matrix(d, props)
-        print("\n****** Status matrix:")
-        print(matrix + "\n")
-
-    if use_bench_simple_names:
-        configs = [Config(benchmarks_simple_names.get(c.get_caption(), c.get_caption()), c.filters[0][1]) for c in dim_benchmarks.configs]
-        dim_benchmarks = Dim(configs)
-        dim_benchmarks.sort()
-
-
-
-    section = reporting.Section(title, [])
-    section.add(reporting.BlockLatex(desc + "\n"))
-    dim_rows = dim_benchmarks.sort() + dim_true
-    # --------------------- Shared stats ---------------------
-    dim_cols = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio + \
-               dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR + \
-               dim_methodFormal
-    # dim_cols = dim_method * dim_sa
-    section.add(create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns))
-
-    # --------------------- CDGP-specific stats ---------------------
-    dim_cols = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio + \
-               dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR
-    section.add(create_subsection_cdgp_specific(props, dim_rows, dim_cols))
-
-
-    figures_cdgp = [
-        "figures/ratioEvaluated_correctVsAllRuns.pdf",
-        "figures/ratioTime_correctVsAllCorrect.pdf",
-        "figures/ratioTime_endedVsAllEnded.pdf",
-    ]
-    for f in figures_cdgp:
-        section.add(reporting.FloatFigure(f))
-    section.add(reporting.BlockLatex(r"\vspace{1cm}" + "\n"))
-    return section
 
 
 
@@ -606,8 +547,8 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols):
 
 
 
-def prepare_report(sects, fname, numRuns, use_bench_simple_names=True, print_status_matrix=True):
-    # -------- Creating nice LaTeX report of the above results --------
+def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matrix=True):
+    """Creating nice LaTeX report of the results."""
     report = reporting.ReportPDF(geometry_params="[paperwidth=75cm, paperheight=40cm, margin=0.3cm]")
     latex_sects = []
     for title, desc, folders, subs in sects:
@@ -632,13 +573,14 @@ def prepare_report(sects, fname, numRuns, use_bench_simple_names=True, print_sta
 
 
         dim_rows = dim_benchmarks.sort() + dim_true
-        dim_cols_cdgp = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio + \
-                        dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR
-        dim_cols_shared = dim_cols_cdgp + dim_methodFormal
-        shared = create_subsection_shared_stats(props, dim_rows, dim_cols_shared, numRuns=numRuns)
-        cdgp = create_subsection_cdgp_specific(props, dim_rows, dim_cols_cdgp)
+        subsects = []
+        for fun, args in subs:
+            if args[0] is None:  # no dimensions for rows, take benchmarks as the default
+                args[0] = dim_rows
+            args2 = [props] + args
+            subsects.append(fun(*args2))
 
-        s = create_section_and_plots(title, desc, props, shared, cdgp)
+        s = create_section_and_plots(title, desc, props, subsects)
         latex_sects.append(s)
 
     for s in latex_sects:
@@ -649,20 +591,62 @@ def prepare_report(sects, fname, numRuns, use_bench_simple_names=True, print_sta
 
 
 
-
 dimColsCdgp = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio + \
-              dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR
+                  dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR
 dimColsShared = dimColsCdgp + dim_methodFormal
+dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel + \
+                 dim_methodGPR * dim_ea_type * dim_sel
+dimColsShared_v2 = dimColsCdgp_v2 + dim_methodFormal
+
+def reports_exp4():
+    folders = ["exp4int_lim", "exp3formal"]
+    title = "Experiments for parametrized CDGP (stop: 1h)"
+    desc = r""""""
+    subs = [
+        (create_subsection_shared_stats, [None, dimColsShared, 10]),
+        (create_subsection_cdgp_specific, [None, dimColsCdgp]),
+    ]
+    subs_v2 = [
+        (create_subsection_shared_stats, [None, dimColsShared_v2, 10]),
+        (create_subsection_cdgp_specific, [None, dimColsCdgp_v2]),
+    ]
+    sects = [(title, desc, folders, subs)]
+    sects_v2 = [(title, desc, folders, subs_v2)]
+
+    prepare_report(sects, "cdgp_exp4int.tex")
+    prepare_report(sects_v2, "cdgp_exp4int_v2.tex")
+
+
+def reports_exp3():
+    folders = ["exp3", "exp3_fix1", "exp3_fix2", "exp3_fix3", 'rsconf', "exp3gpr",
+               "exp3gpr_fix1", "exp3gpr_fix2", "exp3gpr_fix3", "exp3gpr_fix4", "exp3formal"]
+    title = "Experiments for parametrized CDGP (stop: number of iterations)"
+    desc = r"""
+    Important information:
+    \begin{itemize}
+    \item All configurations, unless specified otherwise, has \textbf{population size 500}, and \textbf{number of iterations 100}.
+    \item GPR uses range [-100, 100] and a population size 1000.
+    \item SteadyState configurations has population\_size * 100 (number of iterations), so that the total number
+     of generated solutions is the same.
+    \item SteadyState configurations use always Tournament ($k=7$) deselection. Selection may be Tournament ($k=7$) or Lexicase.
+    \end{itemize}
+    """
+    subs = [
+        (create_subsection_shared_stats, [None, dimColsShared, 10]),
+        (create_subsection_cdgp_specific, [None, dimColsCdgp]),
+    ]
+    subs_v2 = [
+        (create_subsection_shared_stats, [None, dimColsShared_v2, 10]),
+        (create_subsection_cdgp_specific, [None, dimColsCdgp_v2]),
+    ]
+    sects = [(title, desc, folders, subs)]
+    sects_v2 = [(title, desc, folders, subs_v2)]
+
+    prepare_report(sects, "cdgp_exp3.tex")
+    prepare_report(sects_v2, "cdgp_exp3_v2.tex")
+
 
 
 if __name__ == "__main__":
-    folders_exp4 = ["exp4int_lim", "exp3formal"]
-    name_exp4 = "Experiments for parametrized CDGP (stop: 1h)"
-    desc_exp4 = r""""""
-    subs = [
-        ("Shared Statistics", create_subsection_shared_stats, [None, dimColsShared, 10]),
-        ("CDGP Statistics", create_subsection_cdgp_specific, [None, dimColsCdgp]),
-    ]
-    sects_exp4 = [(name_exp4, desc_exp4, folders_exp4, subs)]
-
-    prepare_report(sects_exp4, "cdgp_exp4int.tex", numRuns=10)
+    reports_exp3()
+    # reports_exp4()
