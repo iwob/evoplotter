@@ -153,7 +153,7 @@ dim_sa_ss = Dim([
 
 def normalized_total_time(p, max_time=86400000): # by default 24 h (in ms)
     """If time was longer than max_time, then return max_time, otherwise return time."""
-    v = int(p["result.totalTimeSystem"])
+    v = int(float(p["result.totalTimeSystem"]))
     return max_time if v > max_time else v
 
 def is_optimal_solution(p):
@@ -560,7 +560,8 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
         dim_benchmarks = Dim.from_dict(props, "benchmark")
 
         if use_bench_simple_names:
-            configs = [Config(benchmarks_simple_names.get(c.get_caption(), c.get_caption()), c.filters[0][1]) for c in
+            configs = [Config(benchmarks_simple_names.get(c.get_caption(), c.get_caption()), c.filters[0][1],
+                              benchmark=c.get_caption()) for c in
                        dim_benchmarks.configs]
             dim_benchmarks = Dim(configs)
             dim_benchmarks.sort()
@@ -599,7 +600,7 @@ dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel + \
 dimColsShared_v2 = dimColsCdgp_v2 + dim_methodFormal
 
 def reports_exp4():
-    folders = ["exp4int_lim", "exp3formal"]
+    folders = ["exp4int", "exp3formal"]  # "exp4int_lim"
     title = "Experiments for parametrized CDGP (stop: 1h)"
     desc = r""""""
     subs = [
@@ -648,5 +649,5 @@ def reports_exp3():
 
 
 if __name__ == "__main__":
-    reports_exp3()
-    # reports_exp4()
+    # reports_exp3()
+    reports_exp4()
