@@ -7,30 +7,36 @@ import numpy as np
 
 
 # This processor is to be used for exp4 onward.
+CHECK_CORRECTNESS_OF_FILES = 0
 
 
-def load_correct_props(folders):
-    props_cdgpError = utils.load_properties_dirs(folders, exts=[".cdgp.error"])
-    props0 = utils.load_properties_dirs(folders, exts=[".cdgp", ".cvc4_head_cegqi", ".cvc4_cegqi", ".eusolver"])
-    all_logs = utils.load_properties_dirs(folders, exts=[".cdgp", ".txt", ".cvc4_head_cegqi", ".cvc4_cegqi", ".eusolver"])
-
-    def is_correct(p):
-        return "status" in p and (p["status"] == "completed" or p["status"] == "initialized") and "benchmark" in p
-
-    # Printing names of files which finished with error status or are incomplete.
-    props_errors = [p for p in props0 if not is_correct(p)]
-    if len(props_errors) > 0:
-        print("Files with error status:")
-    for p in props_errors:
+def print_props_filenames(props):
+    for p in props:
         if "thisFileName" in p:
             print(p["thisFileName"])
         else:
             print("'thisFileName' not specified! Printing content instead: " + str(p))
 
+
+def load_correct_props(folders):
+    props_cdgpError = utils.load_properties_dirs(folders, exts=[".cdgp.error"])
+    props0 = utils.load_properties_dirs(folders, exts=[".cdgp", ".cvc4_head_cegqi", ".cvc4_cegqi", ".eusolver"])
+
+    def is_correct(p):
+        return "status" in p and (p["status"] == "completed" or p["status"] == "initialized") and "benchmark" in p
+
     # Filtering props so only correct ones are left
     props = [p for p in props0 if is_correct(p)]
-    print("Loaded: {0} correct property files, {1} incorrect; All log files: {2}".format(len(props), len(props_errors), len(all_logs)))
-    print("Runs that ended with error: {0}".format(len(props_cdgpError)))
+
+    # Printing names of files which finished with error status or are incomplete.
+    if CHECK_CORRECTNESS_OF_FILES:
+        props_errors = [p for p in props0 if not is_correct(p)]
+        if len(props_errors) > 0:
+            print("Files with error status:")
+            print_props_filenames(props_errors)
+        print("Loaded: {0} correct property files, {1} incorrect; All log files: {2}".format(len(props), len(props_errors), len(props) + len(props_errors)))
+    print("Runs that ended with '.cdgp.error': {0}".format(len(props_cdgpError)))
+    print_props_filenames(props_cdgpError)
     return props
 
 
@@ -251,7 +257,7 @@ def get_avg_fitness(props):
     vals = []
     for p in props:
         if "result.best.passedTestsRatio" in p:
-            ratio = float(p["result.best.passedTestsRatio"])
+            ratio = float(p["result.best.passedTests"]) / float(p["result.best.numTests"])
             vals.append(ratio)
         elif p["method"] == "CDGP" or p["method"] == "GPR":
             raise Exception("Information about fitness is unavailable!")
@@ -323,6 +329,8 @@ def get_sum_solverRestarts(props):
         return str(np.sum(vals))
 
 def print_solved_in_time(props, upper_time):
+    if len(props) == 0:
+        return
     # totalTimeSystem is in miliseconds
     solved = 0
     solvedRuns = 0
@@ -341,7 +349,9 @@ def print_solved_in_time(props, upper_time):
     print("Optimal solutions found under {0} s:  {1} / {2}  ({3} %)\n".format(upper_time / 1000.0, solved, num, solved / num))
 
 
-def plot_figures(props):
+def plot_figures(props, exp_prefix):
+    if len(props) == 0:
+        return
     print_solved_in_time(props, 12 * 3600 * 1000)
     print_solved_in_time(props, 6 * 3600 * 1000)
     print_solved_in_time(props, 3 * 3600 * 1000)
@@ -360,13 +370,13 @@ def plot_figures(props):
     plotter.plot_ratio_meeting_predicate(success_props, getter, predicate,
                                          xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=dim_method * dim_sa, # "series_dim=None" for a single line
-                                         savepath="figures/ratioTime_correctVsAllCorrect.pdf",
+                                         savepath="figures/{0}_ratioTime_correctVsAllCorrect.pdf".format(exp_prefix),
                                          title="Ratio of found correct solutions out of all correct solutions",
                                          xlabel="Runtime [hours]")
     plotter.plot_ratio_meeting_predicate(props, getter, predicate,
                                          xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=dim_method * dim_sa,
-                                         savepath="figures/ratioTime_endedVsAllEnded.pdf",
+                                         savepath="figures/{0}_ratioTime_endedVsAllEnded.pdf".format(exp_prefix),
                                          title="Ratio of ended runs",
                                          xlabel="Runtime [hours]")
     def get_total_evaluated(p):
@@ -381,7 +391,7 @@ def plot_figures(props):
     plotter.plot_ratio_meeting_predicate(success_props, get_total_evaluated, predicate,
                                          xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=dim_method * dim_sa,
-                                         savepath="figures/ratioEvaluated_correctVsAllCorrect.pdf",
+                                         savepath="figures/{0}_ratioEvaluated_correctVsAllCorrect.pdf".format(exp_prefix),
                                          title="Ratio of found correct solutions out of all found correct solutions in the given config",
                                          xlabel="Number of evaluated solutions")
     cond = lambda p: p["result.best.isOptimal"] == "true"
@@ -389,7 +399,7 @@ def plot_figures(props):
                                          condition=cond,
                                          xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=dim_method * dim_sa,
-                                         savepath="figures/ratioEvaluated_correctVsAllRuns.pdf",
+                                         savepath="figures/{0}_ratioEvaluated_correctVsAllRuns.pdf".format(exp_prefix),
                                          title="Ratio of runs which ended with correct solution out of all runs",
                                          xlabel="Number of evaluated solutions")
 
@@ -408,10 +418,11 @@ def post(s):
 
 
 
-def create_section_and_plots(title, desc, props, subsects):
+def create_section_and_plots(title, desc, props, subsects, figures_list):
     assert isinstance(title, str)
     assert isinstance(desc, str)
     assert isinstance(props, list)
+    assert isinstance(figures_list, list)
 
     section = reporting.Section(title, [])
     section.add(reporting.BlockLatex(desc + "\n"))
@@ -419,13 +430,7 @@ def create_section_and_plots(title, desc, props, subsects):
         section.add(s)
 
     # Create figures in the appropriate directory
-    plot_figures(props)
-    figures_cdgp = [
-        "figures/ratioEvaluated_correctVsAllRuns.pdf",
-        "figures/ratioTime_correctVsAllCorrect.pdf",
-        "figures/ratioTime_endedVsAllEnded.pdf",
-    ]
-    for f in figures_cdgp:
+    for f in figures_list:
         section.add(reporting.FloatFigure(f))
     section.add(reporting.BlockLatex(r"\vspace{1cm}" + "\n"))
     return section
@@ -482,7 +487,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
 
 
 
-def create_subsection_cdgp_specific(props, dim_rows, dim_cols):
+def create_subsection_cdgp_specific(props, dim_rows, dim_cols, exp_prefix):
     vb = 1  # vertical border
 
     print("AVG BEST-OF-RUN FITNESS")
@@ -531,6 +536,7 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols):
                                     vertical_border=vb))
     latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 50, 100, "colorLow", "colorMedium", "colorHigh")
 
+    plot_figures(props, exp_prefix=exp_prefix)
     subsects_cdgp = [
         ("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
@@ -551,7 +557,7 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
     """Creating nice LaTeX report of the results."""
     report = reporting.ReportPDF(geometry_params="[paperwidth=75cm, paperheight=40cm, margin=0.3cm]")
     latex_sects = []
-    for title, desc, folders, subs in sects:
+    for title, desc, folders, subs, figures in sects:
         print("\nLoading props for: " + title)
         print("Scanned folders:")
         for f in folders:
@@ -581,7 +587,7 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
             args2 = [props] + args
             subsects.append(fun(*args2))
 
-        s = create_section_and_plots(title, desc, props, subsects)
+        s = create_section_and_plots(title, desc, props, subsects, figures)
         latex_sects.append(s)
 
     for s in latex_sects:
@@ -599,23 +605,56 @@ dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel + \
                  dim_methodGPR * dim_ea_type * dim_sel
 dimColsShared_v2 = dimColsCdgp_v2 + dim_methodFormal
 
-def reports_exp4():
-    folders = ["exp4int", "exp3formal"]  # "exp4int_lim"
+def reports_exp4int():
+    folders = ["exp4int", "exp4int_fix1", "exp4int_fix2", "exp4int_fix3", "exp4int_fix4", "exp3formal"]  # "exp4int_lim"
     title = "Experiments for parametrized CDGP (stop: 1h)"
     desc = r""""""
     subs = [
-        (create_subsection_shared_stats, [None, dimColsShared, 10]),
-        (create_subsection_cdgp_specific, [None, dimColsCdgp]),
+        (create_subsection_shared_stats, [None, dimColsShared, 25]),
+        (create_subsection_cdgp_specific, [None, dimColsCdgp, "exp4int"]),
     ]
     subs_v2 = [
-        (create_subsection_shared_stats, [None, dimColsShared_v2, 10]),
-        (create_subsection_cdgp_specific, [None, dimColsCdgp_v2]),
+        (create_subsection_shared_stats, [None, dimColsShared_v2, 25]),
+        (create_subsection_cdgp_specific, [None, dimColsCdgp_v2, "exp4int"]),
     ]
-    sects = [(title, desc, folders, subs)]
-    sects_v2 = [(title, desc, folders, subs_v2)]
+    figures = [
+        "figures/ratioEvaluated_correctVsAllRuns.pdf",
+        "figures/ratioTime_correctVsAllCorrect.pdf",
+        "figures/ratioTime_endedVsAllEnded.pdf",
+    ]
+    sects = [(title, desc, folders, subs, figures)]
+    sects_v2 = [(title, desc, folders, subs_v2, figures)]
 
     prepare_report(sects, "cdgp_exp4int.tex")
     prepare_report(sects_v2, "cdgp_exp4int_v2.tex")
+
+
+def reports_exp4str():
+    folders = ["exp4str"]
+    title = "Experiments for parametrized CDGP (stop: 1h)"
+    desc = r""""""
+    str_dimColsCdgp = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio
+    str_dimColsShared = str_dimColsCdgp + dim_methodFormal
+    str_dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel
+    str_dimColsShared_v2 = str_dimColsCdgp_v2 + dim_methodFormal
+    subs = [
+        (create_subsection_shared_stats, [None, str_dimColsShared, 25]),
+        (create_subsection_cdgp_specific, [None, str_dimColsCdgp, "exp4str"]),
+    ]
+    subs_v2 = [
+        (create_subsection_shared_stats, [None, str_dimColsShared_v2, 25]),
+        (create_subsection_cdgp_specific, [None, str_dimColsCdgp_v2, "exp4str"]),
+    ]
+    figures = [
+        "figures/exp4str_ratioEvaluated_correctVsAllRuns.pdf",
+        "figures/exp4str_ratioTime_correctVsAllCorrect.pdf",
+        "figures/exp4str_ratioTime_endedVsAllEnded.pdf",
+    ]
+    sects = [(title, desc, folders, subs, figures)]
+    sects_v2 = [(title, desc, folders, subs_v2, figures)]
+
+    prepare_report(sects, "cdgp_exp4str.tex")
+    prepare_report(sects_v2, "cdgp_exp4str_v2.tex")
 
 
 def reports_exp3():
@@ -634,14 +673,14 @@ def reports_exp3():
     """
     subs = [
         (create_subsection_shared_stats, [None, dimColsShared, 10]),
-        (create_subsection_cdgp_specific, [None, dimColsCdgp]),
+        (create_subsection_cdgp_specific, [None, dimColsCdgp, "exp3"]),
     ]
     subs_v2 = [
         (create_subsection_shared_stats, [None, dimColsShared_v2, 10]),
-        (create_subsection_cdgp_specific, [None, dimColsCdgp_v2]),
+        (create_subsection_cdgp_specific, [None, dimColsCdgp_v2, "exp3"]),
     ]
-    sects = [(title, desc, folders, subs)]
-    sects_v2 = [(title, desc, folders, subs_v2)]
+    sects = [(title, desc, folders, subs, [])]
+    sects_v2 = [(title, desc, folders, subs_v2, [])]
 
     prepare_report(sects, "cdgp_exp3.tex")
     prepare_report(sects_v2, "cdgp_exp3_v2.tex")
@@ -650,4 +689,5 @@ def reports_exp3():
 
 if __name__ == "__main__":
     # reports_exp3()
-    reports_exp4()
+    reports_exp4int()
+    # reports_exp4str()
