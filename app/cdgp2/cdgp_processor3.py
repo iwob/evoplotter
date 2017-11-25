@@ -23,7 +23,13 @@ def load_correct_props(folders):
     props0 = utils.load_properties_dirs(folders, exts=[".cdgp", ".cvc4_head_cegqi", ".cvc4_cegqi", ".eusolver"])
 
     def is_correct(p):
-        return "status" in p and (p["status"] == "completed" or p["status"] == "initialized") and "benchmark" in p
+        if p["method"] in {"GPR", "CDGP"}:
+            return "result.best.passedTestsRatio" in p and "status" in p and\
+                   (p["status"] == "completed" or p["status"] == "initialized") and "benchmark" in p
+        else:
+            return "status" in p and (p["status"] == "completed" or p["status"] == "initialized") and "benchmark" in p
+
+
 
     # Filtering props so only correct ones are left
     props = [p for p in props0 if is_correct(p)]
@@ -159,7 +165,10 @@ dim_sa_ss = Dim([
 
 def normalized_total_time(p, max_time=86400000): # by default 24 h (in ms)
     """If time was longer than max_time, then return max_time, otherwise return time."""
-    v = int(float(p["result.totalTimeSystem"]))
+    if p["result.totalTimeSystem"] == "3600.0":
+        v = 3600000  # convert to ms (error in logging)
+    else:
+        v = int(float(p["result.totalTimeSystem"]))
     return max_time if v > max_time else v
 
 def is_optimal_solution(p):
@@ -257,8 +266,9 @@ def get_avg_fitness(props):
     vals = []
     for p in props:
         if "result.best.passedTestsRatio" in p:
-            ratio = float(p["result.best.passedTests"]) / float(p["result.best.numTests"])
-            vals.append(ratio)
+            if int(p["result.best.numTests"]) > 0:
+                ratio = float(p["result.best.passedTests"]) / float(p["result.best.numTests"])
+                vals.append(ratio)
         elif p["method"] == "CDGP" or p["method"] == "GPR":
             raise Exception("Information about fitness is unavailable!")
     if len(vals) == 0:
@@ -565,6 +575,10 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
         props = load_correct_props(folders)
         dim_benchmarks = Dim.from_dict(props, "benchmark")
 
+        for p in props:
+            if p["benchmark"] == "benchmarks/SLIA/cdgp_ecj1/dr-name.sl":
+                print(p["result.totalTimeSystem"])
+
         if use_bench_simple_names:
             configs = [Config(benchmarks_simple_names.get(c.get_caption(), c.get_caption()), c.filters[0][1],
                               benchmark=c.get_caption()) for c in
@@ -606,7 +620,8 @@ dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel + \
 dimColsShared_v2 = dimColsCdgp_v2 + dim_methodFormal
 
 def reports_exp4int():
-    folders = ["exp4int", "exp4int_fix1", "exp4int_fix2", "exp4int_fix3", "exp4int_fix4", "exp3formal"]  # "exp4int_lim"
+    folders = ["exp4int", "exp4int_fix1", "exp4int_fix2", "exp4int_fix3", "exp4int_fix4",
+               "exp4int_fix5","exp3formal"]  # "exp4int_lim"
     title = "Experiments for parametrized CDGP (stop: 1h)"
     desc = r""""""
     subs = [
