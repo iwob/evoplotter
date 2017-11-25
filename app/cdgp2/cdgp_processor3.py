@@ -190,7 +190,7 @@ def fun_successRates(filtered):
         return "-"
     num_opt = get_num_optimal(filtered)
     sr = float(num_opt) / float(len(filtered))
-    return "{0}".format("%0.2f" % sr)
+    return "{0}".format("%0.2f" % round(sr, 2))
 def get_stats_size(props):
     vals = [float(p["result.best.size"]) for p in props]
     if len(vals) == 0:
@@ -314,6 +314,30 @@ def get_avg_generationSuccessful(props):
             return "n/a"  # -1.0, -1.0
         else:
             return str(int(round(np.mean(vals))))  # "%0.1f" % np.mean(vals)  # , np.std(vals)
+def get_avg_evaluated(props):
+    if len(props) == 0:
+        return "-"
+    vals = []
+    for p in props:
+        if p["searchAlgorithm"].endswith("SteadyState"):
+            vals.append(float(p["result.best.generation"]))
+        else:
+            vals.append(float(p["result.best.generation"]) * float(p["populationSize"]))
+    return str(int(round(np.mean(vals)))) #"%0.1f" % np.mean(vals)  # , np.std(vals)
+def get_avg_evaluatedSuccessful(props):
+    if len(props) == 0:
+        return "-"
+    vals = []
+    for p in props:
+        if is_optimal_solution(p):
+            if p["searchAlgorithm"].endswith("SteadyState"):
+                vals.append(float(p["result.best.generation"]))
+            else:
+                vals.append(float(p["result.best.generation"]) * float(p["populationSize"]))
+    if len(vals) == 0:
+        return "n/a"  # -1.0, -1.0
+    else:
+        return str(int(round(np.mean(vals))))  # "%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_runtimePerProgram(props):
     if len(props) == 0 or not (p_method_cdgp(props[0]) or p_method_gpr(props[0])):
         return "-"  # -1.0, -1.0
@@ -520,10 +544,15 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, exp_prefix):
         printer.latex_table(props, dim_rows, dim_cols, get_avg_generation, layered_headline=True, vertical_border=vb))
     latex_avgGeneration = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
 
-    print("AVG GENERATION (SUCCESSFUL)")
-    text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_generationSuccessful, layered_headline=True,
+    print("AVG EVALUATED SOLUTIONS")
+    text = post(
+        printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluated, layered_headline=True, vertical_border=vb))
+    latex_avgEvaluated = printer.table_color_map(text, 500.0, 25000.0, 100000.0, "colorLow", "colorMedium", "colorHigh")
+
+    print("AVG EVALUATED SOLUTIONS (SUCCESSFUL)")
+    text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluatedSuccessful, layered_headline=True,
                                     vertical_border=vb))
-    latex_avgGenerationSuccessful = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium",
+    latex_avgEvaluatedSuccessful = printer.table_color_map(text, 500.0, 25000.0, 100000.0, "colorLow", "colorMedium",
                                                             "colorHigh")
 
     print("MAX SOLVER TIME")
@@ -551,7 +580,9 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, exp_prefix):
         ("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
         ("Average generation (all)", latex_avgGeneration, reporting.color_scheme_teal),
-        ("Average generation (only successful)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
+        #("Average generation (only successful)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
+        ("Average evaluated solutions", latex_avgEvaluated, reporting.color_scheme_teal),
+        ("Average evaluated solutions (only successful)", latex_avgEvaluatedSuccessful, reporting.color_scheme_teal),
         ("Approximate average runtime per program [s]", latex_avgRuntimePerProgram, reporting.color_scheme_brown),
         ("Max solver time per query [s]", latex_maxSolverTimes, reporting.color_scheme_violet),
         ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_brown),
@@ -575,9 +606,11 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
         props = load_correct_props(folders)
         dim_benchmarks = Dim.from_dict(props, "benchmark")
 
+        print("\nFiltered Info:")
         for p in props:
-            if p["benchmark"] == "benchmarks/SLIA/cdgp_ecj1/dr-name.sl":
-                print(p["result.totalTimeSystem"])
+            if p["benchmark"] == "benchmarks/SLIA/cdgp_ecj1/firstname.sl" and\
+                p["searchAlgorithm"] == "GP" and p["CDGPtestsRatio"] == "1.0":
+                print(p["thisFileName"] + "   --->  " + str(float(p["result.totalTimeSystem"]) / 1000.0))
 
         if use_bench_simple_names:
             configs = [Config(benchmarks_simple_names.get(c.get_caption(), c.get_caption()), c.filters[0][1],
