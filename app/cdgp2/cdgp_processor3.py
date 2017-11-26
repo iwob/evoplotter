@@ -25,7 +25,9 @@ def load_correct_props(folders):
     def is_correct(p):
         if p["method"] in {"GPR", "CDGP"}:
             return "result.best.passedTestsRatio" in p and "status" in p and\
-                   (p["status"] == "completed" or p["status"] == "initialized") and "benchmark" in p
+                   (p["status"] == "completed" or p["status"] == "initialized")\
+                   and "benchmark" in p and p["result.best.numTests"] != "0"
+
         else:
             return "status" in p and (p["status"] == "completed" or p["status"] == "initialized") and "benchmark" in p
 
@@ -180,16 +182,18 @@ def get_num_optimal(props):
 
 def get_num_computed(filtered):
     return len(filtered)
-def fun_successRates_full(filtered):
+def fun_successRate_full(filtered):
     if len(filtered) == 0:
         return "-"
     num_opt = get_num_optimal(filtered)
     return "{0}/{1}".format(str(num_opt), str(len(filtered)))
-def fun_successRates(filtered):
+def get_successRate(filtered):
+    num_opt = get_num_optimal(filtered)
+    return float(num_opt) / float(len(filtered))
+def fun_successRate(filtered):
     if len(filtered) == 0:
         return "-"
-    num_opt = get_num_optimal(filtered)
-    sr = float(num_opt) / float(len(filtered))
+    sr = get_successRate(filtered)
     return "{0}".format("%0.2f" % round(sr, 2))
 def get_stats_size(props):
     vals = [float(p["result.best.size"]) for p in props]
@@ -396,7 +400,7 @@ def plot_figures(props, exp_prefix):
     print_solved_in_time(props, 600 * 1000)
 
     # Plot chart of number of found solutions in time
-    success_props = [p for p in props if p["result.best.isOptimal"] == "true"]
+    success_props = [p for p in props if is_optimal_solution(p)]
     getter = lambda p: float(normalized_total_time(p)) / (3600 * 1000)  # take hours as a unit
     predicate = lambda v, v_xaxis: v <= v_xaxis
     xs = np.arange(0.0, 24.0+1e-9, 0.5) # a point every 30 minutes
@@ -436,6 +440,26 @@ def plot_figures(props, exp_prefix):
                                          savepath="figures/{0}_ratioEvaluated_correctVsAllRuns.pdf".format(exp_prefix),
                                          title="Ratio of runs which ended with correct solution out of all runs",
                                          xlabel="Number of evaluated solutions")
+
+    plotter.compare_avg_data_series(props, dim_methodCDGP * dim_sa, "CDGPtestsRatio",
+                                    getter_y=get_successRate,
+                                    is_aggr=1,
+                                    savepath="figures/{0}_q_successRates.pdf".format(exp_prefix),
+                                    title="Success rates",
+                                    ylabel="Success rate",
+                                    xlabel="q")
+
+    plotter.compare_avg_data_series_d(success_props, dim_methodCDGP * dim_sa, "CDGPtestsRatio", "result.best.size",
+                                    savepath="figures/{0}_q_sizes.pdf".format(exp_prefix),
+                                    title="Size of found correct solutions",
+                                    ylabel="Size",
+                                    xlabel="q")
+
+    plotter.compare_avg_data_series_d(props, dim_methodCDGP*dim_sa, "CDGPtestsRatio", "cdgp.totalTests",
+                                    savepath="figures/{0}_q_tests.pdf".format(exp_prefix),
+                                    title="Total number of test cases",
+                                    ylabel="Total tests",
+                                    xlabel="q")
 
 
 
@@ -482,7 +506,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
 
     print("SUCCESS RATES")
     text = post(
-        printer.latex_table(props, dim_rows, dim_cols, fun_successRates, layered_headline=True, vertical_border=vb))
+        printer.latex_table(props, dim_rows, dim_cols, fun_successRate, layered_headline=True, vertical_border=vb))
     latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 
     print("AVG RUNTIME")
@@ -608,8 +632,10 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
 
         print("\nFiltered Info:")
         for p in props:
-            if p["benchmark"] == "benchmarks/SLIA/cdgp_ecj1/firstname.sl" and\
-                p["searchAlgorithm"] == "GP" and p["CDGPtestsRatio"] == "1.0":
+            #if p["benchmark"] == "benchmarks/SLIA/cdgp_ecj1/firstname.sl" and\
+            #    p["searchAlgorithm"] == "GP" and p["CDGPtestsRatio"] == "1.0":
+            #    print(p["thisFileName"] + "   --->  " + str(float(p["result.totalTimeSystem"]) / 1000.0))
+            if p["method"] in {"GPR", "CDGP"} and p["result.best.numTests"] == "0":
                 print(p["thisFileName"] + "   --->  " + str(float(p["result.totalTimeSystem"]) / 1000.0))
 
         if use_bench_simple_names:
@@ -666,9 +692,12 @@ def reports_exp4int():
         (create_subsection_cdgp_specific, [None, dimColsCdgp_v2, "exp4int"]),
     ]
     figures = [
-        "figures/ratioEvaluated_correctVsAllRuns.pdf",
-        "figures/ratioTime_correctVsAllCorrect.pdf",
-        "figures/ratioTime_endedVsAllEnded.pdf",
+        "figures/exp4int_ratioEvaluated_correctVsAllRuns.pdf",
+        "figures/exp4int_ratioTime_correctVsAllCorrect.pdf",
+        "figures/exp4int_ratioTime_endedVsAllEnded.pdf",
+        "figures/exp4int_q_successRates.pdf",
+        "figures/exp4int_q_sizes.pdf",
+        "figures/exp4int_q_tests.pdf",
     ]
     sects = [(title, desc, folders, subs, figures)]
     sects_v2 = [(title, desc, folders, subs_v2, figures)]
@@ -697,6 +726,9 @@ def reports_exp4str():
         "figures/exp4str_ratioEvaluated_correctVsAllRuns.pdf",
         "figures/exp4str_ratioTime_correctVsAllCorrect.pdf",
         "figures/exp4str_ratioTime_endedVsAllEnded.pdf",
+        "figures/exp4str_q_successRates.pdf",
+        "figures/exp4str_q_sizes.pdf",
+        "figures/exp4str_q_tests.pdf",
     ]
     sects = [(title, desc, folders, subs, figures)]
     sects_v2 = [(title, desc, folders, subs_v2, figures)]

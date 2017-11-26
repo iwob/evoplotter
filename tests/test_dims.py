@@ -73,8 +73,8 @@ class TestsDims(unittest.TestCase):
         props = [{'a': '0', 'b': '25'},
                  {'a': '4', 'b': '35'},
                  {'a': '4', 'b': '45', 'c':'34'}]
-        self.assertEqual({'0', '4'}, get_unique_values(props, lambda x: x['a']))
-        self.assertEqual({'25', '35', '45'}, get_unique_values(props, lambda x: x['b']))
+        self.assertEqual({'0', '4'}, utils.get_unique_values(props, lambda x: x['a']))
+        self.assertEqual({'25', '35', '45'}, utils.get_unique_values(props, lambda x: x['b']))
 
 
     def test_Dim_from_data(self):

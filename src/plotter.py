@@ -11,6 +11,36 @@ OUTPUT_FOLDER = 'figures'
 
 
 
+# Point markers in matplotlib:
+# "." 	point
+# "," 	pixel
+# "o" 	circle
+# "v" 	triangle_down
+# "^" 	triangle_up
+# "<" 	triangle_left
+# ">" 	triangle_right
+# "1" 	tri_down
+# "2" 	tri_up
+# "3" 	tri_left
+# "4" 	tri_right
+# "8" 	octagon
+# "s" 	square
+# "p" 	pentagon
+# "P" 	plus (filled)
+# "*" 	star
+# "h" 	hexagon1
+# "H" 	hexagon2
+# "+" 	plus
+# "x" 	x
+# "X" 	x (filled)
+# "D" 	diamond
+# "d" 	thin_diamond
+# "|" 	vline
+# "_" 	hline
+
+
+
+
 # ------------------------------------------------------------------
 #                        CREATING FIGURES
 # ------------------------------------------------------------------
@@ -197,7 +227,9 @@ def plot_fitness_progression_on_benchmarks(props, dim_benchmarks, dim_variants,
 
 
 def _plot_fitness_progression_on_benchmarks_subplot(fig, axes, i, j, props, benchmark, variant, keys_info, xlim_db=None, ylim_db=None, plot_individual_runs=False, key_lastGen="result.lastGeneration", key_avgFits="result.stats.avgFitness", markevery=2, errorevry=2):
-    """Draws a subplot containing fitness progression through iterations on an intersection of a single benchmark and single variant."""
+    """Draws a subplot containing fitness progression through iterations on an intersection
+    of a single benchmark and single variant.
+    """
     axes[i,j].margins(0.01)  # Pad margins so that markers don't get clipped by the axes
     axes[i,j].spines['top'].set_visible(False)
     axes[i,j].spines['right'].set_visible(False)
@@ -240,11 +272,92 @@ def _plot_fitness_progression_on_benchmarks_subplot(fig, axes, i, j, props, benc
 
 
 
+def compare_avg_data_series_d(props, dim_series, key_x, key_y, point_markers=None,
+                            savepath=None, show_plot=0, **kwargs):
+    assert isinstance(key_y, str)
+    fun_x = lambda p: p[key_y]
+    compare_avg_data_series(props, dim_series, key_x, fun_x, 0, point_markers, savepath,
+                              show_plot, **kwargs)
 
 
 
-def compare_fitness_on_benchmarks(props, dim_benchmarks, dim_variants, key_fit="result.best.eval", print_quantities=False, use_latex=False, savepath=None):
-    """For each benchmark creates a box-and-wshiskers plot on which boxes are drawn for each configuration of the experiment."""
+def compare_avg_data_series(props, dim_series, key_x, getter_y, is_aggr=0, point_markers=None,
+                            savepath=None, show_plot=0, **kwargs):
+    """Creates a simple 2D plot on which data series are compared on a certain value.
+
+    :param props: (list[dict[str, str]]) dictionaries to be processed.
+    :param dim_series: (Dim) a dimension used to generate different data series.
+    :param key_x: (str) a key from which should be taken values on x axis (treated
+    as ordinal variables sorted lexicographically).
+    :param getter_y: (lambda) a function from prop to a value. If is_aggr=1, then the
+    function is applied to all properties meeting the x point predicate.
+    """
+    assert isinstance(props, list)
+    assert isinstance(dim_series, dims.Dim)
+    assert isinstance(key_x, str)
+    assert not isinstance(getter_y, str)
+    point_markers = ["x", "+", "o", "^", "s", "8"] if point_markers is None else point_markers
+
+    kwargs["title"] =  kwargs.get("ylabel", "")
+    kwargs["ylabel"] =  kwargs.get("ylabel", "Y")
+    kwargs["xlabel"] =  kwargs.get("xlabel", "X")
+    kwargs["legend_loc"] =  kwargs.get("legend_loc", "lower right")
+
+    dim_x = dims.Dim.from_dict(props, key_x).sort()
+    x_capts = dim_x.get_captions()
+    xs = list(range(len(x_capts)))
+
+    fig = plt.figure() # figsize=(12, 7)
+    plt.xticks(xs, x_capts)
+    plt.margins(0.01)  # Pad margins so that markers don't get clipped by the axes
+    ax1 = fig.add_subplot(111)
+    ax1.set_title(kwargs["title"])
+    ax1.set_ylabel(kwargs["ylabel"])
+    ax1.set_xlabel(kwargs["xlabel"])
+
+
+    def compute_series(f_props):
+        """Produces xs and ys for a single data series. ys here is an average."""
+        ys = []
+        for x_conf in dim_x:
+            x_props = x_conf.filter_props(f_props)
+            if is_aggr:
+                avg = getter_y(x_props)
+            else:
+                avg  = np.mean([float(getter_y(p)) for p in x_props])
+            ys.append(avg)
+        return xs, ys
+
+    series = []
+    for s in dim_series:
+        f_props = s.filter_props(props)
+        if len(f_props) > 0:
+            data = compute_series(f_props)
+            series.append((s.get_caption(), data))
+
+    for i, s in enumerate(series):
+        pm = point_markers[i] if i < len(point_markers) else point_markers[-1]
+        name, data = s
+        ax1.plot(data[0], data[1], pm+"-", label=name)
+
+    lgd = ax1.legend(loc=kwargs["legend_loc"], bbox_transform=plt.gcf().transFigure)
+    if savepath is not None:
+        print("Saving figure: " + savepath)
+        fig.savefig(savepath, bbox_extra_artists=(lgd,), bbox_inches='tight')
+    if show_plot:
+        plt.show()
+
+
+
+
+def compare_fitness_on_benchmarks(props, dim_benchmarks, dim_variants, key="result.best.eval",
+                                  print_quantities=False, use_latex=False, savepath=None, show_plot=1):
+    """For each benchmark creates a box-and-wshiskers plot on which boxes are drawn for
+    each configuration of the experiment.
+
+    :param props: (list[dict[str, str]]) dictionaries to be processed.
+    :param dim_variants: (Dim) a dimension used to generate different data series.
+    """
     assert isinstance(dim_benchmarks, dims.Dim)
     assert isinstance(dim_variants, dims.Dim)
     nrow = len(dim_benchmarks)
@@ -255,20 +368,21 @@ def compare_fitness_on_benchmarks(props, dim_benchmarks, dim_variants, key_fit="
     i = 0
     for db in dim_benchmarks:
         props_db = db.filter_props(props)
-        _compare_fitness_on_benchmarks_subplot(fig, axes, i, db, props_db, dim_variants, key_fit=key_fit, print_quantities=print_quantities, use_latex=use_latex)
+        _compare_fitness_on_benchmarks_subplot(fig, axes, i, db, props_db, dim_variants, key_fit=key, print_quantities=print_quantities, use_latex=use_latex)
         i += 1
 
-    if savepath is None:
-        savepath = OUTPUT_FOLDER + "/box.pdf"
-    fig.savefig(savepath)
-    plt.show()
+    if savepath is not None:
+        print("Saving figure: " + savepath)
+        fig.savefig(savepath, bbox_extra_artists=(lgd,), bbox_inches='tight')
+    if show_plot:
+        plt.show()
 
 
 
 
 
-def plot_ratio_meeting_predicate(props, getter, predicate, condition=None, series_dim=None, xs=None, savepath=None, xlabel=None, xticks=None,
-                                 title=None, show_plot=1):
+def plot_ratio_meeting_predicate(props, getter, predicate, condition=None, series_dim=None, xs=None,
+                                 savepath=None, xlabel=None, xticks=None, title=None, show_plot=1):
     """Plots a ratio of solutions meeting the predicate. Ratios are presented on the Y axis. On the X axis
     presented are values of a certain attribute on which progression is made (e.g. time to solve). Those
     values (obtained by getter) are then compared with the dict's value (using the predicate).

@@ -1,6 +1,21 @@
 import os
 
 
+
+def get_unique_values(data, extr):
+    """Collects unique values in the data.
+
+    :param data: (list[dict[str]]) list storing all the data.
+    :param extr: (lambda) function for extracting value from a dictionary.
+    :return: (set[str]) a set of unique values.
+    """
+    assert isinstance(data, list), "Data should be a list!"
+    s = set()
+    for p in data:
+        s.add(extr(p))
+    return s
+
+
 def read_lines(path):
     """Reads all lines from the specified file.
 

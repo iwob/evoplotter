@@ -1,3 +1,4 @@
+from . import utils
 
 
 class Dim(object):
@@ -72,6 +73,10 @@ class Dim(object):
             raise Exception("To the Dimension may be added only a Config or other Dimension.")
     __rmul__ = __mul__
 
+    def get_captions(self):
+        """Returns a list of captions of all configs in this dimension."""
+        return [c.get_caption() for c in self.configs]
+
     def filter_out_outsiders(self, props):
         """Returns properties in which contained are only elements belonging to one of
         configs in this dimension. Note that dimension values (configs) do not have to
@@ -89,7 +94,7 @@ class Dim(object):
     def from_data(cls, props, extr):
         """Creates a Dim object by collecting all unique values in the data.
         Extractor (extr) is a function used to get values."""
-        s = get_unique_values(props, extr)
+        s = utils.get_unique_values(props, extr)
         configs = [Config(el, lambda p, extr=extr, el=el: extr(p) == el) for el in s]
         return Dim(configs)
 
@@ -97,7 +102,7 @@ class Dim(object):
     def from_dict(cls, props, key):
         """Creates a Dim object by collecting all unique values under the specified
         key in the dictionaries."""
-        s = get_unique_values(props, lambda p: p[key])
+        s = utils.get_unique_values(props, lambda p: p[key])
         configs = []
         for el in s:
             kwargs = {key: el}
@@ -106,18 +111,6 @@ class Dim(object):
 
 
 
-def get_unique_values(data, extr):
-    """Collects unique values in the data.
-
-    :param data: (list[dict[str]]) list storing all the data.
-    :param extr: (lambda) function for extracting value from a dictionary.
-    :return: (set[str]) a set of unique values.
-    """
-    assert isinstance(data, list), "Data should be a list!"
-    s = set()
-    for p in data:
-        s.add(extr(p))
-    return s
 
 def generate_configs(dims_list):
     """Returns a list of configurations for a dimension."""
