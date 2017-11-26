@@ -388,6 +388,8 @@ def print_solved_in_time(props, upper_time):
 
 
 def plot_figures(props, exp_prefix):
+    # We want to consider CDGP only
+    props = [p for p in props if p_method_cdgp(p) or p_method_gpr(p)]
     if len(props) == 0:
         return
     print_solved_in_time(props, 12 * 3600 * 1000)
