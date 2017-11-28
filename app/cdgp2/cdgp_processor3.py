@@ -165,7 +165,7 @@ dim_sa_ss = Dim([
 
 
 
-def normalized_total_time(p, max_time=86400000): # by default 24 h (in ms)
+def normalized_total_time(p, max_time=3600000): # by default 1 h (in ms)
     """If time was longer than max_time, then return max_time, otherwise return time."""
     if p["result.totalTimeSystem"] == "3600.0":
         v = 3600000  # convert to ms (error in logging)
@@ -391,34 +391,35 @@ def plot_figures(props, exp_prefix):
     # We want to consider CDGP only
     props = [p for p in props if p_method_cdgp(p) or p_method_gpr(p)]
     if len(props) == 0:
+        print("No props: plots were not generated.")
         return
-    print_solved_in_time(props, 12 * 3600 * 1000)
-    print_solved_in_time(props, 6 * 3600 * 1000)
-    print_solved_in_time(props, 3 * 3600 * 1000)
-    print_solved_in_time(props, 1 * 3600 * 1000)
-    print_solved_in_time(props, 0.5 * 3600 * 1000)
-    print_solved_in_time(props, 0.25 * 3600 * 1000)
-    print_solved_in_time(props, 0.125 * 3600 * 1000)
-    print_solved_in_time(props, 600 * 1000)
+    # print_solved_in_time(props, 12 * 3600 * 1000)
+    # print_solved_in_time(props, 6 * 3600 * 1000)
+    # print_solved_in_time(props, 3 * 3600 * 1000)
+    # print_solved_in_time(props, 1 * 3600 * 1000)
+    # print_solved_in_time(props, 0.5 * 3600 * 1000)
+    # print_solved_in_time(props, 0.25 * 3600 * 1000)
+    # print_solved_in_time(props, 0.125 * 3600 * 1000)
+    # print_solved_in_time(props, 600 * 1000)
 
     # Plot chart of number of found solutions in time
     success_props = [p for p in props if is_optimal_solution(p)]
-    getter = lambda p: float(normalized_total_time(p)) / (3600 * 1000)  # take hours as a unit
+    getter = lambda p: float(normalized_total_time(p)) / (60 * 1000)  # take minutes as a unit
     predicate = lambda v, v_xaxis: v <= v_xaxis
-    xs = np.arange(0.0, 24.0+1e-9, 0.5) # a point every 30 minutes
-    xticks = np.arange(0.0, 24.0+1e-9, 1.0) # a tick every 60 minutes
+    xs = np.arange(0.0, 60.5+1e-9, 1.0) # a point every 1.0 minutes
+    xticks = np.arange(0.0, 60.0+1e-9, 5.0) # a tick every 5 minutes
     plotter.plot_ratio_meeting_predicate(success_props, getter, predicate,
                                          xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=dim_method * dim_sa, # "series_dim=None" for a single line
                                          savepath="figures/{0}_ratioTime_correctVsAllCorrect.pdf".format(exp_prefix),
                                          title="Ratio of found correct solutions out of all correct solutions",
-                                         xlabel="Runtime [hours]")
+                                         xlabel="Runtime [minutes]")
     plotter.plot_ratio_meeting_predicate(props, getter, predicate,
                                          xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=dim_method * dim_sa,
                                          savepath="figures/{0}_ratioTime_endedVsAllEnded.pdf".format(exp_prefix),
                                          title="Ratio of ended runs",
-                                         xlabel="Runtime [hours]")
+                                         xlabel="Runtime [minutes]")
     def get_total_evaluated(p):
         if "searchAlgorithm" not in p:
             return None
@@ -426,8 +427,8 @@ def plot_figures(props, exp_prefix):
             return int(p["result.best.generation"])
         else:
             return int(p["result.best.generation"]) * int(p["populationSize"])
-    xticks = np.arange(0.0, 50000.01, 5000)
-    xs = np.arange(0.0, 50000.01, 1250)
+    xs = np.arange(0.0, 500.0 * 1000.0 + 0.01, 10000)
+    xticks = np.arange(0.0, 500.0 *1000.0 + 0.01, 50000)
     plotter.plot_ratio_meeting_predicate(success_props, get_total_evaluated, predicate,
                                          xs=xs, xticks=xticks, show_plot=0,
                                          series_dim=dim_method * dim_sa,
@@ -619,9 +620,10 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, exp_prefix):
 
 
 
-
-def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matrix=True):
+_prev_props = None
+def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matrix=True, reuse_props=False):
     """Creating nice LaTeX report of the results."""
+    global _prev_props
     report = reporting.ReportPDF(geometry_params="[paperwidth=75cm, paperheight=40cm, margin=0.3cm]")
     latex_sects = []
     for title, desc, folders, subs, figures in sects:
@@ -629,7 +631,13 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
         print("Scanned folders:")
         for f in folders:
             print(f)
-        props = load_correct_props(folders)
+
+        # Load props
+        if reuse_props:
+            props = _prev_props
+        else:
+            props = load_correct_props(folders)
+            _prev_props = props
         dim_benchmarks = Dim.from_dict(props, "benchmark")
 
         print("\nFiltered Info:")
@@ -637,8 +645,10 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
             #if p["benchmark"] == "benchmarks/SLIA/cdgp_ecj1/firstname.sl" and\
             #    p["searchAlgorithm"] == "GP" and p["CDGPtestsRatio"] == "1.0":
             #    print(p["thisFileName"] + "   --->  " + str(float(p["result.totalTimeSystem"]) / 1000.0))
-            if p["method"] in {"GPR", "CDGP"} and p["result.best.numTests"] == "0":
+            if p["method"] in {"GPR", "CDGP"} and is_optimal_solution(p) and\
+               p["benchmark"] == "benchmarks/SLIA/cdgp_ecj1/initials.sl":
                 print(p["thisFileName"] + "   --->  " + str(float(p["result.totalTimeSystem"]) / 1000.0))
+                print("BEST: " + p["result.best.smtlib"])
 
         if use_bench_simple_names:
             configs = [Config(benchmarks_simple_names.get(c.get_caption(), c.get_caption()), c.filters[0][1],
@@ -647,8 +657,8 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
             dim_benchmarks = Dim(configs)
             dim_benchmarks.sort()
         if print_status_matrix:
-            d = dim_benchmarks * dim_methodCDGP * dim_testsRatio * dim_sa + \
-                dim_benchmarks * dim_methodGPR * dim_testsRatioGPR * dim_sa
+            d = dim_benchmarks * dim_methodCDGP * dim_testsRatio * dim_sa# + \
+                #dim_benchmarks * dim_methodGPR * dim_testsRatioGPR * dim_sa
             matrix = produce_status_matrix(d, props)
             print("\n****** Status matrix:")
             print(matrix + "\n")
@@ -705,11 +715,11 @@ def reports_exp4int():
     sects_v2 = [(title, desc, folders, subs_v2, figures)]
 
     prepare_report(sects, "cdgp_exp4int.tex")
-    prepare_report(sects_v2, "cdgp_exp4int_v2.tex")
+    prepare_report(sects_v2, "cdgp_exp4int_v2.tex", reuse_props=True)
 
 
 def reports_exp4str():
-    folders = ["exp4str"]
+    folders = ["exp4str", "exp4str_fix1", "exp4str_fix2"]
     title = "Experiments for parametrized CDGP (stop: 1h)"
     desc = r""""""
     str_dimColsCdgp = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio
@@ -736,7 +746,7 @@ def reports_exp4str():
     sects_v2 = [(title, desc, folders, subs_v2, figures)]
 
     prepare_report(sects, "cdgp_exp4str.tex")
-    prepare_report(sects_v2, "cdgp_exp4str_v2.tex")
+    prepare_report(sects_v2, "cdgp_exp4str_v2.tex", reuse_props=True)
 
 
 def reports_exp3():
@@ -771,5 +781,5 @@ def reports_exp3():
 
 if __name__ == "__main__":
     # reports_exp3()
-    reports_exp4int()
-    # reports_exp4str()
+    # reports_exp4int()
+    reports_exp4str()
