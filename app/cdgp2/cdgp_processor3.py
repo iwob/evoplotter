@@ -20,11 +20,16 @@ def print_props_filenames(props):
 
 def load_correct_props(folders):
     props_cdgpError = utils.load_properties_dirs(folders, exts=[".cdgp.error"])
-    props0 = utils.load_properties_dirs(folders, exts=[".cdgp", ".cvc4_head_cegqi", ".cvc4_cegqi", ".eusolver"])
+    exts = [".cdgp", ".cvc4_head_cegqi", ".cvc4_cegqi", ".eusolver", ".cvc4", ".cvc4_head"]
+    props0 = utils.load_properties_dirs(folders, exts=exts)
 
     def is_correct(p):
         if p["method"] in {"GPR", "CDGP"}:
-            return "result.best.passedTestsRatio" in p and "status" in p and\
+            if "SLIA" not in p["benchmark"] and p["searchAlgorithm"] in {"Lexicase", "LexicaseSteadyState"} and\
+               ("lex" not in p["outDir"] and p["outDir"] != 'exp4str2_fix1'):
+                return False
+            else:
+                return "result.best.passedTestsRatio" in p and "status" in p and\
                    (p["status"] == "completed" or p["status"] == "initialized")\
                    and "benchmark" in p and p["result.best.numTests"] != "0"
 
@@ -97,8 +102,12 @@ def p_sel_tourn(p):
     return p["searchAlgorithm"] == "GPSteadyState" or p["searchAlgorithm"] == "GP"
 
 
+
+
 d1 = "benchmarks/LIA/cdgp_paper17/other/"
 d2 = "benchmarks/LIA/cdgp_paper17/"
+d3 = "benchmarks/SLIA/cdgp_ecj1/"
+d4 = "benchmarks/SLIA/cdgp_ecj2/"
 benchmarks_simple_names = {d1 + "ArithmeticSeries3.sl": "IsSeries3",
                            d1 + "ArithmeticSeries4.sl": "IsSeries4",
                            d1 + "CountPositive2.sl": "CountPos2",
@@ -116,9 +125,23 @@ benchmarks_simple_names = {d1 + "ArithmeticSeries3.sl": "IsSeries3",
                            d2 + "fg_array_sum_4_15.sl": "Sum4",
                            d2 + "fg_max2.sl": "Max2",
                            d2 + "fg_max4.sl": "Max4",
+                           # String benchmarks
+                           d3 + "dr-name.sl": "dr-name",
+                           d3 + "firstname.sl": "firstname",
+                           d3 + "initials.sl": "initials",
+                           d3 + "lastname.sl": "lastname",
+                           d3 + "name-combine-2.sl": "name-combine-2",
+                           d3 + "name-combine-3.sl": "name-combine-3",
+                           d3 + "name-combine-4.sl": "name-combine-4",
+                           d3 + "name-combine.sl": "name-combine",
+                           d4 + "phone-1.sl": "phone-1",
+                           d4 + "phone-2.sl": "phone-2",
+                           d4 + "phone-3.sl": "phone-3",
+                           d4 + "phone-4.sl": "phone-4",
+                           d4 + "phone.sl": "phone",
                            "benchmarks/NIA/rsconf.sl": "rsconf"}
 
-dim_true = Dim(Config("All benchmarks", lambda p: True, method=None))
+dim_true = Dim(Config("All", lambda p: True, method=None))
 dim_method = Dim([
     Config("CDGP", p_method_for("CDGP"), method="CDGP"),
     Config("GPR", p_method_for("GPR"), method="GPR")
@@ -130,14 +153,26 @@ dim_methodGPR = Dim([
     Config("GPR", p_method_for("GPR"), method="GPR")
 ])
 dim_methodFormal = Dim([
-    Config("EUSOLVER", p_method_for("eusolver"), method="eusolver"),
+    Config("EUSolver", p_method_for("eusolver"), method="eusolver"),
     Config("CVC4_cegqi", p_method_for("cvc4_head_cegqi"), method="cvc4_head_cegqi"),
+])
+dim_methodFormalStrings = Dim([
+    Config("CVC4 1.5", p_method_for("cvc4"), method="cvc4"),
+    Config("CVC4_head", p_method_for("cvc4_head"), method="cvc4_head"),
 ])
 dim_sa = Dim([
     Config("Tour", p_GP, searchAlgorithm="GP"),
     Config("TourSS", p_GPSteadyState, searchAlgorithm="GPSteadyState"),
     Config("Lex", p_Lexicase, searchAlgorithm="Lexicase"),
     Config("LexSS", p_LexicaseSteadyState, searchAlgorithm="LexicaseSteadyState")
+])
+dim_tour = Dim([
+    Config("Tour", p_GP, searchAlgorithm="GP"),
+    Config("TourSS", p_GPSteadyState, searchAlgorithm="GPSteadyState"),
+])
+dim_lexicase = Dim([
+    Config("Lex", p_Lexicase, searchAlgorithm="Lexicase"),
+    Config("LexSS", p_LexicaseSteadyState, searchAlgorithm="LexicaseSteadyState"),
 ])
 dim_testsRatio = Dim([
     Config("0.0", p_testsRatio("0.0"), testsRatio="0.0"),
@@ -188,6 +223,8 @@ def fun_successRate_full(filtered):
     num_opt = get_num_optimal(filtered)
     return "{0}/{1}".format(str(num_opt), str(len(filtered)))
 def get_successRate(filtered):
+    # if len(filtered) == 0:
+    #     return -1
     num_opt = get_num_optimal(filtered)
     return float(num_opt) / float(len(filtered))
 def fun_successRate(filtered):
@@ -640,15 +677,19 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
             _prev_props = props
         dim_benchmarks = Dim.from_dict(props, "benchmark")
 
-        print("\nFiltered Info:")
-        for p in props:
-            #if p["benchmark"] == "benchmarks/SLIA/cdgp_ecj1/firstname.sl" and\
-            #    p["searchAlgorithm"] == "GP" and p["CDGPtestsRatio"] == "1.0":
-            #    print(p["thisFileName"] + "   --->  " + str(float(p["result.totalTimeSystem"]) / 1000.0))
-            if p["method"] in {"GPR", "CDGP"} and is_optimal_solution(p) and\
-               p["benchmark"] == "benchmarks/SLIA/cdgp_ecj1/initials.sl":
-                print(p["thisFileName"] + "   --->  " + str(float(p["result.totalTimeSystem"]) / 1000.0))
-                print("BEST: " + p["result.best.smtlib"])
+        # print("\nFiltered Info:")
+        # for p in props:
+            # Print file names of certain config
+            # if "fg_array_search_2" in p["benchmark"] and "searchAlgorithm" in p and\
+            #    p["searchAlgorithm"] == "Lexicase" and p["method"] == "CDGP" and\
+            #    p["CDGPtestsRatio"] == "0.0":
+            #     print(p["thisFileName"] + "   --->  " + str(float(p["result.totalTimeSystem"]) / 1000.0))
+            #     print("BEST: " + p["result.best.smtlib"])
+            # Print bests
+            # if p["method"] in {"GPR", "CDGP"} and is_optimal_solution(p) and\
+            #    p["benchmark"] == "benchmarks/SLIA/cdgp_ecj1/initials.sl":
+            #     print(p["thisFileName"] + "   --->  " + str(float(p["result.totalTimeSystem"]) / 1000.0))
+            #     print("BEST: " + p["result.best.smtlib"])
 
         if use_bench_simple_names:
             configs = [Config(benchmarks_simple_names.get(c.get_caption(), c.get_caption()), c.filters[0][1],
@@ -657,8 +698,17 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
             dim_benchmarks = Dim(configs)
             dim_benchmarks.sort()
         if print_status_matrix:
-            d = dim_benchmarks * dim_methodCDGP * dim_testsRatio * dim_sa# + \
-                #dim_benchmarks * dim_methodGPR * dim_testsRatioGPR * dim_sa
+            # Corrections for whole non-formal LIA
+            #d = dim_benchmarks * dim_methodCDGP * dim_testsRatio * dim_sa +\
+            #    dim_benchmarks * dim_methodGPR * dim_testsRatioGPR * dim_sa
+
+            # Corrections for Lexicase
+            d = dim_benchmarks * dim_methodCDGP * dim_testsRatio * dim_lexicase +\
+                dim_benchmarks * dim_methodGPR * dim_testsRatioGPR * dim_lexicase
+
+            # Corrections for Strings
+            # d = dim_benchmarks * dim_methodCDGP * dim_testsRatio * dim_sa
+
             matrix = produce_status_matrix(d, props)
             print("\n****** Status matrix:")
             print(matrix + "\n")
@@ -683,18 +733,19 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
 
 
 
-dimColsCdgp = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio + \
-                  dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR
-dimColsShared = dimColsCdgp + dim_methodFormal
-dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel + \
-                 dim_methodGPR * dim_ea_type * dim_sel
-dimColsShared_v2 = dimColsCdgp_v2 + dim_methodFormal
 
 def reports_exp4int():
     folders = ["exp4int", "exp4int_fix1", "exp4int_fix2", "exp4int_fix3", "exp4int_fix4",
-               "exp4int_fix5","exp3formal"]  # "exp4int_lim"
+               "exp4int_fix5", "exp4int_lex", "exp4int_lex_fix1", "exp3formal"]
+    #folders = ["exp4int_lex", "exp4int_lex_fix1", "exp3formal"]
     title = "Experiments for parametrized CDGP (stop: 1h)"
     desc = r""""""
+    dimColsCdgp = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio + \
+                  dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR
+    dimColsShared = dimColsCdgp # + dim_methodFormal
+    dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel + \
+                     dim_methodGPR * dim_ea_type * dim_sel
+    dimColsShared_v2 = dim_methodFormal #dimColsCdgp_v2 + dim_methodFormal
     subs = [
         (create_subsection_shared_stats, [None, dimColsShared, 25]),
         (create_subsection_cdgp_specific, [None, dimColsCdgp, "exp4int"]),
@@ -719,13 +770,14 @@ def reports_exp4int():
 
 
 def reports_exp4str():
-    folders = ["exp4str", "exp4str_fix1", "exp4str_fix2"]
+    folders = ["exp4str", "exp4str_fix1", "exp4str_fix2", "exp4str2", "exp4str2_fix1",
+               "exp4str2_fix2", "exp4str_formal_final"]
     title = "Experiments for parametrized CDGP (stop: 1h)"
     desc = r""""""
     str_dimColsCdgp = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio
-    str_dimColsShared = str_dimColsCdgp + dim_methodFormal
+    str_dimColsShared = str_dimColsCdgp # + dim_methodFormalStrings
     str_dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel
-    str_dimColsShared_v2 = str_dimColsCdgp_v2 + dim_methodFormal
+    str_dimColsShared_v2 = dim_methodFormalStrings #str_dimColsCdgp_v2 + dim_methodFormalStrings
     subs = [
         (create_subsection_shared_stats, [None, str_dimColsShared, 25]),
         (create_subsection_cdgp_specific, [None, str_dimColsCdgp, "exp4str"]),
@@ -763,6 +815,12 @@ def reports_exp3():
     \item SteadyState configurations use always Tournament ($k=7$) deselection. Selection may be Tournament ($k=7$) or Lexicase.
     \end{itemize}
     """
+    dimColsCdgp = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio + \
+                  dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR
+    dimColsShared = dim_methodFormal
+    dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel + \
+                     dim_methodGPR * dim_ea_type * dim_sel
+    dimColsShared_v2 = dimColsCdgp_v2 + dim_methodFormal
     subs = [
         (create_subsection_shared_stats, [None, dimColsShared, 10]),
         (create_subsection_cdgp_specific, [None, dimColsCdgp, "exp3"]),
