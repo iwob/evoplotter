@@ -126,7 +126,7 @@ def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="
 
 
 def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layered_headline=False,
-                vertical_border=1):
+                vertical_border=1, first_col_align="l"):
     """Returns code of a LaTeX table (tabular environment) created from the given dimensions.
 
     :param props: (dict) all props gathered in the experiment.
@@ -141,6 +141,7 @@ def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layer
      depending on the configuration.
     :param vertical_border: (int) mode of the vertical borders in the table. Bigger the number,
      more dense the vertical borders. Range of values: 0 - 2.
+    :param first_col_align: (str) alignment of the first column, that is row labels.
     :return: (str) code of the LaTeX table.
     """
     assert isinstance(dim_rows, dims.Dim)
@@ -148,11 +149,11 @@ def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layer
 
     numCols = len(dim_cols.configs) + 1
     if vertical_border >= 2:
-        alignments = "|" + "|".join("c"*numCols) + "|"  # and not layered_headline
+        alignments = "|{0}|".format(first_col_align) + "|".join("c" * (numCols - 1)) + "|"  # and not layered_headline
     elif vertical_border == 1:
-        alignments = "|c|" + ("c" * (numCols-1)) + "|"
+        alignments = "|{0}|".format(first_col_align) + ("c" * (numCols - 1)) + "|"
     else:
-        alignments = "c"*numCols
+        alignments = first_col_align + ("c" * (numCols - 1))
     text = r"\begin{tabular}{" + alignments + "}\n"
     text += r"\hline" + "\n"
     text += latex_table_header(dim_cols, layered_headline, d_cols=" & ", d_rows="\\\\\n", vertical_border=vertical_border)
