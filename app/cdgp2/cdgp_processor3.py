@@ -545,6 +545,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
     latex_status = printer.table_color_map(text, 0.0, numRuns / 2, numRuns, "colorLow", "colorMedium", "colorHigh")
 
     print("SUCCESS RATES")
+    print(printer.text_table(props, dim_rows, dim_cols, fun_successRate, d_cols=";"))
     text = post(
         printer.latex_table(props, dim_rows, dim_cols, fun_successRate, layered_headline=True, vertical_border=vb))
     latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
@@ -745,7 +746,7 @@ def reports_exp4int():
     dimColsShared = dimColsCdgp # + dim_methodFormal
     dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel + \
                      dim_methodGPR * dim_ea_type * dim_sel
-    dimColsShared_v2 = dim_methodFormal #dimColsCdgp_v2 + dim_methodFormal
+    dimColsShared_v2 = dimColsCdgp_v2 + dim_methodFormal
     subs = [
         (create_subsection_shared_stats, [None, dimColsShared, 25]),
         (create_subsection_cdgp_specific, [None, dimColsCdgp, "exp4int"]),
@@ -777,7 +778,7 @@ def reports_exp4str():
     str_dimColsCdgp = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio
     str_dimColsShared = str_dimColsCdgp # + dim_methodFormalStrings
     str_dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel
-    str_dimColsShared_v2 = dim_methodFormalStrings #str_dimColsCdgp_v2 + dim_methodFormalStrings
+    str_dimColsShared_v2 = str_dimColsCdgp_v2 + dim_methodFormalStrings
     subs = [
         (create_subsection_shared_stats, [None, str_dimColsShared, 25]),
         (create_subsection_cdgp_specific, [None, str_dimColsCdgp, "exp4str"]),
@@ -838,6 +839,5 @@ def reports_exp3():
 
 
 if __name__ == "__main__":
-    # reports_exp3()
-    # reports_exp4int()
-    reports_exp4str()
+    reports_exp4int()
+    # reports_exp4str()
