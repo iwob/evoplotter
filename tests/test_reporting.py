@@ -14,9 +14,11 @@ class TestsPrinter(unittest.TestCase):
 \usepackage[paperwidth=65cm, paperheight=40cm, margin=0.3cm]{geometry}
 \usepackage[table]{xcolor}
 \usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
 
 \DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces
-\setlength{\tabcolsep}{10pt}
+\setlength{\tabcolsep}{8pt}
 
 
 \begin{document}
@@ -40,9 +42,11 @@ class TestsPrinter(unittest.TestCase):
 \usepackage[paperwidth=65cm, paperheight=40cm, margin=0.3cm]{geometry}
 \usepackage[table]{xcolor}
 \usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
 
 \DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces
-\setlength{\tabcolsep}{10pt}
+\setlength{\tabcolsep}{8pt}
 
 
 \begin{document}
@@ -68,9 +72,11 @@ class TestsPrinter(unittest.TestCase):
 \usepackage[paperwidth=65cm, paperheight=40cm, margin=0.3cm]{geometry}
 \usepackage[table]{xcolor}
 \usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
 
 \DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces
-\setlength{\tabcolsep}{10pt}
+\setlength{\tabcolsep}{8pt}
 
 
 \begin{document}

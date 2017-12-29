@@ -49,7 +49,7 @@ class TestsPrinter(unittest.TestCase):
         text = printer.latex_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]),
                                    vertical_border=0)
         text = self.clear_multicols(text)
-        self.assertEqual(r"\begin{tabular}{cccc}" + "\n"
+        self.assertEqual(r"\begin{tabular}{lccc}" + "\n"
                          r"\hline" + "\n" +
                          r" & c0 & c1 & c2\\" + "\n" +
                          r"\hline" + "\n" +
@@ -59,7 +59,7 @@ class TestsPrinter(unittest.TestCase):
 
     def test_latex_table_vb1(self):
         text = printer.latex_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]),
-                                   vertical_border=1)
+                                   vertical_border=1, first_col_align="c")
         text = self.clear_multicols(text)
         self.assertEqual(r"\begin{tabular}{|c|ccc|}" + "\n"
                          r"\hline" + "\n" +
@@ -71,9 +71,9 @@ class TestsPrinter(unittest.TestCase):
 
     def test_latex_table_vb2(self):
         text = printer.latex_table(self.data, self.dim_rows, self.dim_cols, lambda ds: sum([d["x"] for d in ds]),
-                                   vertical_border=2)
+                                   vertical_border=2, first_col_align="r")
         text = self.clear_multicols(text)
-        self.assertEqual(r"\begin{tabular}{|c|c|c|c|}" + "\n"
+        self.assertEqual(r"\begin{tabular}{|r|c|c|c|}" + "\n"
                          r"\hline" + "\n" +
                          r" & c0 & c1 & c2\\" + "\n" +
                          r"\hline" + "\n" +
