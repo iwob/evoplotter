@@ -101,8 +101,9 @@ def normalized_total_time(p, max_time=3600000 * 5): # by default 5 h (in ms)
     return max_time if v > max_time else v
 
 def is_optimal_solution(p):
-    return p["result.best.isOptimal"] == "true" and\
+    return p["result.best.isOptimal"] == "true" and \
            ("result.best.VerificationDecision" not in p or p["result.best.VerificationDecision"] == "unsat")
+    # return "result.best.VerificationDecision" not in p or p["result.best.VerificationDecision"] == "unsat"
 
 def get_num_optimal(props):
     props2 = [p for p in props if is_optimal_solution(p)]
@@ -570,10 +571,11 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
             _prev_props = props
         dim_benchmarks = Dim.from_dict(props, "benchmark")
 
-        #print("\nFiltered Info:")
-        #for p in props:
-            # if p["method"] in {"GP", "CDGP"} and int(p["result.best.generation"]) >= 99990:
-            #     print(p["thisFileName"] + "   --->  " + str(p["result.best.generation"]))
+        print("\nFiltered Info:")
+        for p in props:
+            if p["method"] in {"CDGP"} and p["benchmark"].endswith("gravityNoG_25.sl"):
+                # print(p["thisFileName"] + "   --->  " + "{0}, best={1}".format(p["result.best"], p["result.best.mse"]))
+                print("isOptimal: {0};  mse={1};  program={2}".format(is_optimal_solution(p), p["result.best.mse"], p["result.best"]))
             # Print file names of certain config
             # if "fg_array_search_2" in p["benchmark"] and "searchAlgorithm" in p and\
             #    p["searchAlgorithm"] == "Lexicase" and p["method"] == "CDGP" and\
