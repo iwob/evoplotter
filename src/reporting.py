@@ -91,6 +91,8 @@ class BlockLatex(object):
     """Simply stores as a single string blob several LaTeX instructions or whole text paragraphs."""
     def __init__(self, text):
         self.text = text
+    def __str__(self):
+        return self.text
     def get_text(self, opts):
         return self.text
 

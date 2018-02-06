@@ -292,7 +292,7 @@ def table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor="colorLow", 
     :return: (str) text of the table with added \cellcolor commands with appropriate colors as arguments.
     """
     def color_cell(s):
-        if s == "-" or s == "-" or not utils.isfloat(s.strip()):
+        if s == "-" or s == "-" or s.strip().lower() == "nan" or not utils.isfloat(s.strip()):
             return s
         else:
             # Computing color gradient.
