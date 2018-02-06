@@ -87,3 +87,71 @@ produceHeader()
 
 
 
+def generateRanksVertical(label, data):
+    text = r"\begin{tabular}{lr}" + "\n"
+    text += r"\hline" + "\n"
+    text += "{0} & {1}\\\\".format("method", label) + "\n"
+    text += r"\hline" + "\n"
+    values = sorted(zip(data.keys(), data.values()), key=lambda tup: tup[1])
+    # print(values)
+    for k, v in values:
+        val = "{0:.3f}".format(v)
+        text += "{0} & {1}\\\\".format(k, val) + "\n"
+    text += r"\hline" + "\n"
+    text += r"\end{tabular}"
+    # print("\n\nFRIEDMAN for: " + label)
+    print(text)
+    print(r"%")
+
+def generateRanksHorizontal(label, data):
+    text = r"\begin{tabular}{" + "l" + ("r" * len(data))  + "}\n"
+    text += r"\hline" + "\n"
+    values = sorted(zip(data.keys(), data.values()), key=lambda tup: tup[1])
+    # print(values)
+    rowMethods = "method"
+    rowRanks = label
+    for k, v in values:
+        val = "{0:.3f}".format(v)
+        rowMethods += "& {0}".format(k)
+        rowRanks += " & {0}".format(val)
+    rowMethods += r"\\" + "\n"
+    rowRanks += r"\\" + "\n"
+    text += rowMethods
+    text += rowRanks
+    # print("\n\nFRIEDMAN for: " + label)
+    # text += r"\hline" + "\n"
+    text += r"\end{tabular}"
+    print(text)
+    print(r"\smallskip%")
+
+
+def generate(label, data):
+    # generateRanksVertical(label, data)
+    generateRanksHorizontal(label, data)
+
+
+ranksLarge0 = {"lexsi": 2.056, "lexs": 3.611, "gpsi":3.722 , "lex":4.444,
+               "lexprior": 4.833, "gps":5.444, "gp":5.500, "gpprior":6.389}
+
+ranksLarge5 = {"lexsi": 2.222, "lexs": 3.500, "gpsi":3.833 , "lex":4.333,
+               "lexprior": 4.556, "gps":5.111, "gp":5.833, "gpprior":6.611}
+
+ranksSmall0 = {"lexsi": 2.500, "lexs": 3.056, "gpsi":4.278 , "lex":4.556,
+               "lexprior": 4.278, "gps":5.500, "gp":5.667, "gpprior":6.167}
+
+ranksSmall5 = {"lexsi": 2.167, "lexs": 3.611, "gpsi":4.333 , "lex":4.333,
+               "lexprior": 4.722, "gps":5.222, "gp":5.722, "gpprior":5.889}
+
+
+print("\n\n")
+generate("rank (small0.0)", ranksSmall0)
+generate("rank (small0.5)", ranksSmall5)
+generate("rank (large0.0)", ranksLarge0)
+generate("rank (large0.5)", ranksLarge5)
+
+
+
+
+
+
+
