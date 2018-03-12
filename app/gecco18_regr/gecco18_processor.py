@@ -47,7 +47,7 @@ def produce_status_matrix(dim, props):
     """Generates a status data in the form of a python list. It can be
     later used to retry missing runs.
     
-    :param dim: (Dimension) dimensions no which data are to be divided.
+    :param dim: (Dimension) dimensions on which data are to be divided.
     :param props: (dict[str,str]) properties files.
     :return: (str) Python code of a list containing specified data.
     """
@@ -69,13 +69,20 @@ def p_sel_lexicase(p):
     return p["selection"] == "lexicase"
 def p_sel_tourn(p):
     return p["selection"] == "tournament"
+def p_testsRatio_equalTo(ratio):
+    return lambda p, ratio=ratio: p["testsRatio"] == ratio
 
 
 
 
-d1 = "benchmarks/physics/"
-benchmarks_simple_names = {d1 + "gravity_25.sl": "physics/gravity_25.sl",
-                           d1 + "gravityNoG_25.sl": "physics/gravityNoG_25.sl",}
+def simplify_benchmark_name(name):
+    """Shortens or modifies the path of the benchmark."""
+    if name.startswith("benchmarks/physics/"):
+        return name.replace("benchmarks/physics/", "physics/", 1)
+    else:
+        return name
+
+
 
 dim_true = Dim(Config("All", lambda p: True, method=None))
 dim_methodCDGP = Dim([Config("CDGP", p_method_for("CDGP"), method="CDGP")])
@@ -85,6 +92,8 @@ dim_sel = Dim([Config("$Tour$", p_sel_tourn, selection="tournament"),
                Config("$Lex$", p_sel_lexicase, selection="lexicase")])
 dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
                    Config("$generational$", p_sel_lexicase, evolutionMode="generational")])
+dim_testsRatio = Dim([Config("$0.75$", p_testsRatio_equalTo("0.75"), testsRatio="0.75"),
+                      Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0")])
 # dim_sa = Dim([Config("$CDGP$", p_GP),
 # 			    Config("$CDGP^{ss}$", p_steadyState),
 #               Config("$CDGP_{lex}$", p_lexicase),
@@ -101,12 +110,17 @@ def normalized_total_time(p, max_time=3600000 * 5): # by default 5 h (in ms)
     return max_time if v > max_time else v
 
 def is_optimal_solution(p):
+    k = "result.best.verificationDecision"
     return p["result.best.isOptimal"] == "true" and \
-           ("result.best.VerificationDecision" not in p or p["result.best.VerificationDecision"] == "unsat")
-    # return "result.best.VerificationDecision" not in p or p["result.best.VerificationDecision"] == "unsat"
+           (k not in p or p[k] == "unsat")
+    # return "result.best.verificationDecision" not in p or p["result.best.verificationDecision"] == "unsat"
 
 def get_num_optimal(props):
     props2 = [p for p in props if is_optimal_solution(p)]
+    return len(props2)
+
+def get_num_propertiesMet(props):
+    props2 = [p for p in props if p["result.best.verificationDecision"] == "unsat"]
     return len(props2)
 
 def get_num_computed(filtered):
@@ -117,14 +131,18 @@ def fun_successRate_full(filtered):
     num_opt = get_num_optimal(filtered)
     return "{0}/{1}".format(str(num_opt), str(len(filtered)))
 def get_successRate(filtered):
-    # if len(filtered) == 0:
-    #     return -1
     num_opt = get_num_optimal(filtered)
     return float(num_opt) / float(len(filtered))
 def fun_successRate(filtered):
     if len(filtered) == 0:
         return "-"
     sr = get_successRate(filtered)
+    return "{0}".format("%0.2f" % round(sr, 2))
+def fun_propertiesMet(filtered):
+    if len(filtered) == 0:
+        return "-"
+    num_opt = get_num_propertiesMet(filtered)
+    sr = float(num_opt) / float(len(filtered))
     return "{0}".format("%0.2f" % round(sr, 2))
 def get_stats_size(props):
     vals = [float(p["result.best.size"]) for p in props]
@@ -204,7 +222,7 @@ def get_avg_mse(props):
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
     else:
-        return "%0.2f" % np.mean(vals)  # , np.std(vals)
+        return "%0.5f" % np.mean(vals)  # , np.std(vals)
 def get_avg_runtime_helper(vals):
     if len(vals) == 0:
         return "n/a"  # -1.0, -1.0
@@ -442,6 +460,12 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
         printer.latex_table(props, dim_rows, dim_cols, fun_successRate, layered_headline=True, vertical_border=vb))
     latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 
+    print("FINAL PROPERTIES")
+    print(printer.text_table(props, dim_rows, dim_cols, fun_propertiesMet, d_cols=";"))
+    text = post(
+        printer.latex_table(props, dim_rows, dim_cols, fun_propertiesMet, layered_headline=True, vertical_border=vb))
+    latex_propertiesMet = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
+
     print("AVG RUNTIME")
     text = post(
         printer.latex_table(props, dim_rows, dim_cols, get_avg_runtime, layered_headline=True, vertical_border=vb))
@@ -467,7 +491,8 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
 
     subsects_main = [
         ("Status (correctly finished runs)", latex_status, reporting.color_scheme_red_r),
-        ("Success rates", latex_successRates, reporting.color_scheme_green),
+        ("Success rates (mse below thresh (1.0e-25) + properties met)", latex_successRates, reporting.color_scheme_green),
+        ("Success rates (properties met)", latex_propertiesMet, reporting.color_scheme_green),
         ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
         ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
         # ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow),
@@ -534,7 +559,7 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, exp_prefix):
 
     plot_figures(props, exp_prefix=exp_prefix)
     subsects_cdgp = [
-        ("Average best-of-run fitness (MSE)", latex_avgBestOfRunFitness, reporting.color_scheme_green),
+        ("Average best-of-run MSE", latex_avgBestOfRunFitness, reporting.color_scheme_green),
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
         ("Average generation (all)", latex_avgGeneration, reporting.color_scheme_teal),
         #("Average generation (only successful)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
@@ -573,9 +598,9 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
 
         print("\nFiltered Info:")
         for p in props:
-            if p["method"] in {"CDGP"} and p["benchmark"].endswith("gravityNoG_25.sl"):
+            if p["method"] in {"CDGP"} and p["benchmark"].endswith("resistance_par2_25.sl"):
                 # print(p["thisFileName"] + "   --->  " + "{0}, best={1}".format(p["result.best"], p["result.best.mse"]))
-                print("isOptimal: {0};  mse={1};  program={2}".format(is_optimal_solution(p), p["result.best.mse"], p["result.best"]))
+                print("isOptimal: {0};  finalVer={3};  mse={1};  program={2}".format(is_optimal_solution(p), p["result.best.mse"], p["result.best"], p["result.best.verificationDecision"]))
             # Print file names of certain config
             # if "fg_array_search_2" in p["benchmark"] and "searchAlgorithm" in p and\
             #    p["searchAlgorithm"] == "Lexicase" and p["method"] == "CDGP" and\
@@ -589,7 +614,7 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
             #     print("BEST: " + p["result.best.smtlib"])
 
         if use_bench_simple_names:
-            configs = [Config(benchmarks_simple_names.get(c.get_caption(), c.get_caption()), c.filters[0][1],
+            configs = [Config(simplify_benchmark_name(c.get_caption()), c.filters[0][1],
                               benchmark=c.get_caption()) for c in
                        dim_benchmarks.configs]
             dim_benchmarks = Dim(configs)
@@ -624,12 +649,12 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
 
 
 
-def reports_e0():
-    folders = ["e0", "e0_gp"]
+def reports_e1():
+    folders = ["e1_0.75"]
     #folders = ["exp4int_lex", "exp4int_lex_fix1", "exp3formal"]
     title = "Experiments for regression CDGP (stop: 5h)"
     desc = r""""""
-    dimColsCdgp = dim_method
+    dimColsCdgp = dim_methodCDGP * dim_testsRatio + dim_methodGP
     dimColsShared = dimColsCdgp
     # dimColsCdgp_v2 = dim_method
     # dimColsShared_v2 = dimColsCdgp_v2
@@ -652,7 +677,7 @@ def reports_e0():
     sects = [(title, desc, folders, subs, figures)]
     # sects_v2 = [(title, desc, folders, subs_v2, figures)]
 
-    prepare_report(sects, "cdgp_e0.tex", paperwidth=30, include_all_row=False)
+    prepare_report(sects, "cdgp_e1.tex", paperwidth=30, include_all_row=False)
     # prepare_report(sects_v2, "cdgp_exp4int_v2.tex", reuse_props=True)
 
 
@@ -660,4 +685,4 @@ def reports_e0():
 
 
 if __name__ == "__main__":
-    reports_e0()
+    reports_e1()
