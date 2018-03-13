@@ -1,3 +1,4 @@
+import os
 from src import utils
 from src import plotter
 from src import printer
@@ -8,6 +9,18 @@ import numpy as np
 
 # This processor is to be used for exp4 onward.
 CHECK_CORRECTNESS_OF_FILES = 0
+STATUS_FILE_NAME = "status.txt"
+
+
+def ensure_dir(file_path):
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+def save_to_file(file_path, content):
+    file = open(file_path, "w")
+    file.write(content)
+    file.close()
 
 
 def print_props_filenames(props):
@@ -88,10 +101,10 @@ dim_true = Dim(Config("All", lambda p: True, method=None))
 dim_methodCDGP = Dim([Config("CDGP", p_method_for("CDGP"), method="CDGP")])
 dim_methodGP = Dim([Config("GP", p_method_for("GP"), method="GP")])
 dim_method = dim_methodCDGP + dim_methodGP
-dim_sel = Dim([Config("$Tour$", p_sel_tourn, selection="tournament"),
+dim_sel = Dim([#Config("$Tour$", p_sel_tourn, selection="tournament"),
                Config("$Lex$", p_sel_lexicase, selection="lexicase")])
-dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
-                   Config("$generational$", p_sel_lexicase, evolutionMode="generational")])
+dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),])
+                   #Config("$generational$", p_sel_lexicase, evolutionMode="generational")])
 dim_testsRatio = Dim([Config("$0.75$", p_testsRatio_equalTo("0.75"), testsRatio="0.75"),
                       Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0")])
 # dim_sa = Dim([Config("$CDGP$", p_GP),
@@ -620,11 +633,14 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
             dim_benchmarks = Dim(configs)
             dim_benchmarks.sort()
         if print_status_matrix:
-            d = dim_benchmarks * dim_method * dim_sel * dim_evoMode
+            d = dim_benchmarks * dim_methodGP  * dim_sel * dim_evoMode +\
+                dim_benchmarks * dim_methodCDGP * dim_sel * dim_evoMode * dim_testsRatio
 
             matrix = produce_status_matrix(d, props)
             print("\n****** Status matrix:")
             print(matrix + "\n")
+            print("Saving status matrix to file: {0}".format(STATUS_FILE_NAME))
+            save_to_file(STATUS_FILE_NAME, matrix)
 
 
         dim_rows = dim_benchmarks.sort()
@@ -650,7 +666,7 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
 
 
 def reports_e1():
-    folders = ["e1_0.75"]
+    folders = ["e1_0.75", "e1_0.75_10", "e1_1.0"]
     #folders = ["exp4int_lex", "exp4int_lex_fix1", "exp3formal"]
     title = "Experiments for regression CDGP (stop: 5h)"
     desc = r""""""
@@ -685,4 +701,6 @@ def reports_e1():
 
 
 if __name__ == "__main__":
+    ensure_dir("figures/")
+
     reports_e1()
