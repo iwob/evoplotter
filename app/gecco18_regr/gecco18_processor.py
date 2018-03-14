@@ -666,7 +666,7 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
 
 
 def reports_e1():
-    folders = ["e1_0.75", "e1_0.75_10", "e1_1.0"]
+    folders = ["e1_0.75", "e1_0.75_10", "e1_1.0", "e1_fix1", "e1_fix2"]
     #folders = ["exp4int_lex", "exp4int_lex_fix1", "exp3formal"]
     title = "Experiments for regression CDGP (stop: 5h)"
     desc = r""""""
