@@ -72,6 +72,7 @@ class Table(object):
             self.rows.append(cols)
 
     def removeColumn(self, index):
+        assert isinstance(index, int)
         for row in self.rows:
             del row[index]
 
@@ -88,6 +89,7 @@ class Table(object):
                 self.removeColumn(i)
 
     def removeRow(self, index):
+        assert isinstance(index, int)
         del self.rows[index]
 
     def getText(self):
