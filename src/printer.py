@@ -2,6 +2,115 @@ from . import dims
 from . import utils
 
 
+class CellRenderer(object):
+    def __init__(self, condition, editor):
+        self.condition = condition
+        self.editor = editor
+
+    def __call__(self, *args, **kwargs):
+        value = args[0]
+        body = args[1]
+        if self.condition(value, body):
+            return self.editor(value, body)
+        else:
+            return body
+
+
+class LatexTextbf(CellRenderer):
+    def __init__(self, condition):
+        editor = lambda value, body: r"\textbf{" + str(body) + "}"
+        CellRenderer.__init__(self, condition, editor)
+
+
+class CellShading(CellRenderer):
+    def __init__(self, MinNumber, MidNumber, MaxNumber, MinColor="colorLow", MidColor="colorMedium",
+                 MaxColor="colorHigh"):
+        """
+        :param MinNumber: (float) below or equal to this value everything will be colored fully with MinColor.
+          Higher values will be gradiented towards MidColor.
+        :param MidNumber: (float) middle point. Values above go towards MaxColor, and values below towards MinColor.
+        :param MaxNumber: (float) above or equal to this value everything will be colored fully with MaxColor.
+          Lower values will be gradiented towards MidColor.
+        :param MinColor: (str) name of the LaTeX color representing the lowest value.
+        :param MidColor: (str) name of the LaTeX color representing the middle value. This color is also used for
+          gradient, that is closer a given cell value is to the MidNumber, more MidColor'ed it becomes.
+        :param MaxColor: (str) name of the LaTeX color representing the highest value."""
+        def color_cell(v, body):
+            if v == "-" or v == "-" or v.strip().lower() == "nan" or not utils.isfloat(v.strip()):
+                return v
+            else:
+                # Computing color gradient.
+                val = float(v.strip())
+                if val > MidNumber:
+                    PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber - MidNumber), 100.0), 0.0)
+                    color = "{0}!{1:.1f}!{2}".format(MaxColor, PercentColor, MidColor)
+                else:
+                    PercentColor = max(min(100.0 * (MidNumber - val) / (MidNumber - MinNumber), 100.0), 0.0)
+                    color = "{0}!{1:.1f}!{2}".format(MinColor, PercentColor, MidColor)
+                return "\cellcolor{" + color + "}" + str(body)
+        condition = lambda v, b: True
+        editor = lambda v, b: color_cell(v, b)
+        CellRenderer.__init__(self, condition, editor)
+
+
+
+class Table(object):
+    def __init__(self, tableBody, renderers=None):
+        if renderers is None:
+            renderers = []
+        assert isinstance(tableBody, str)
+        assert isinstance(renderers, list)
+        tableBody = tableBody.strip() # Remove leading and trailing whitespaces
+        self.rows = []
+        self.renderers = renderers
+        for line in tableBody.split("\n"):
+            cols = [c.strip() for c in line.split("&")]
+            if cols[-1].endswith(r"\\"):
+                cols[-1] = cols[-1][:-2]
+            elif cols[-1].endswith(r"\\\hline"):
+                cols[-1] = cols[-1][:-8]
+            self.rows.append(cols)
+
+    def removeColumn(self, index):
+        for row in self.rows:
+            del row[index]
+
+    def removeColumns(self, indexes):
+        assert isinstance(indexes, list)
+        for i in sorted(indexes, reverse=True):
+            self.removeColumn(i)
+
+    def leaveColumns(self, indexes):
+        """Removes all the columns but those indicated by indexes."""
+        assert isinstance(indexes, list)
+        for i in range(len(self.rows[0])-1, -1, -1):
+            if i not in indexes:
+                self.removeColumn(i)
+
+    def removeRow(self, index):
+        del self.rows[index]
+
+    def getText(self):
+        return str(self)
+
+    def applyRenderers(self, value):
+        text = str(value)
+        for rend in self.renderers:
+            text = rend(value, text)
+        return text
+
+    def __str__(self):
+        text = ""
+        for row in self.rows:
+            rowRendered = [self.applyRenderers(cell) for cell in row]
+            text += " & ".join(rowRendered) + r"\\" + "\n"
+        return text
+
+
+
+
+
+
 def text_listing(props, dim, fun, is_fun_single_prop=False, d_configs="\n\n\n", fun_config_header=None):
     """Returns a text listing of values computed for the specified configs. By default follows a format
     similar to the presented below:
