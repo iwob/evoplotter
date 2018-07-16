@@ -50,23 +50,102 @@ def processTableNewInterface_SvsSI(tableBody, title):
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
     rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
     table = printer.Table(tableBody, renderers=[rBold, rShading])
-    table.leaveColumns([0, 5, 6, 7, 8, 13, 14, 15, 16, 17]) # comparing only IS with S
+    table.leaveColumns([0, 5, 6, 7, 8, 13, 14, 15, 16]) # comparing only IS with S
 
     colored = printer.table_color_map(str(table), 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
     #print(reporting.color_scheme_green)
     print(colored)
 
 
-def processTableNewInterface_withoutS(tableBody, title):
+def processTableNewInterface_withoutSC(tableBody, title):
     print(title)
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
     rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
     table = printer.Table(tableBody, renderers=[rBold, rShading])
-    table.removeColumns([5, 6, 13, 14]) # leaving out S
+    table.leaveColumns([0, 1, 3, 7, 9, 11, 15]) # leaving out S and C
 
     colored = printer.table_color_map(str(table), 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
     #print(reporting.color_scheme_green)
     print(colored)
+
+
+def computeAvg(table):
+    suma = 0.0
+    n = 0.0
+    for r in table.rows:
+        for c in r:
+            n += 1.0
+            suma += float(c)
+    return suma / n
+
+def printTablesAverages(tableBodySmall, tableBodyLarge, title=""):
+    print(title)
+    tableSmall = printer.Table(tableBodySmall)
+    tableLarge = printer.Table(tableBodyLarge)
+
+    tableSmall.rows = tableSmall.rows[:-2]
+    tableLarge.rows = tableLarge.rows[:-2]
+
+    tableSmall.removeColumns([0, 17])
+    tableLarge.removeColumns([0, 17])
+
+    print("Avg success rate tableSmall: {0}".format(computeAvg(tableSmall)))
+    print("Avg success rate tableLarge: {0}".format(computeAvg(tableLarge)))
+
+
+def printTablesAveragesCvsN(tableBody, title="", doPrint=True):
+    print(title)
+    tableC = printer.Table(tableBody)
+    tableN = printer.Table(tableBody)
+
+    tableC.rows = tableC.rows[:-2]
+    tableN.rows = tableN.rows[:-2]
+
+    tableC.removeColumns([0, 2, 4, 6, 8, 10, 12, 14, 16, 17])
+    tableN.removeColumns([0, 1, 3, 5, 7, 9, 11, 13, 15, 17])
+
+    avgC = computeAvg(tableC)
+    avgN = computeAvg(tableN)
+    if doPrint:
+        print("Avg success rate C: {0}".format(avgC))
+        print("Avg success rate N: {0}".format(avgN))
+    return avgC, avgN
+
+
+def printTablesAveragesSvsIS(tableBody, title="", doPrint=True):
+    print(title)
+    tableS = printer.Table(tableBody)
+    tableIS = printer.Table(tableBody)
+
+    tableS.rows = tableS.rows[:-2]
+    tableIS.rows = tableIS.rows[:-2]
+
+    tableS.leaveColumns([5, 6, 13, 14])
+    tableIS.leaveColumns([7, 8, 15, 16])
+
+    avgS = computeAvg(tableS)
+    avgIS = computeAvg(tableIS)
+    if doPrint:
+        print("Avg success rate S: {0}".format(avgS))
+        print("Avg success rate IS: {0}".format(avgIS))
+    return avgS, avgIS
+
+
+def printTablesAveragesCvsN_merge(tableSmall, tableLarge, title=""):
+    avgSmallC, avgSmallN = printTablesAveragesCvsN(tableSmall, doPrint=False)
+    avgLargeC, avgLargeN = printTablesAveragesCvsN(tableLarge, doPrint=False)
+    print(title)
+    print("Avg success rate C: {0}".format((avgSmallC + avgLargeC) / 2.0))
+    print("Avg success rate N: {0}".format((avgSmallN + avgLargeN) / 2.0))
+
+
+def printTablesAveragesSvsIS_merge(tableSmall, tableLarge, title=""):
+    avgSmallS, avgSmallIS = printTablesAveragesSvsIS(tableSmall, doPrint=False)
+    avgLargeS, avgLargeIS = printTablesAveragesSvsIS(tableLarge, doPrint=False)
+    print(title)
+    print("Avg success rate S: {0}".format((avgSmallS + avgLargeS) / 2.0))
+    print("Avg success rate IS: {0}".format((avgSmallIS + avgLargeIS) / 2.0))
+
 
 
 tableSmall = r"""
@@ -102,8 +181,16 @@ processTableNewInterface_SvsSI(tableSmall, "PROCESSED (NEW) tableSmall:\n")
 processTableNewInterface_SvsSI(tableLarge, "PROCESSED (NEW) tableLarge:\n")
 
 
-processTableNewInterface_withoutS(tableSmall, "PROCESSED (NEW) withoutS tableSmall:\n")
-processTableNewInterface_withoutS(tableLarge, "PROCESSED (NEW) withoutS tableLarge:\n")
+processTableNewInterface_withoutSC(tableSmall, "PROCESSED (NEW) withoutSC tableSmall:\n")
+processTableNewInterface_withoutSC(tableLarge, "PROCESSED (NEW) withoutSC tableLarge:\n")
+
+printTablesAverages(tableSmall, tableLarge)
+
+printTablesAveragesCvsN_merge(tableSmall, tableLarge, title="printTablesAveragesCvsN")
+printTablesAveragesSvsIS_merge(tableSmall, tableLarge, title="printTablesAveragesSvsIS")
+
+# printTablesAveragesCvsN(tableSmall, title="printTablesAveragesCvsN: tableSmall")
+# printTablesAveragesCvsN(tableLarge, title="printTablesAveragesCvsN: tableLarge")
 
 # processTable(tableSmall, "PROCESSED tableSmall:\n")
 # processTable(tableLarge, "PROCESSED tableLarge:\n")
