@@ -55,14 +55,15 @@ class CellShading(CellRenderer):
 
 
 class Table(object):
-    def __init__(self, tableBody, renderers=None):
-        if renderers is None:
-            renderers = []
+    def __init__(self, tableBody, cellRenderers=None):
+        if cellRenderers is None:
+            cellRenderers = []
         assert isinstance(tableBody, str)
-        assert isinstance(renderers, list)
+        assert isinstance(cellRenderers, list)
         tableBody = tableBody.strip() # Remove leading and trailing whitespaces
         self.rows = []
-        self.renderers = renderers
+        self.cellRenderers = cellRenderers
+        # Extracting rows
         for line in tableBody.split("\n"):
             cols = [c.strip() for c in line.split("&")]
             if cols[-1].endswith(r"\\"):
@@ -92,12 +93,16 @@ class Table(object):
         assert isinstance(index, int)
         del self.rows[index]
 
+    def addRow(self, row):
+        assert isinstance(row, list)
+        self.rows.append(row)
+
     def getText(self):
         return str(self)
 
     def applyRenderers(self, value):
         text = str(value)
-        for rend in self.renderers:
+        for rend in self.cellRenderers:
             text = rend(value, text)
         return text
 
