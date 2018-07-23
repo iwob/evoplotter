@@ -58,15 +58,18 @@ def processTableNewInterface_SvsSI(tableBody, title):
 
 
 def processTableNewInterface_withoutSC(tableBody, title):
-    print(title)
+    dimCx = Dim([("0.0", None), ("0.5", None)])
+    dimSel = Dim([("T", None), ("L", None)])
+    dimMethod = Dim([("U", None), ("P", None), ("S", None), ("IS", None)])
+    main = dimSel * dimMethod * dimCx
+    dimCols = Dim([("method",None)]) + main + Dim([("mean",None)])
+    print("numConfigs: " + str(len(dimCols.configs)))
+    print("asd: "+title)
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
     rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-    table = printer.Table(tableBody, cellRenderers=[rBold, rShading])
+    table = printer.Table(tableBody, dimCols=dimCols, cellRenderers=[rBold, rShading])
     table.leaveColumns([0, 1, 3, 7, 9, 11, 15]) # leaving out S and C
-
-    colored = printer.table_color_map(str(table), 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-    #print(reporting.color_scheme_green)
-    print(colored)
+    print(table.render())
 
 
 def computeAvg(table):

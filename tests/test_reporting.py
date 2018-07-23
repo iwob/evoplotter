@@ -15,6 +15,7 @@ class TestsPrinter(unittest.TestCase):
 \usepackage[table]{xcolor}
 \usepackage{hyperref}
 \usepackage{graphicx}
+\usepackage{booktabs}
 \usepackage{float}
 
 \DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces
@@ -43,6 +44,7 @@ class TestsPrinter(unittest.TestCase):
 \usepackage[table]{xcolor}
 \usepackage{hyperref}
 \usepackage{graphicx}
+\usepackage{booktabs}
 \usepackage{float}
 
 \DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces
@@ -73,6 +75,7 @@ class TestsPrinter(unittest.TestCase):
 \usepackage[table]{xcolor}
 \usepackage{hyperref}
 \usepackage{graphicx}
+\usepackage{booktabs}
 \usepackage{float}
 
 \DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces

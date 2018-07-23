@@ -16,10 +16,21 @@ class CellRenderer(object):
             return body
 
 
-class LatexTextbf(CellRenderer):
-    def __init__(self, condition):
-        editor = lambda value, body: r"\textbf{" + str(body) + "}"
+class LatexCommand(CellRenderer):
+    def __init__(self, cmdOpen, cmdClose, condition):
+        assert isinstance(cmdOpen, str) and isinstance(cmdClose, str)
+        editor = lambda value, body: cmdOpen + str(body) + cmdClose
         CellRenderer.__init__(self, condition, editor)
+
+
+class LatexTextbf(LatexCommand):
+    def __init__(self, condition):
+        LatexCommand.__init__(self, r"\textbf{", "}", condition)
+
+
+class LatexTextit(LatexCommand):
+    def __init__(self, condition):
+        LatexCommand.__init__(self, r"\textit{", "}", condition)
 
 
 class CellShading(CellRenderer):
@@ -54,15 +65,88 @@ class CellShading(CellRenderer):
 
 
 
+class TableHeaderInterface(object):
+    def __init__(self):
+        self.cells = []
+
+    def removeCell(self, index):
+        pass
+
+    def addCell(self, index, cell):
+        pass
+
+
+
+class TableHeader(TableHeaderInterface):
+    def __init__(self, dimCols, layeredHeadline=True, verticalBorder=0, horizontal_border=1, useBooktabs=False):
+        TableHeaderInterface.__init__(self)
+        assert isinstance(dimCols, dims.Dim)
+        self.dimCols = dimCols
+
+        # Each cell of the header is a list of captions of a given Config.
+        # Cells of header are associated with the respective columns of the table.
+        # Removing a column means that it's header cell also will be removed.
+        # Adding a column means adding it's header cell.
+        self.cells = dimCols.get_captions_list()
+
+        self.layeredHeadline = layeredHeadline
+        self.verticalBorder = verticalBorder
+        self.horizontal_border = horizontal_border
+        self.useBooktabs = useBooktabs
+
+    def removeCell(self, index):
+        assert isinstance(index, int)
+        del self.cells[index]
+
+    def addCell(self, index, cell):
+        assert isinstance(cell, list)
+        self.cells.insert(index, cell)
+
+    def render(self):
+        return latex_table_header_cells(self.cells, layered_headline=self.layeredHeadline, vertical_border=self.verticalBorder,
+                                        horizontal_border=self.horizontal_border, tabFirstCol=False, useBooktabs=self.useBooktabs)
+
+
+
+class EmptyTableHeader(TableHeaderInterface):
+    def __init__(self):
+        TableHeaderInterface.__init__(self)
+
+    def removeCell(self, index):
+        pass
+
+    def addCell(self, index, cell):
+        pass
+
+    def render(self):
+        return ""
+
+
+
+
 class Table(object):
-    def __init__(self, tableBody, cellRenderers=None):
+    """
+    Rule: in hierarchical header merged are cells with the same caption on the same level.
+    """
+    def __init__(self, tableBody, dimCols=None, cellRenderers=None, layeredHeadline=True, verticalBorder=0,
+                 horizontalBorder=1, useBooktabs=False):
         if cellRenderers is None:
             cellRenderers = []
         assert isinstance(tableBody, str)
         assert isinstance(cellRenderers, list)
         tableBody = tableBody.strip() # Remove leading and trailing whitespaces
         self.rows = []
+        self.dimCols = dimCols
+        if dimCols is None:
+            self.header = EmptyTableHeader()
+        else:
+            self.header = TableHeader(dimCols, layeredHeadline=layeredHeadline, verticalBorder=verticalBorder,
+                                      horizontal_border=horizontalBorder, useBooktabs=useBooktabs)
         self.cellRenderers = cellRenderers
+        self.layeredHeadline = layeredHeadline
+        self.verticalBorder = verticalBorder
+        self.horizontalBorder = horizontalBorder
+        self.useBooktabs = useBooktabs
         # Extracting rows
         for line in tableBody.split("\n"):
             cols = [c.strip() for c in line.split("&")]
@@ -74,6 +158,7 @@ class Table(object):
 
     def removeColumn(self, index):
         assert isinstance(index, int)
+        self.header.removeCell(index)
         for row in self.rows:
             del row[index]
 
@@ -95,10 +180,12 @@ class Table(object):
 
     def addRow(self, row):
         assert isinstance(row, list)
+        assert len(row) == len(self.header.cells), "Number of columns in the row does not match the table header!"
         self.rows.append(row)
 
-    def getText(self):
-        return str(self)
+    def getText(self, opts=None):
+        """Part of the interface of reporting module."""
+        return self.render()
 
     def applyRenderers(self, value):
         text = str(value)
@@ -106,13 +193,34 @@ class Table(object):
             text = rend(value, text)
         return text
 
-    def __str__(self):
+    def getHeaderCells(self):
+        return self.header.cells
+
+    def renderTableHeader(self):
+        return self.header.render()
+
+    def renderTableBody(self):
         text = ""
-        for row in self.rows:
+        for i, row in enumerate(self.rows):
             rowRendered = [self.applyRenderers(cell) for cell in row]
-            text += " & ".join(rowRendered) + r"\\" + "\n"
+            text += " & ".join(rowRendered) + r"\\"
+            if self.horizontalBorder >= 2 and i < len(self.rows) - 1:
+                if self.useBooktabs:
+                    text += r"\midrule"
+                else:
+                    text += r"\hline"
+            text += "\n"
         return text
 
+    def render(self, latexizeUnderscores=True, firstColAlign="l"):
+        text  = self.renderTableHeader()
+        text += self.renderTableBody()
+        dimCols = self.dimCols if self.dimCols is not None else dims.Dim.generic_labels(len(self.rows[0]))
+        return latex_table_wrapper(text, dimCols, latexize_underscores=latexizeUnderscores, vertical_border=self.verticalBorder,
+                                   horizontal_border=self.horizontalBorder, first_col_align=firstColAlign, tabFirstCol=False, useBooktabs=self.useBooktabs)
+
+    def __str__(self):
+        return self.render()
 
 
 
@@ -240,6 +348,40 @@ def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="
     return text
 
 
+def latex_table_wrapper(tableBody, dim_cols, latexize_underscores=True, vertical_border=1, horizontal_border=1,
+                        first_col_align="l", tabFirstCol=True, useBooktabs=False):
+    assert isinstance(tableBody, str)
+    assert isinstance(dim_cols, dims.Dim)
+    # Tabular prefix
+    if tabFirstCol: # TODO: remove tabFirstCol option entirely
+        numCols = len(dim_cols.configs) + 1
+    else:
+        numCols = len(dim_cols.configs)
+    if vertical_border >= 2:
+        alignments = "|{0}|".format(first_col_align) + "|".join("c" * (numCols - 1)) + "|"  # and not layered_headline
+    elif vertical_border == 1:
+        alignments = "|{0}|".format(first_col_align) + ("c" * (numCols - 1)) + "|"
+    else:
+        alignments = first_col_align + ("c" * (numCols - 1))
+    text = r"\begin{tabular}{" + alignments + "}\n"
+    if horizontal_border >= 1:
+        text += r"\hline" + "\n" if not useBooktabs else r"\toprule" + "\n"
+    else:
+        text += "\n"
+
+    # Tabular body
+    text += tableBody
+
+    # Tabular suffix
+    if horizontal_border >= 1:
+        text += r"\hline" + "\n" if not useBooktabs else r"\bottomrule" + "\n"
+    else:
+        text += "\n"
+    text += r"\end{tabular}" + "\n"
+    if latexize_underscores:
+        text = text.replace("_", r"\_")
+    return text
+
 
 def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layered_headline=False,
                 vertical_border=1, first_col_align="l"):
@@ -263,27 +405,33 @@ def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layer
     assert isinstance(dim_rows, dims.Dim)
     assert isinstance(dim_cols, dims.Dim)
 
-    numCols = len(dim_cols.configs) + 1
-    if vertical_border >= 2:
-        alignments = "|{0}|".format(first_col_align) + "|".join("c" * (numCols - 1)) + "|"  # and not layered_headline
-    elif vertical_border == 1:
-        alignments = "|{0}|".format(first_col_align) + ("c" * (numCols - 1)) + "|"
-    else:
-        alignments = first_col_align + ("c" * (numCols - 1))
-    text = r"\begin{tabular}{" + alignments + "}\n"
-    text += r"\hline" + "\n"
-    text += latex_table_header(dim_cols, layered_headline, d_cols=" & ", d_rows="\\\\\n", vertical_border=vertical_border)
-    text += text_table_body(props, dim_rows, dim_cols, fun, d_cols=" & ", d_rows="\\\\\n")
+    body = latex_table_header(dim_cols, layered_headline, d_cols=" & ", d_rows="\\\\\n", vertical_border=vertical_border)
+    body += text_table_body(props, dim_rows, dim_cols, fun, d_cols=" & ", d_rows="\\\\\n")
 
-    text += r"\hline" + "\n"
-    text += r"\end{tabular}" + "\n"
-    if latexize_underscores:
-        text = text.replace("_", r"\_")
+    text = latex_table_wrapper(body, dim_cols, latexize_underscores=latexize_underscores, vertical_border=vertical_border,
+                               first_col_align=first_col_align)
     return text
 
 
+def latex_table_header_cells(cells, layered_headline=False, d_cols=" & ", d_rows="\\\\\n",
+                       vertical_border=0, horizontal_border=1, tabFirstCol=True, useBooktabs=False):
+    """Produces header for a LaTeX table. In the case of generating layered headline, columns
+    dimension is assumed to contain Configs with the same number of filters and corresponding
+    configs placed on the same positions (this will always be correct, if '*' was used to
+    combine dimensions).
+    """
+    if layered_headline:
+        return latex_table_header_multilayered_cells(cells, d_cols=d_cols, d_rows=d_rows,
+                                            vertical_border=vertical_border, horizontal_border=horizontal_border,
+                                            tabFirstCol=tabFirstCol, useBooktabs=useBooktabs)
+    else:
+        return latex_table_header_one_layer_cells(cells, d_cols=d_cols, d_rows=d_rows,
+                                                  vertical_border=vertical_border, horizontal_border=horizontal_border,
+                                                  tabFirstCol=tabFirstCol)
+
+
 def latex_table_header(dim_cols, layered_headline=False, d_cols=" & ", d_rows="\\\\\n",
-                       vertical_border=0):
+                       vertical_border=0, useBooktabs=False):
     """Produces header for a LaTeX table. In the case of generating layered headline, columns
     dimension is assumed to contain Configs with the same number of filters and corresponding
     configs placed on the same positions (this will always be correct, if '*' was used to
@@ -291,29 +439,71 @@ def latex_table_header(dim_cols, layered_headline=False, d_cols=" & ", d_rows="\
     """
     if layered_headline:
         return latex_table_header_multilayered(dim_cols, d_cols=d_cols, d_rows=d_rows,
-                                               vertical_border=vertical_border)
+                                               vertical_border=vertical_border, useBooktabs=useBooktabs)
     else:
         return latex_table_header_one_layer(dim_cols, d_cols=d_cols, d_rows=d_rows,
                                             vertical_border=vertical_border)
 
 
-def latex_table_header_one_layer(dim_cols, d_cols=" & ", d_rows="\\\\\n", vertical_border=0):
+def latex_table_header_one_layer_cells(cells_cols, d_cols=" & ", d_rows="\\\\\n", vertical_border=0, horizontal_border=1, sep="_", tabFirstCol=True):
+    chead = [r"\multicolumn{1}{c}{" + sep.join(d) + "}" for d in cells_cols]
+    text  = d_cols if tabFirstCol else ""
+    text += d_cols.join(chead) + d_rows
+    if horizontal_border >= 1:
+        text += r"\hline"
+    text += "\n"
+    return text
+
+
+def latex_table_header_one_layer(dim_cols, d_cols=" & ", d_rows="\\\\\n", vertical_border=0, horizontal_border=1, tabFirstCol=True):
     chead = [r"\multicolumn{1}{c}{" + d.get_caption() + "}" for d in dim_cols]
-    return d_cols + d_cols.join(chead) + d_rows + r"\hline" + "\n"
+    text  = d_cols if tabFirstCol else ""
+    text += d_cols.join(chead) + d_rows
+    if horizontal_border >= 1:
+        text += r"\hline"
+    text += "\n"
+    return text
 
 
-def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", vertical_border=0):
-    num_layers = len(dim_cols[0].filters)  # num of layers in the example filter
+def latex_table_header_multilayered_cells(cells_cols, d_cols=" & ", d_rows="\\\\\n", vertical_border=0, horizontal_border=1,
+                                          tabFirstCol=True, useBooktabs=False):
+    """cells_cols = a list of captions for dimensions"""
+    dim_cols = dims.Dim([])
+    for cell in cells_cols:
+        filters = []
+        for c in cell:
+            filters.append((c, None))
+        dim_cols = dim_cols + dims.Dim(dims.Config(filters))
+    return latex_table_header_multilayered(dim_cols, d_cols=d_cols, d_rows=d_rows, vertical_border=vertical_border,
+                                           horizontal_border=horizontal_border, tabFirstCol=tabFirstCol, useBooktabs=useBooktabs)
+
+
+def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", vertical_border=0, horizontal_border=1,
+                                    tabFirstCol=True, useBooktabs=False):
+    assert isinstance(dim_cols, dims.Dim)
+    num_layers = max([len(c.filters) for c in dim_cols.configs])  # num of layers in the example filter
 
     # Going from the highest layer to the lowest.
     def produce_lines(dimens, layer_no):
-        if len(dimens[0]) == 1 or layer_no == num_layers -1:
+        if layer_no == num_layers -1: #len(dimens[0]) == 1 or ...
             # Only a single row, use a simplified routine.
-            align = "c|" if vertical_border >= 1 else "c"
-            chead = [r"\multicolumn{1}{" + align + "}{" + d.get_caption() + "}" for d in dimens]
-            # if vertical_border >= 1:  # this is currently by | in tabular arg
-            #     chead[0] = chead[0].replace("{c", "{|c")
-            return d_cols + d_cols.join(chead) + d_rows + r"\hline" + "\n"
+
+            headerCells = []
+            for i, d in enumerate(dimens):
+                if vertical_border == 0:
+                    align = "c"
+                else:
+                    align = "c|"
+                    if i == 0:  # use of multicolumn for meta-information requires this
+                        align = "|" + align
+                headerCells.append(r"\multicolumn{1}{" + align + "}{" + d.get_caption() + "}")
+
+            firstColSep = d_cols if tabFirstCol else ""
+            if horizontal_border >= 1:
+                ender = r"\hline" + "\n" if not useBooktabs else r"\midrule" + "\n"
+            else:
+                ender = "\n"
+            return firstColSep + d_cols.join(headerCells) + d_rows + ender
         text = ""
         top_filters_list = [] # stores tuples (filter, numContiguous)
         last = None
@@ -333,8 +523,8 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
             align = "c"
             if vertical_border >= 1:
                 align += "|"
-                # if i == 0:  # this is currently by | in tabular arg
-                #     align = "|" + align
+                if i == 0:  # this is currently by | in tabular arg  #2: use of multicolumn for meta-information requires this
+                    align = "|" + align
             ftext = r"\multicolumn{" + str(foccurs) + "}{" + align + "}{" + fname + "}" # \multicolumn{6}{c}{$EPS$}
             buffer.append(ftext)
 
@@ -348,7 +538,9 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
                 # Add dummy config; multiline header needs to know that column's border needs to continue
                 subconfigs_queue.append(dims.Config("", lambda p: False))
 
-        text += d_cols + d_cols.join(buffer) + d_rows
+        if tabFirstCol:
+            text += d_cols
+        text += d_cols.join(buffer) + d_rows
         text += produce_lines(dims.Dim(subconfigs_queue), layer_no + 1)
         return text
 

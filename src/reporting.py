@@ -23,6 +23,7 @@ class ReportPDF(object):
                          "[table]{xcolor}",
                          "{hyperref}",
                          "{graphicx}",
+                         "{booktabs}",
                          "{float}"]
         self.packages.extend(packages)
         self.blocks = [self.get_preamble(), self.root]
@@ -38,7 +39,7 @@ class ReportPDF(object):
         """Creates report for the data and returns its LaTeX code."""
         text = ""
         for b in self.blocks:
-            text += b.get_text(opts={})
+            text += b.getText(opts={})
         return text
 
     def save(self, filename):
@@ -75,13 +76,13 @@ class BlockBundle(object):
     def __init__(self, contents):
         assert isinstance(contents, list)
         self.contents = contents
-    def get_text(self, opts):
+    def getText(self, opts):
         return self.merge_items(opts=opts)
     def merge_items(self, opts):
         text = ""
         d = opts
         for b in self.contents:
-            text += b.get_text(opts=d)
+            text += b.getText(opts=d)
         return text
     def add(self, b):
         self.contents.append(b)
@@ -93,7 +94,7 @@ class BlockLatex(object):
         self.text = text
     def __str__(self):
         return self.text
-    def get_text(self, opts):
+    def getText(self, opts):
         return self.text
 
 
@@ -103,10 +104,10 @@ class BlockEnvironment(object):
         self.name = name
         self.contents = contents
 
-    def get_text(self, opts):
+    def getText(self, opts):
         text = r"\begin{" + self.name + "}\n\n"
         for b in self.contents:
-            text += b.get_text(opts=opts)
+            text += b.getText(opts=opts)
         text += r"\end{" + self.name + "}\n"
         return text
 
@@ -124,7 +125,7 @@ class Section(BlockBundle):
         self.level = 0
         self.cmd = "section"
 
-    def get_text(self, opts):
+    def getText(self, opts):
         text = "\\" + self.cmd + "{" + self.title + "}\n"
         opts["section_level"] = self.level + 1 # to pass deeper
         text += self.merge_items(opts=opts)
@@ -146,7 +147,7 @@ class SectionRelative(BlockBundle):
         self.title = title
         self.move = move
 
-    def get_text(self, opts):
+    def getText(self, opts):
         opts["section_level"] = opts.get("section_level", 0) + self.move
         sect_level = opts["section_level"]  # remember current section level
         assert sect_level <= 2, "Latex supports nested sections only up to subsubsection."
@@ -186,7 +187,7 @@ class FloatFigure:
         self.pos = pos
         self.graphics_opts = graphics_opts
 
-    def get_text(self, opts):
+    def getText(self, opts):
         text  = r"\begin{figure}[" + self.pos + "]\n"
         text += r"\includegraphics[" + self.graphics_opts + "]{" + self.path + "}\n"
         if self.caption is not None:
@@ -201,6 +202,10 @@ class FloatFigure:
 # By default color schemes color high values and go down to white with lower values.
 # If _r is appended to the color scheme name, then colored are low values instead.
 
+color_scheme_gray_light = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
+\definecolor{colorMedium}{rgb}{0.9, 0.9, 0.9} % gray
+\definecolor{colorHigh}{rgb}{0.75, 0.75, 0.75} % gray
+""")
 color_scheme_blue = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
 \definecolor{colorMedium}{rgb}{0.83, 0.89, 0.98} % light blue
 \definecolor{colorHigh}{rgb}{0.63, 0.79, 0.95} % blue
