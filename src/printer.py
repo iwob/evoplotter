@@ -81,7 +81,7 @@ class TableHeader(TableHeaderInterface):
     def __init__(self, dimCols, layeredHeadline=True, verticalBorder=0, horizontal_border=1, useBooktabs=False):
         TableHeaderInterface.__init__(self)
         assert isinstance(dimCols, dims.Dim)
-        self.dimCols = dimCols
+        self.dimCols = dims.Dim(dimCols.configs[:]) # copy of the original dimCols
 
         # Each cell of the header is a list of captions of a given Config.
         # Cells of header are associated with the respective columns of the table.
@@ -97,6 +97,8 @@ class TableHeader(TableHeaderInterface):
     def removeCell(self, index):
         assert isinstance(index, int)
         del self.cells[index]
+        # Removing corresponding column dimension
+        del self.dimCols[index]
 
     def addCell(self, index, cell):
         assert isinstance(cell, list)
@@ -136,7 +138,8 @@ class Table(object):
         assert isinstance(cellRenderers, list)
         tableBody = tableBody.strip() # Remove leading and trailing whitespaces
         self.rows = []
-        self.dimCols = dimCols
+        # self.dimCols = dimCols
+        self.dimCols = dims.Dim(dimCols.configs[:])  # copy of the original dimCols
         if dimCols is None:
             self.header = EmptyTableHeader()
         else:
@@ -161,6 +164,8 @@ class Table(object):
         self.header.removeCell(index)
         for row in self.rows:
             del row[index]
+        # Removing corresponding column dimension
+        del self.dimCols[index]
 
     def removeColumns(self, indexes):
         assert isinstance(indexes, list)

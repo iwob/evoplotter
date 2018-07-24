@@ -58,6 +58,9 @@ class Dim(object):
     def __getitem__(self, item):
         return self.configs[item]
 
+    def __delitem__(self, key):
+        del self.configs[key]
+
     def __mul__(self, other):
         assert isinstance(other, Dim), "Dimension may be merged only with other Dimension."
         if len(other) == 0:

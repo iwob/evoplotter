@@ -20,6 +20,7 @@ tableBody = r"""
 
 
 def generateTable(verticalBorder, horizontalBorder, useBooktabs):
+    print("Generating a table for table_variants.tex ..")
     dimCx = Dim([("0.0", None), ("0.5", None)])
     dimSel = Dim([("T", None), ("L", None)])
     dimMethod = Dim([("U", None), ("P", None), ("S", None), ("IS", None)])
@@ -30,33 +31,53 @@ def generateTable(verticalBorder, horizontalBorder, useBooktabs):
     rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
     table = printer.Table(tableBody, dimCols=dimCols, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
                           horizontalBorder=horizontalBorder, useBooktabs=useBooktabs)
-    rendered = table.render()
-    print(rendered)
     return table
 
 
+def generateTableRemovedCols(verticalBorder, horizontalBorder, useBooktabs):
+    print("Generating a table for table_variants_removedCols.tex ..")
+    dimCx = Dim([("0.0", None), ("0.5", None)])
+    dimSel = Dim([("T", None), ("L", None)])
+    dimMethod = Dim([("U", None), ("P", None), ("S", None), ("IS", None)])
+    main = dimSel * dimMethod * dimCx
+    dimCols = Dim([Config([("method", None), ("", None), ("cx", None)])]) + main + Dim([("mean", None)])
 
-report = reporting.ReportPDF()
-report.add(reporting.color_scheme_gray_light)
+    rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
+    rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
+    table = printer.Table(tableBody, dimCols=dimCols, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
+                          horizontalBorder=horizontalBorder, useBooktabs=useBooktabs)
 
-verticalBorder_list = [0, 1, 2]
-horizontalBorder_list = [0, 1, 2]
-
-useBooktabs_list = [False, True]
-
-for ub in useBooktabs_list:
-    sec1 = reporting.SectionRelative("useBooktabs={0}".format(ub))
-    report.add(sec1)
-    # report.add(reporting.BlockLatex(r"\bigskip"))
-    for hb in horizontalBorder_list:
-        sec2 = reporting.SectionRelative("horizontalBorder={0}".format(hb))
-        sec1.add(sec2)
-        report.add(reporting.BlockLatex(r"\bigskip\bigskip"))
-        for vb in verticalBorder_list:
-            subsec = reporting.SectionRelative("verticalBorder={2}".format(ub, hb, vb))
-            subsec.add(generateTable(verticalBorder=vb, horizontalBorder=hb, useBooktabs=ub))
-            subsec.add(reporting.BlockLatex(r"\bigskip"))
-            sec2.add(subsec)
+    table.leaveColumns([0, 1, 3, 7, 9, 11, 15])  # leaving out S and C
+    return table
 
 
+def generateReport(tableGenerator):
+    report = reporting.ReportPDF()
+    report.add(reporting.color_scheme_gray_light)
+
+    verticalBorder_list = [0, 1, 2]
+    horizontalBorder_list = [0, 1, 2]
+    useBooktabs_list = [False, True]
+
+    for ub in useBooktabs_list:
+        sec1 = reporting.SectionRelative("useBooktabs={0}".format(ub))
+        report.add(sec1)
+        # report.add(reporting.BlockLatex(r"\bigskip"))
+        for hb in horizontalBorder_list:
+            sec2 = reporting.SectionRelative("horizontalBorder={0}".format(hb))
+            sec1.add(sec2)
+            report.add(reporting.BlockLatex(r"\bigskip\bigskip"))
+            for vb in verticalBorder_list:
+                subsec = reporting.SectionRelative("verticalBorder={2}".format(ub, hb, vb))
+                subsec.add(tableGenerator(verticalBorder=vb, horizontalBorder=hb, useBooktabs=ub))
+                subsec.add(reporting.BlockLatex(r"\bigskip"))
+                sec2.add(subsec)
+    return report
+
+
+
+report = generateReport(generateTable)
 report.save_and_compile("table_variants.tex")
+
+report = generateReport(generateTableRemovedCols)
+report.save_and_compile("table_variants_removedCols.tex")
