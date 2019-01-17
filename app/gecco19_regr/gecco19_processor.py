@@ -117,10 +117,10 @@ dim_testsRatio = Dim([Config("$0.8$", p_testsRatio_equalTo("0.8"), testsRatio="0
 
 
 
-def normalized_total_time(p, max_time=3600000 * 5): # by default 5 h (in ms)
+def normalized_total_time(p, max_time=3600000):
     """If time was longer than max_time, then return max_time, otherwise return time."""
-    if p["result.totalTimeSystem"] == "3600.0":
-        v = 3600000  # convert to ms (error in logging)
+    if "cdgp.wasTimeout" in p and p["cdgp.wasTimeout"] == "true":
+        v = 3600000
     else:
         v = int(float(p["result.totalTimeSystem"]))
     return max_time if v > max_time else v
@@ -676,7 +676,7 @@ def reports_exp0():
     dimColsCdgp = dim_methodCDGP * dim_evoMode * dim_testsRatio + dim_methodGP * dim_evoMode
     dimColsShared = dimColsCdgp
     subs = [
-        (create_subsection_shared_stats, [None, dimColsShared, 25]),
+        (create_subsection_shared_stats, [None, dimColsShared, 20]),
         (create_subsection_cdgp_specific, [None, dimColsCdgp, "e0"]),
     ]
     figures = [
@@ -686,7 +686,7 @@ def reports_exp0():
     ]
     sects = [(title, desc, folders, subs, figures)]
 
-    prepare_report(sects, "cdgp_r_e0.tex", paperwidth=30, include_all_row=False)
+    prepare_report(sects, "cdgp_r_e0.tex", paperwidth=30, include_all_row=True)
 
 
 
