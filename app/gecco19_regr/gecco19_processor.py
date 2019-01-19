@@ -1,4 +1,5 @@
 import os
+import shutil
 from src import utils
 from src import plotter
 from src import printer
@@ -9,14 +10,22 @@ import numpy as np
 
 # This processor is to be used for exp4 onward.
 CHECK_CORRECTNESS_OF_FILES = 0
-STATUS_FILE_NAME = "status.txt"
+STATUS_FILE_NAME = "results/status.txt"
 OPT_SOLUTIONS_FILE_NAME = "opt_solutions.txt"
 
 
 def ensure_dir(file_path):
+    assert file_path[-1] == "/"  # directory path must end with "/", otherwise it's not recognized
     directory = os.path.dirname(file_path)
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+def ensure_clear_dir(file_path):
+    assert file_path[-1] == "/"  # directory path must end with "/", otherwise it's not recognized
+    directory = os.path.dirname(file_path)
+    if os.path.exists(directory):
+        shutil.rmtree(directory, ignore_errors=False)
+    os.makedirs(directory)
 
 def save_to_file(file_path, content):
     file = open(file_path, "w")
@@ -73,6 +82,37 @@ def produce_status_matrix(dim, props):
 
 
 
+def save_listings(props, dim_rows, dim_cols):
+    """Saves listings of various useful info to separate text files."""
+    assert isinstance(dim_rows, Dim)
+    assert isinstance(dim_cols, Dim)
+    ensure_dir("results/listings/")
+
+    # Saving optimal verified solutions
+    for dr in dim_rows:
+        bench = dr.get_caption()
+        bench = bench[:bench.rfind(".")] if "." in bench else bench
+        f = open("results/listings/verified_{0}.txt".format(bench), "w")
+
+        props_bench = dr.filter_props(props)
+        for dc in dim_cols:
+            f.write("{0}\n".format(dc.get_caption()))
+            props_final = [p for p in dc.filter_props(props_bench) if is_verified_solution(p)]
+
+            for p in props_final:
+                fname = p["thisFileName"].replace("/home/ibladek/workspace/GECCO19/gecco19/", "")
+                best = p["result.best"]
+                fit = float(p["result.best.mse"])
+                if fit >= 1e-15:
+                    f.write("{0}\t\t\t(FILE: {1}) (MSE: {2})\n".format(best, fname, fit))
+                else:
+                    f.write("{0}\t\t\t(FILE: {1})\n".format(best, fname))
+
+            f.write("\n\n")
+        f.close()
+
+
+
 def p_method_for(name):
     return lambda p, name=name: p["method"] == name
 def p_generational(p):
@@ -125,14 +165,19 @@ def normalized_total_time(p, max_time=3600000):
         v = int(float(p["result.totalTimeSystem"]))
     return max_time if v > max_time else v
 
-def is_optimal_solution(p):
+def is_verified_solution(p):
     k = "result.best.verificationDecision"
-    return p["result.best.isOptimal"] == "true" and \
-           (k not in p or p[k] == "unsat")
-    # return "result.best.verificationDecision" not in p or p["result.best.verificationDecision"] == "unsat"
+    return p["result.best.isOptimal"] == "true" and p[k] == "unsat"
+
+def is_approximated_solution(p):
+    """Checks if the MSE was below the threshold."""
+    tr = float(p["optThreshold"])
+    # TODO: finish
+    k = "result.best.verificationDecision"
+    return p["result.best.isOptimal"] == "true" and p[k] == "unsat"
 
 def get_num_optimal(props):
-    props2 = [p for p in props if is_optimal_solution(p)]
+    props2 = [p for p in props if is_verified_solution(p)]
     return len(props2)
 
 def get_num_propertiesMet(props):
@@ -167,7 +212,7 @@ def get_stats_size(props):
     else:
         return str(int(round(np.mean(vals)))) #, np.std(vals)
 def get_stats_sizeOnlySuccessful(props):
-    vals = [float(p["result.best.size"]) for p in props if is_optimal_solution(p)]
+    vals = [float(p["result.best.size"]) for p in props if is_verified_solution(p)]
     if len(vals) == 0:
         return "-"#-1.0, -1.0
     else:
@@ -252,7 +297,7 @@ def get_avg_runtimeOnlySuccessful(props):
     if len(props) == 0:
         return "-"
     else:
-        vals = [float(normalized_total_time(p)) / 1000.0 for p in props if is_optimal_solution(p)]
+        vals = [float(normalized_total_time(p)) / 1000.0 for p in props if is_verified_solution(p)]
         return get_avg_runtime_helper(vals)
 def get_avg_runtime(props):
     if len(props) == 0:
@@ -274,7 +319,7 @@ def get_avg_generationSuccessful(props):
     if len(props) == 0:
         return "-"
     else:
-        vals = [float(p["result.best.generation"]) for p in props if is_optimal_solution(p)]
+        vals = [float(p["result.best.generation"]) for p in props if is_verified_solution(p)]
         if len(vals) == 0:
             return "n/a"  # -1.0, -1.0
         else:
@@ -294,7 +339,7 @@ def get_avg_evaluatedSuccessful(props):
         return "-"
     vals = []
     for p in props:
-        if is_optimal_solution(p):
+        if is_verified_solution(p):
             if p["evolutionMode"] == "steadyState":
                 vals.append(float(p["result.totalGenerations"]))
             else:
@@ -472,7 +517,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
         printer.latex_table(props, dim_rows, dim_cols, get_num_computed, layered_headline=True, vertical_border=vb))
     latex_status = printer.table_color_map(text, 0.0, numRuns / 2, numRuns, "colorLow", "colorMedium", "colorHigh")
 
-    print("SUCCESS RATES")
+    print("SUCCESS RATES (mse below thresh (1.0e-15) + properties met)")
     print(printer.text_table(props, dim_rows, dim_cols, fun_successRate, d_cols=";"))
     text = post(
         printer.latex_table(props, dim_rows, dim_cols, fun_successRate, layered_headline=True, vertical_border=vb))
@@ -509,7 +554,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
 
     subsects_main = [
         ("Status (correctly finished runs)", latex_status, reporting.color_scheme_red_r),
-        ("Success rates (mse below thresh (1.0e-25) + properties met)", latex_successRates, reporting.color_scheme_green),
+        ("Success rates (mse below thresh (1.0e-15) + properties met)", latex_successRates, reporting.color_scheme_green),
         ("Success rates (properties met)", latex_propertiesMet, reporting.color_scheme_green),
         ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
         ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
@@ -606,7 +651,7 @@ def get_benchmarks_from_props(props, simple_names=True):
 
 _prev_props = None
 def prepare_report(sects, fname, simple_bench_names=True, print_status_matrix=True, reuse_props=False,
-                   paperwidth=75, include_all_row=True):
+                   paperwidth=75, include_all_row=True, dim_cols_listings=None):
     """Creating nice LaTeX report of the results."""
     global _prev_props  # used in case reuse_props was set to True
     report = reporting.ReportPDF(geometry_params="[paperwidth={0}cm, paperheight=40cm, margin=0.3cm]".format(paperwidth))
@@ -650,6 +695,10 @@ def prepare_report(sects, fname, simple_bench_names=True, print_status_matrix=Tr
         if include_all_row:
             dim_rows += dim_true
 
+        if dim_cols_listings is not None:
+            save_listings(props, dim_rows, dim_cols_listings)
+
+
         subsects = []
         for fun, args in subs:
             if args[0] is None:  # no dimensions for rows, take benchmarks as the default
@@ -664,13 +713,16 @@ def prepare_report(sects, fname, simple_bench_names=True, print_status_matrix=Tr
         if s is not None:
             report.add(s)
     print("\n\nGenerating PDF report ...")
+    cwd = os.getcwd()
+    os.chdir("results/")
     report.save_and_compile(fname)
+    os.chdir(cwd)
 
 
 
 
 def reports_exp0():
-    folders = ["exp0"]
+    folders = ["exp0", "exp0_fix0", "exp0_fix1"]
     title = "Experiments for regression CDGP (stop: 1h)"
     desc = r""""""
     dimColsCdgp = dim_methodCDGP * dim_evoMode * dim_testsRatio + dim_methodGP * dim_evoMode
@@ -686,13 +738,14 @@ def reports_exp0():
     ]
     sects = [(title, desc, folders, subs, figures)]
 
-    prepare_report(sects, "cdgp_r_e0.tex", paperwidth=30, include_all_row=True)
+    prepare_report(sects, "cdgp_r_e0.tex", paperwidth=30, include_all_row=True, dim_cols_listings=dimColsShared)
 
 
 
 
 
 if __name__ == "__main__":
-    ensure_dir("figures/")
+    ensure_clear_dir("results/")
+    ensure_dir("results/figures/")
 
     reports_exp0()
