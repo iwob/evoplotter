@@ -219,10 +219,12 @@ class Config(object):
 
     def filter_props(self, props):
         """Returns all properties files satisfied by a conjunction of all filters in this Config."""
+        assert isinstance(props, list), "filter_props expects list of property files"
         return [p for p in props if self.filter(p)]
 
     def filter(self, p):
         """Checks, if properties file p is satisfied by a conjunction of all filters in this Config."""
+        assert isinstance(p, dict), "filter expects property file"
         for f in self.filters:
             if not f[1](p):
                 return False
