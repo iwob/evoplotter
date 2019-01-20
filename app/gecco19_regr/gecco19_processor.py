@@ -148,8 +148,9 @@ dim_sel = Dim([#Config("$Tour$", p_sel_tourn, selection="tournament"),
                Config("$Lex$", p_sel_lexicase, selection="lexicase")])
 dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
                    Config("$generational$", p_generational, evolutionMode="generational")])
-dim_testsRatio = Dim([Config("$0.8$", p_testsRatio_equalTo("0.8"), testsRatio="0.8"),
-                      Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0")])
+# dim_testsRatio = Dim([Config("$0.8$", p_testsRatio_equalTo("0.8"), testsRatio="0.8"),
+#                       Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0")])
+dim_testsRatio = Dim([Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0")])
 # dim_sa = Dim([Config("$CDGP$", p_GP),
 # 			    Config("$CDGP^{ss}$", p_steadyState),
 #               Config("$CDGP_{lex}$", p_lexicase),
@@ -180,7 +181,7 @@ def get_num_optimal(props):
     props2 = [p for p in props if is_verified_solution(p)]
     return len(props2)
 
-def get_num_propertiesMet(props):
+def get_num_allPropertiesMet(props):
     props2 = [p for p in props if p["result.best.verificationDecision"] == "unsat"]
     return len(props2)
 
@@ -199,10 +200,10 @@ def fun_successRate(filtered):
         return "-"
     sr = get_successRate(filtered)
     return "{0}".format("%0.2f" % round(sr, 2))
-def fun_propertiesMet(filtered):
+def fun_allPropertiesMet(filtered):
     if len(filtered) == 0:
         return "-"
-    num_opt = get_num_propertiesMet(filtered)
+    num_opt = get_num_allPropertiesMet(filtered)
     sr = float(num_opt) / float(len(filtered))
     return "{0}".format("%0.2f" % round(sr, 2))
 def get_stats_size(props):
@@ -523,10 +524,10 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
         printer.latex_table(props, dim_rows, dim_cols, fun_successRate, layered_headline=True, vertical_border=vb))
     latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 
-    print("FINAL PROPERTIES")
-    print(printer.text_table(props, dim_rows, dim_cols, fun_propertiesMet, d_cols=";"))
+    print("SUCCESS RATES (properties met)")
+    print(printer.text_table(props, dim_rows, dim_cols, fun_allPropertiesMet, d_cols=";"))
     text = post(
-        printer.latex_table(props, dim_rows, dim_cols, fun_propertiesMet, layered_headline=True, vertical_border=vb))
+        printer.latex_table(props, dim_rows, dim_cols, fun_allPropertiesMet, layered_headline=True, vertical_border=vb))
     latex_propertiesMet = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 
     print("AVG RUNTIME")
@@ -730,7 +731,7 @@ def reports_exp0():
     dimColsShared = dimColsCdgp
     subs = [
         (create_subsection_shared_stats, [None, dimColsShared, 20]),
-        (create_subsection_cdgp_specific, [None, dimColsCdgp, "e0"]),
+        (create_subsection_cdgp_specific, [None, dimColsCdgp, "e1"]),
     ]
     figures = [
         # "figures/e0_ratioEvaluated_correctVsAllRuns.pdf",
@@ -739,7 +740,7 @@ def reports_exp0():
     ]
     sects = [(title, desc, folders, subs, figures)]
 
-    prepare_report(sects, "cdgp_r_e0.tex", paperwidth=30, include_all_row=True, dim_cols_listings=dimColsShared)
+    prepare_report(sects, "cdgp_r_e1.tex", paperwidth=30, include_all_row=True, dim_cols_listings=dimColsShared)
 
 
 
