@@ -517,7 +517,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
         printer.latex_table(props, dim_rows, dim_cols, get_num_computed, layered_headline=True, vertical_border=vb))
     latex_status = printer.table_color_map(text, 0.0, numRuns / 2, numRuns, "colorLow", "colorMedium", "colorHigh")
 
-    print("SUCCESS RATES (mse below thresh (1.0e-15) + properties met)")
+    print("SUCCESS RATES (mse below thresh (1.0e-10) + properties met)")
     print(printer.text_table(props, dim_rows, dim_cols, fun_successRate, d_cols=";"))
     text = post(
         printer.latex_table(props, dim_rows, dim_cols, fun_successRate, layered_headline=True, vertical_border=vb))
@@ -554,7 +554,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
 
     subsects_main = [
         ("Status (correctly finished runs)", latex_status, reporting.color_scheme_red_r),
-        ("Success rates (mse below thresh (1.0e-15) + properties met)", latex_successRates, reporting.color_scheme_green),
+        ("Success rates (mse below thresh (1.0e-10) + properties met)", latex_successRates, reporting.color_scheme_green),
         ("Success rates (properties met)", latex_propertiesMet, reporting.color_scheme_green),
         ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
         ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
@@ -722,7 +722,8 @@ def prepare_report(sects, fname, simple_bench_names=True, print_status_matrix=Tr
 
 
 def reports_exp0():
-    folders = ["exp0", "exp0_fix0", "exp0_fix1"]
+    # folders = ["exp0", "exp0_fix0", "exp0_fix1"]
+    folders = ["exp1", "exp1_run2"]
     title = "Experiments for regression CDGP (stop: 1h)"
     desc = r""""""
     dimColsCdgp = dim_methodCDGP * dim_evoMode * dim_testsRatio + dim_methodGP * dim_evoMode
