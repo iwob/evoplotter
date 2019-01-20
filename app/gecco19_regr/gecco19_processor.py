@@ -8,8 +8,7 @@ from src.dims import *
 import numpy as np
 
 
-# This processor is to be used for exp4 onward.
-CHECK_CORRECTNESS_OF_FILES = 0
+CHECK_CORRECTNESS_OF_FILES = 1
 STATUS_FILE_NAME = "results/status.txt"
 OPT_SOLUTIONS_FILE_NAME = "opt_solutions.txt"
 
@@ -41,22 +40,49 @@ def print_props_filenames(props):
             print("'thisFileName' not specified! Printing content instead: " + str(p))
 
 
+def create_errors_listing(error_props, filename):
+    f = open("results/listings/{0}".format(filename), "w")
+    print("Creating log of errors ({0})...".format(filename))
+    for i, p in enumerate(error_props):
+        if i > 0:
+            f.write("\n" + ("-" * 50) + "\n")
+        for k in sorted(p.keys()):
+            v = p[k]
+            f.write("{0} = {1}\n".format(k, v))
+    f.close()
+
+
+def create_errors_solver_listing(error_props, filename):
+    f = open("results/listings/{0}".format(filename), "w")
+    print("Creating log of errors ({0})...".format(filename))
+    for i, p in enumerate(error_props):
+        if i > 0:
+            f.write("\n" + ("-" * 50) + "\n\n")
+
+        # read the whole original file, because multiline error messages are not preserved in dicts
+        with open(p["evoplotter.file"], 'r') as content_file:
+            content = content_file.read()
+            f.write(content)
+    f.close()
+
+
 def load_correct_props(folders):
-    props_cdgpError = utils.load_properties_dirs(folders, exts=[".cdgp.error"])
+    props_cdgpError = utils.load_properties_dirs(folders, exts=[".cdgp.error"], add_file_path=True)
     exts = [".cdgp"]
-    props0 = utils.load_properties_dirs(folders, exts=exts)
+    props0 = utils.load_properties_dirs(folders, exts=exts, add_file_path=True)
 
     def is_correct(p):
         return "result.best.verificationDecision" in p
 
-
-
     # Filtering props so only correct ones are left
     props = [p for p in props0 if is_correct(p)]
+
+    create_errors_solver_listing(props_cdgpError, "errors_solver.txt")
 
     # Printing names of files which finished with error status or are incomplete.
     if CHECK_CORRECTNESS_OF_FILES:
         props_errors = [p for p in props0 if not is_correct(p)]
+        create_errors_listing(props_errors, "errors_run.txt")
         if len(props_errors) > 0:
             print("Files with error status:")
             print_props_filenames(props_errors)
@@ -86,7 +112,6 @@ def save_listings(props, dim_rows, dim_cols):
     """Saves listings of various useful info to separate text files."""
     assert isinstance(dim_rows, Dim)
     assert isinstance(dim_cols, Dim)
-    ensure_dir("results/listings/")
 
     # Saving optimal verified solutions
     for dr in dim_rows:
@@ -749,5 +774,6 @@ def reports_exp0():
 if __name__ == "__main__":
     ensure_clear_dir("results/")
     ensure_dir("results/figures/")
+    ensure_dir("results/listings/")
 
     reports_exp0()
