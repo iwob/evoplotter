@@ -53,21 +53,28 @@ def load_properties(lines, sep="=", comment_marker="#"):
     return res
 
 
-def load_properties_file(path_file):
+def load_properties_file(path_file, add_file_path=False):
     """Creates a dictionary for properties loaded from a given file.
 
     :param path_file: (str) path to a file.
+    :param add_file_path: (bool) specifies if path to a file on disk should be stored in dictionary.
+     The path will be stored under 'evoplotter.file' key.
     :return: (dict[str,str]) dictionary with property names as keys.
     """
     lines = read_lines(path_file)
-    return load_properties(lines)
+    p = load_properties(lines)
+    if add_file_path:
+        p["evoplotter.file"] = path_file
+    return p
 
 
-def load_properties_dir(path_dir, exts=None):
+def load_properties_dir(path_dir, exts=None, add_file_path=False):
     """Creates a dictionary for properties loaded from files in the given directory. All subdirectories will be recursively traversed.
 
     :param path_dir: (str) path to a directory from which paths will be read.
     :param exts: (list[str]) list of accepted extensions. None means that all extensions are to be accepted.
+    :param add_file_path: (bool) specifies if path to a file on disk should be stored in dictionary.
+     The path will be stored under 'evoplotter.file' key.
     :return: (list(dict[str,str])) list of dictionaries created for each file in the folder.
     """
     res = []
@@ -75,20 +82,22 @@ def load_properties_dir(path_dir, exts=None):
         for f in files:
             if exts is None or file_extension_ok(f, exts):
                 full_name = os.path.join(root, f)
-                res.append(load_properties_file(full_name))
+                res.append(load_properties_file(full_name, add_file_path=add_file_path))
     return res
 
 
-def load_properties_dirs(dirs, exts=None):
+def load_properties_dirs(dirs, exts=None, add_file_path=False):
     """Loads properties files from the specified directories.  All subdirectories will be recursively traversed.
 
     :param dirs: (list[str]) list of paths to directories.
     :param exts: (list[str]) list of accepted extensions. None means that all extensions are to be accepted.
+    :param add_file_path: (bool) specifies if path to a file on disk should be stored in dictionary.
+     The path will be stored under 'evoplotter.file' key.
     :return: (list[dict[str,str]]) list of dictionaries created for each file in the specified folders.
     """
     res = []
     for d in dirs:
-        res.extend(load_properties_dir(d, exts))
+        res.extend(load_properties_dir(d, exts, add_file_path=add_file_path))
     return res
 
 
