@@ -32,6 +32,16 @@ def save_to_file(file_path, content):
     file.close()
 
 
+def delete_logs(props, pred, verbose=True, simulate=False):
+    for p in props:
+        if "evoplotter.file" in p and pred(p):
+            path = p["evoplotter.file"]
+            if not simulate:
+                os.remove(path)
+            if verbose:
+                print("File removed: {0}".format(path))
+
+
 def print_props_filenames(props):
     for p in props:
         if "thisFileName" in p:
@@ -76,6 +86,22 @@ def load_correct_props(folders):
 
     # Filtering props so only correct ones are left
     props = [p for p in props0 if is_correct(p)]
+
+    # print("Filtered (props):")
+    # for p in props:
+    #     if "resistance_par3_c1_10" in p["benchmark"] and p["method"] == "CDGP":
+    #         print(p["evoplotter.file"])
+    # print("Filtered (props_cdgpError):")
+    # for p in props_cdgpError:
+    #     if "resistance_par3_c1_10" in p["benchmark"] and p["method"] == "CDGP":
+    #         print(p["evoplotter.file"])
+
+    # Clear log file
+    # print("[del] props")
+    # delete_logs(props, lambda p: "gravity" in p["benchmark"], simulate=True)
+    # print("[del] props_cdgpError")
+    # delete_logs(props_cdgpError, lambda p: "gravity" in p["benchmark"], simulate=True)
+
 
     create_errors_solver_listing(props_cdgpError, "errors_solver.txt")
 
@@ -156,12 +182,9 @@ def p_testsRatio_equalTo(ratio):
 
 def simplify_benchmark_name(name):
     """Shortens or modifies the path of the benchmark in order to make the table more readable."""
-    if name.startswith("benchmarks/physics/"):
-        return name.replace("benchmarks/physics/", "physics/")
-    elif name.startswith("benchmarks/regression_formal/"):
-        return name.replace("benchmarks/regression_formal/", "")
-    else:
-        return name
+    i = name.rfind("/")
+    name = name if i == -1 else name[i+1:]
+    return name.replace("_3", "_03").replace("_5", "_05")
 
 
 
@@ -171,8 +194,9 @@ dim_methodGP = Dim([Config("GP", p_method_for("GP"), method="GP")])
 dim_method = dim_methodCDGP + dim_methodGP
 dim_sel = Dim([#Config("$Tour$", p_sel_tourn, selection="tournament"),
                Config("$Lex$", p_sel_lexicase, selection="lexicase")])
-dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
-                   Config("$generational$", p_generational, evolutionMode="generational")])
+# dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
+#                    Config("$generational$", p_generational, evolutionMode="generational")])
+dim_evoMode = Dim([Config("$generational$", p_generational, evolutionMode="generational")])
 # dim_testsRatio = Dim([Config("$0.8$", p_testsRatio_equalTo("0.8"), testsRatio="0.8"),
 #                       Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0")])
 dim_testsRatio = Dim([Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0")])
@@ -749,7 +773,8 @@ def prepare_report(sects, fname, simple_bench_names=True, print_status_matrix=Tr
 
 def reports_exp0():
     # folders = ["exp0", "exp0_fix0", "exp0_fix1"]
-    folders = ["exp1", "exp1_run2"]
+    folders = ["exp1", "exp1_run2", "exp1_physics", "exp1_resistance", "exp1_square3", "exp1_gravity",
+               "exp1_formal3"]
     title = "Experiments for regression CDGP (stop: 1h)"
     desc = r""""""
     dimColsCdgp = dim_methodCDGP * dim_evoMode * dim_testsRatio + dim_methodGP * dim_evoMode

@@ -10,6 +10,7 @@ import numpy as np
 # This processor is to be used for exp4 onward.
 CHECK_CORRECTNESS_OF_FILES = 0
 STATUS_FILE_NAME = "status.txt"
+OPT_SOLUTIONS_FILE_NAME = "opt_solutions.txt"
 
 
 def ensure_dir(file_path):
