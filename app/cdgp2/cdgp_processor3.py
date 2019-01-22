@@ -1,3 +1,4 @@
+import re
 from src import utils
 from src import plotter
 from src import printer
@@ -8,6 +9,14 @@ import numpy as np
 
 # This processor is to be used for exp4 onward.
 CHECK_CORRECTNESS_OF_FILES = 0
+OPT_SOLUTIONS_FILE_NAME = "opt_solutions"
+
+
+
+def save_to_file(file_path, content):
+    file = open(file_path, "w")
+    file.write(content)
+    file.close()
 
 
 def print_props_filenames(props):
@@ -66,6 +75,28 @@ def produce_status_matrix(dim, props):
         numRuns = len(config.filter_props(props))
         text += "({0}, {1}), ".format(config.stored_values, numRuns)
     return text + "]"
+
+
+def save_opt_solutions(dim, props, exp_prefix=None):
+    text = ""
+    for config in dim:
+        caption = config.get_caption()
+        if caption.startswith("All"):
+            continue # ignore All rows
+        text += caption + "\n"
+        pool = config.filter_props(props)
+        for p in pool:
+            if is_optimal_solution(p):
+                solution = re.sub(' +',' ', p["result.best.smtlib"])
+                text += str(solution) + "\n"
+        text += "\n\n"
+
+    if exp_prefix is None:
+        fname = OPT_SOLUTIONS_FILE_NAME + ".txt"
+    else:
+        fname = OPT_SOLUTIONS_FILE_NAME + "_" + str(exp_prefix) + ".txt"
+    save_to_file(fname, text)
+
 
 
 
@@ -536,7 +567,7 @@ def create_section_and_plots(title, desc, props, subsects, figures_list):
 
 
 
-def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
+def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, exp_prefix):
     vb = 1  # vertical border
 
     print("STATUS")
@@ -572,6 +603,11 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
     text = post(printer.latex_table(props, dim_rows, dim_cols, get_stats_sizeOnlySuccessful, layered_headline=True,
                                     vertical_border=vb))
     latex_sizesOnlySuccessful = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
+
+
+    # Saving optimal solutions to a file
+    save_opt_solutions(dim_rows * dim_cols, props, exp_prefix=exp_prefix)
+
 
     subsects_main = [
         ("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
@@ -678,8 +714,11 @@ def prepare_report(sects, fname, use_bench_simple_names=True, print_status_matri
             _prev_props = props
         dim_benchmarks = Dim.from_dict(props, "benchmark")
 
-        # print("\nFiltered Info:")
-        # for p in props:
+        print("\nFiltered Info:")
+        for p in props:
+            if p["method"] in {"GPR", "CDGP"} and p["searchAlgorithm"] in {"GP", "Lexicase"} and\
+                    int(p["result.best.generation"]) >= 99990:
+                print(p["thisFileName"] + "   --->  " + str(p["result.best.generation"]))
             # Print file names of certain config
             # if "fg_array_search_2" in p["benchmark"] and "searchAlgorithm" in p and\
             #    p["searchAlgorithm"] == "Lexicase" and p["method"] == "CDGP" and\
@@ -743,16 +782,18 @@ def reports_exp4int():
     desc = r""""""
     dimColsCdgp = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio + \
                   dim_methodGPR * dim_ea_type * dim_sel * dim_testsRatioGPR
-    dimColsShared = dimColsCdgp # + dim_methodFormal
-    dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel + \
-                     dim_methodGPR * dim_ea_type * dim_sel
+    dimColsShared = dimColsCdgp + dim_methodFormal
+    #dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel + \
+    #                 dim_methodGPR * dim_ea_type * dim_sel
+    dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_testsRatio + \
+                     dim_methodGPR * dim_ea_type * dim_testsRatioGPR
     dimColsShared_v2 = dimColsCdgp_v2 + dim_methodFormal
     subs = [
-        (create_subsection_shared_stats, [None, dimColsShared, 25]),
+        (create_subsection_shared_stats, [None, dimColsShared, 25, "exp4int"]),
         (create_subsection_cdgp_specific, [None, dimColsCdgp, "exp4int"]),
     ]
     subs_v2 = [
-        (create_subsection_shared_stats, [None, dimColsShared_v2, 25]),
+        (create_subsection_shared_stats, [None, dimColsShared_v2, 25, "exp4int"]),
         (create_subsection_cdgp_specific, [None, dimColsCdgp_v2, "exp4int"]),
     ]
     figures = [
@@ -776,15 +817,15 @@ def reports_exp4str():
     title = "Experiments for parametrized CDGP (stop: 1h)"
     desc = r""""""
     str_dimColsCdgp = dim_methodCDGP * dim_ea_type * dim_sel * dim_testsRatio
-    str_dimColsShared = str_dimColsCdgp # + dim_methodFormalStrings
-    str_dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_sel
+    str_dimColsShared = str_dimColsCdgp + dim_methodFormalStrings
+    str_dimColsCdgp_v2 = dim_methodCDGP * dim_ea_type * dim_testsRatio
     str_dimColsShared_v2 = str_dimColsCdgp_v2 + dim_methodFormalStrings
     subs = [
-        (create_subsection_shared_stats, [None, str_dimColsShared, 25]),
+        (create_subsection_shared_stats, [None, str_dimColsShared, 25, "exp4str"]),
         (create_subsection_cdgp_specific, [None, str_dimColsCdgp, "exp4str"]),
     ]
     subs_v2 = [
-        (create_subsection_shared_stats, [None, str_dimColsShared_v2, 25]),
+        (create_subsection_shared_stats, [None, str_dimColsShared_v2, 25, "exp4str"]),
         (create_subsection_cdgp_specific, [None, str_dimColsCdgp_v2, "exp4str"]),
     ]
     figures = [
@@ -823,11 +864,11 @@ def reports_exp3():
                      dim_methodGPR * dim_ea_type * dim_sel
     dimColsShared_v2 = dimColsCdgp_v2 + dim_methodFormal
     subs = [
-        (create_subsection_shared_stats, [None, dimColsShared, 10]),
+        (create_subsection_shared_stats, [None, dimColsShared, 10, "exp3"]),
         (create_subsection_cdgp_specific, [None, dimColsCdgp, "exp3"]),
     ]
     subs_v2 = [
-        (create_subsection_shared_stats, [None, dimColsShared_v2, 10]),
+        (create_subsection_shared_stats, [None, dimColsShared_v2, 10, "exp3"]),
         (create_subsection_cdgp_specific, [None, dimColsCdgp_v2, "exp3"]),
     ]
     sects = [(title, desc, folders, subs, [])]
@@ -839,5 +880,5 @@ def reports_exp3():
 
 
 if __name__ == "__main__":
-    reports_exp4int()
-    # reports_exp4str()
+    # reports_exp4int()
+    reports_exp4str()
