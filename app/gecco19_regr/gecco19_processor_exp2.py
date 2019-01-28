@@ -1,4 +1,3 @@
-import os
 from src import utils
 from src import plotter
 from src import printer
@@ -71,6 +70,21 @@ def plot_figures(props, exp_prefix):
     if len(props) == 0:
         print("No props: plots were not generated.")
         return
+
+    getter_mse = lambda p: float(p["result.best.mse"])
+    predicate = lambda v, v_xaxis: v <= v_xaxis
+    N = 50  # number of points per plot line
+    r = (0.0, 1e0)
+    xs = np.linspace(r[0], r[1], N)
+    xticks = np.arange(r[0], r[1], r[1] / 10)
+    plotter.plot_ratio_meeting_predicate(props, getter_mse, predicate, xs=xs, xticks=xticks,
+                                         title="Ratio of solutions with MSE under the certain level",
+                                         xlabel="MSE",
+                                         series_dim=dim_method,
+                                         xlogscale=False,
+                                         savepath="results/figures/ratioMSE.pdf".format(exp_prefix))
+
+
     # print_solved_in_time(props, 12 * 3600 * 1000)
     # print_solved_in_time(props, 6 * 3600 * 1000)
     # print_solved_in_time(props, 3 * 3600 * 1000)
@@ -159,11 +173,13 @@ def post(s):
 
 
 
-def create_section_and_plots(title, desc, props, subsects, figures_list):
+def create_section_and_plots(title, desc, props, subsects, figures_list, exp_prefix):
     assert isinstance(title, str)
     assert isinstance(desc, str)
     assert isinstance(props, list)
     assert isinstance(figures_list, list)
+
+    plot_figures(props, exp_prefix=exp_prefix)
 
     section = reporting.Section(title, [])
     section.add(reporting.BlockLatex(desc + "\n"))
@@ -187,7 +203,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
         printer.latex_table(props, dim_rows, dim_cols, get_num_computed, layered_headline=True, vertical_border=vb))
     latex_status = printer.table_color_map(text, 0.0, numRuns / 2, numRuns, "colorLow", "colorMedium", "colorHigh")
 
-    print("SUCCESS RATES (mse below thresh (1.0e-10) + properties met)")
+    print("SUCCESS RATES (mse below thresh (1.0e-25) + properties met)")
     print(printer.text_table(props, dim_rows, dim_cols, fun_successRate, d_cols=";"))
     text = post(
         printer.latex_table(props, dim_rows, dim_cols, fun_successRate, layered_headline=True, vertical_border=vb))
@@ -236,7 +252,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
 
 
 
-def create_subsection_cdgp_specific(props, dim_rows, dim_cols, exp_prefix):
+def create_subsection_cdgp_specific(props, dim_rows, dim_cols):
     vb = 1  # vertical border
 
     print("AVG BEST-OF-RUN FITNESS (MSE)")
@@ -290,7 +306,6 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, exp_prefix):
                                     vertical_border=vb))
     latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 50, 100, "colorLow", "colorMedium", "colorHigh")
 
-    plot_figures(props, exp_prefix=exp_prefix)
     subsects_cdgp = [
         ("Average best-of-run MSE", latex_avgBestOfRunFitness, reporting.color_scheme_green),
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
@@ -320,7 +335,7 @@ def get_benchmarks_from_props(props, simple_names=True):
 
 
 _prev_props = None
-def prepare_report(sects, fname, simple_bench_names=True, print_status_matrix=True, reuse_props=False,
+def prepare_report(sects, fname, exp_prefix, simple_bench_names=True, print_status_matrix=True, reuse_props=False,
                    paperwidth=75, include_all_row=True, dim_cols_listings=None):
     """Creating nice LaTeX report of the results."""
     global _prev_props  # used in case reuse_props was set to True
@@ -376,7 +391,7 @@ def prepare_report(sects, fname, simple_bench_names=True, print_status_matrix=Tr
             args2 = [props] + args
             subsects.append(fun(*args2))
 
-        s = create_section_and_plots(title, desc, props, subsects, figures)
+        s = create_section_and_plots(title, desc, props, subsects, figures, exp_prefix)
         latex_sects.append(s)
 
     for s in latex_sects:
@@ -391,23 +406,24 @@ def prepare_report(sects, fname, simple_bench_names=True, print_status_matrix=Tr
 
 
 def reports_exp2():
-    folders = ["exp2_physics3", "exp2_physics3_partial", "exp2_physics5"]
+    folders = ["exp2_physics3_run1", "exp2_physics3_run2", "exp2_physics3_partial", "exp2_physics5"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
     dimColsCdgp = dim_methodCDGP * dim_evoMode * dim_testsRatio + dim_methodGP * dim_evoMode
     dimColsShared = dimColsCdgp
     subs = [
         (create_subsection_shared_stats, [None, dimColsShared, 20]),
-        (create_subsection_cdgp_specific, [None, dimColsCdgp, "e2"]),
+        (create_subsection_cdgp_specific, [None, dimColsCdgp]),
     ]
     figures = [
+        "figures/ratioMSE.pdf"
         # "figures/e0_ratioEvaluated_correctVsAllRuns.pdf",
         # "figures/e0_ratioTime_correctVsAllCorrect.pdf",
         # "figures/e0_ratioTime_endedVsAllEnded.pdf"
     ]
     sects = [(title, desc, folders, subs, figures)]
 
-    prepare_report(sects, "cdgp_r_exp2.tex", paperwidth=30, include_all_row=True, dim_cols_listings=dimColsShared)
+    prepare_report(sects, "cdgp_r_exp2.tex", "e2", paperwidth=40, include_all_row=True, dim_cols_listings=dimColsShared)
 
 
 

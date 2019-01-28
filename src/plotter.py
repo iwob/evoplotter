@@ -382,7 +382,8 @@ def compare_fitness_on_benchmarks(props, dim_benchmarks, dim_variants, key="resu
 
 
 def plot_ratio_meeting_predicate(props, getter, predicate, condition=None, series_dim=None, xs=None,
-                                 savepath=None, xlabel=None, xticks=None, title=None, show_plot=1):
+                                 savepath=None, xlabel=None, xticks=None, title=None, show_plot=1,
+                                 xlogscale=False, ylogscale=False):
     """Plots a ratio of solutions meeting the predicate. Ratios are presented on the Y axis. On the X axis
     presented are values of a certain attribute on which progression is made (e.g. time to solve). Those
     values (obtained by getter) are then compared with the dict's value (using the predicate).
@@ -455,6 +456,10 @@ def plot_ratio_meeting_predicate(props, getter, predicate, condition=None, serie
 
     for s in series:
         name, data = s
+        if xlogscale:
+            ax1.set_xscale("log", nonposx='clip')
+        if ylogscale:
+            ax1.set_yscale("log", nonposy='clip')
         ax1.plot(data[0], data[1], ".-", label=name)  # label=label
 
     lgd = ax1.legend(loc='lower right', bbox_transform=plt.gcf().transFigure)
