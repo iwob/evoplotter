@@ -1,5 +1,3 @@
-import os
-import shutil
 from src import utils
 from src import plotter
 from src import printer
@@ -15,8 +13,18 @@ def simplify_benchmark_name(name):
     return name.replace("_3", "_03").replace("_5", "_05")
 
 
+
 def p_method_for(name):
     return lambda p, name=name: p["method"] == name
+def p_matches_dict(p, d):
+    for k, v in d.items():
+        if p[k] != v:
+            return False
+    return True
+def p_method_for_dict(d):
+    assert isinstance(d, dict)
+    d = d.copy()
+    return lambda p, d=d: p_matches_dict(p, d)
 def p_generational(p):
     return p["evolutionMode"] == "generational"
 def p_steadyState(p):
@@ -29,9 +37,19 @@ def p_testsRatio_equalTo(ratio):
     return lambda p, ratio=ratio: p["testsRatio"] == ratio
 
 
+
 dim_true = Dim(Config("All", lambda p: True, method=None))
-dim_methodCDGP = Dim([Config("CDGP", p_method_for("CDGP"), method="CDGP")])
-dim_methodGP = Dim([Config("GP", p_method_for("GP"), method="GP")])
+# dim_methodCDGP = Dim([Config("CDGP", p_method_for("CDGP"), method="CDGP")])
+# dim_methodGP = Dim([Config("GP", p_method_for("GP"), method="GP")])
+dim_methodCDGP = Dim([
+    Config("CDGP", p_method_for_dict({"method":"CDGP","partialConstraintsInFitness":"false"}), method="CDGP"),
+    Config("$CDGP_{props}$", p_method_for_dict({"method":"CDGP","partialConstraintsInFitness":"true"}), method="CDGPprops"),
+])
+dim_methodGP = Dim([
+    Config("$GP_{500}$", p_method_for_dict({"method":"GP","populationSize":"500"}), method="GP500"),
+    # Config("$GP_{1000}$", p_method_for_dict({"method": "GP", "populationSize": "1000"}), method="GP1000"),
+    # Config("$GP_{5000}$", p_method_for_dict({"method": "GP", "populationSize": "5000"}), method="GP5000"),
+])
 dim_method = dim_methodCDGP + dim_methodGP
 dim_sel = Dim([#Config("$Tour$", p_sel_tourn, selection="tournament"),
                Config("$Lex$", p_sel_lexicase, selection="lexicase")])
@@ -45,6 +63,11 @@ dim_testsRatio = Dim([Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1
 # 			    Config("$CDGP^{ss}$", p_steadyState),
 #               Config("$CDGP_{lex}$", p_lexicase),
 #               Config("$CDGP_{lex}^{ss}$", p_LexicaseSteadyState)])
+dim_optThreshold = Dim([
+    Config("$optTr=0.01$", p_method_for_dict({"optThresholdC": "0.01"}), optThreshold="0.01"),
+    Config("$optTr=0.1$", p_method_for_dict({"optThresholdC": "0.1"}), optThreshold="0.1"),
+])
+
 
 
 
@@ -54,6 +77,22 @@ def plot_figures(props, exp_prefix):
     if len(props) == 0:
         print("No props: plots were not generated.")
         return
+
+    getter_mse = lambda p: float(p["result.best.mse"])
+    predicate = lambda v, v_xaxis: v <= v_xaxis
+    N = 50  # number of points per plot line
+    r = (0.0, 1e0)
+    xs = np.linspace(r[0], r[1], N)
+    xticks = np.arange(r[0], r[1], r[1] / 10)
+    plotter.plot_ratio_meeting_predicate(props, getter_mse, predicate, xs=xs, xticks=xticks,
+                                         show_plot=False,
+                                         title="Ratio of solutions with MSE under the certain level",
+                                         xlabel="MSE",
+                                         series_dim=dim_method,
+                                         xlogscale=False,
+                                         savepath="results/figures/ratioMSE.pdf".format(exp_prefix))
+
+
     # print_solved_in_time(props, 12 * 3600 * 1000)
     # print_solved_in_time(props, 6 * 3600 * 1000)
     # print_solved_in_time(props, 3 * 3600 * 1000)
@@ -144,11 +183,13 @@ def post(s):
 
 
 
-def create_section_and_plots(title, desc, props, subsects, figures_list):
+def create_section_and_plots(title, desc, props, subsects, figures_list, exp_prefix):
     assert isinstance(title, str)
     assert isinstance(desc, str)
     assert isinstance(props, list)
     assert isinstance(figures_list, list)
+
+    plot_figures(props, exp_prefix=exp_prefix)
 
     section = reporting.Section(title, [])
     section.add(reporting.BlockLatex(desc + "\n"))
@@ -172,7 +213,13 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
         printer.latex_table(props, dim_rows, dim_cols, get_num_computed, layered_headline=True, vertical_border=vb))
     latex_status = printer.table_color_map(text, 0.0, numRuns / 2, numRuns, "colorLow", "colorMedium", "colorHigh")
 
-    print("SUCCESS RATES (mse below thresh (1.0e-10) + properties met)")
+    # print("SUCCESS RATES (mse below thresh)")
+    # print(printer.text_table(props, dim_rows, dim_cols, fun_successRateMseOnly, d_cols=";"))
+    # text = post(
+    #     printer.latex_table(props, dim_rows, dim_cols, fun_successRateMseOnly, layered_headline=True, vertical_border=vb))
+    # latex_successRatesMseOnly = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
+
+    print("SUCCESS RATES (mse below thresh + properties met)")
     print(printer.text_table(props, dim_rows, dim_cols, fun_successRate, d_cols=";"))
     text = post(
         printer.latex_table(props, dim_rows, dim_cols, fun_successRate, layered_headline=True, vertical_border=vb))
@@ -209,7 +256,8 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
 
     subsects_main = [
         ("Status (correctly finished runs)", latex_status, reversed(reporting.color_scheme_red)),
-        ("Success rates (mse below thresh (1.0e-10) + properties met)", latex_successRates, reporting.color_scheme_green),
+        # ("Success rates (mse below thresh)", latex_successRatesMseOnly, reporting.color_scheme_teal),
+        ("Success rates (mse below thresh + properties met)", latex_successRates, reporting.color_scheme_darkgreen),
         ("Success rates (properties met)", latex_propertiesMet, reporting.color_scheme_green),
         ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
         ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
@@ -221,7 +269,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
 
 
 
-def create_subsection_cdgp_specific(props, dim_rows, dim_cols, exp_prefix):
+def create_subsection_cdgp_specific(props, dim_rows, dim_cols):
     vb = 1  # vertical border
 
     print("AVG BEST-OF-RUN FITNESS (MSE)")
@@ -275,7 +323,6 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, exp_prefix):
                                     vertical_border=vb))
     latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 50, 100, "colorLow", "colorMedium", "colorHigh")
 
-    plot_figures(props, exp_prefix=exp_prefix)
     subsects_cdgp = [
         ("Average best-of-run MSE", latex_avgBestOfRunFitness, reporting.color_scheme_green),
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
@@ -305,7 +352,7 @@ def get_benchmarks_from_props(props, simple_names=True):
 
 
 _prev_props = None
-def prepare_report(sects, fname, simple_bench_names=True, print_status_matrix=True, reuse_props=False,
+def prepare_report(sects, fname, exp_prefix, simple_bench_names=True, print_status_matrix=True, reuse_props=False,
                    paperwidth=75, include_all_row=True, dim_cols_listings=None):
     """Creating nice LaTeX report of the results."""
     global _prev_props  # used in case reuse_props was set to True
@@ -361,7 +408,7 @@ def prepare_report(sects, fname, simple_bench_names=True, print_status_matrix=Tr
             args2 = [props] + args
             subsects.append(fun(*args2))
 
-        s = create_section_and_plots(title, desc, props, subsects, figures)
+        s = create_section_and_plots(title, desc, props, subsects, figures, exp_prefix)
         latex_sects.append(s)
 
     for s in latex_sects:
@@ -375,26 +422,26 @@ def prepare_report(sects, fname, simple_bench_names=True, print_status_matrix=Tr
 
 
 
-
-def reports_exp1():
-    folders = ["exp1", "exp1_run2", "exp1_physics", "exp1_resistance", "exp1_square3", "exp1_gravity",
-               "exp1_formal3"]
-    title = "Experiments for regression CDGP (stop: 1h)"
+def reports_exp3():
+    # folders = ["exp3_physics3", "exp3_physics5"]
+    folders = ["exp3aut_physics3_first", "exp3aut_physics5_first"]
+    title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
-    dimColsCdgp = dim_methodCDGP * dim_evoMode * dim_testsRatio + dim_methodGP * dim_evoMode
+    dimColsCdgp = dim_optThreshold * (dim_methodCDGP * dim_testsRatio + dim_methodGP)
     dimColsShared = dimColsCdgp
     subs = [
-        (create_subsection_shared_stats, [None, dimColsShared, 20]),
-        (create_subsection_cdgp_specific, [None, dimColsCdgp, "e1"]),
+        (create_subsection_shared_stats, [None, dimColsShared, 25]),
+        (create_subsection_cdgp_specific, [None, dimColsCdgp]),
     ]
     figures = [
+        "figures/ratioMSE.pdf"
         # "figures/e0_ratioEvaluated_correctVsAllRuns.pdf",
         # "figures/e0_ratioTime_correctVsAllCorrect.pdf",
         # "figures/e0_ratioTime_endedVsAllEnded.pdf"
     ]
     sects = [(title, desc, folders, subs, figures)]
 
-    prepare_report(sects, "cdgp_r_exp1.tex", paperwidth=30, include_all_row=True, dim_cols_listings=dimColsShared)
+    prepare_report(sects, "cdgp_r_exp3.tex", "e3", paperwidth=40, include_all_row=True, dim_cols_listings=dimColsShared)
 
 
 
@@ -402,5 +449,6 @@ if __name__ == "__main__":
     ensure_clear_dir("results/")
     ensure_dir("results/figures/")
     ensure_dir("results/listings/")
+    ensure_dir("results/listings/errors/")
 
-    reports_exp1()
+    reports_exp3()

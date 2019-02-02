@@ -376,7 +376,7 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
 
     section = reporting.Section(title, [])
     subsects = [
-        ("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
+        ("Status (correctly finished processes)", latex_status, reversed(reporting.color_scheme_red)),
         ("Success rates", latex_successRates, reporting.color_scheme_green),
         ("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),

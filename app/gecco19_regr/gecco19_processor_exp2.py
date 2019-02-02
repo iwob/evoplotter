@@ -164,6 +164,8 @@ def get_content_of_subsections(subsects):
     content = []
     vspace = reporting.BlockLatex(r"\vspace{0.75cm}"+"\n")
     for title, table, cs in subsects:
+        if isinstance(cs, reporting.ColorScheme3):
+            cs = cs.toBlockLatex()
         sub = reporting.SectionRelative(title, contents=[cs, reporting.BlockLatex(table + "\n"), vspace])
         content.append(sub)
     return content
@@ -203,6 +205,12 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
         printer.latex_table(props, dim_rows, dim_cols, get_num_computed, layered_headline=True, vertical_border=vb))
     latex_status = printer.table_color_map(text, 0.0, numRuns / 2, numRuns, "colorLow", "colorMedium", "colorHigh")
 
+    print("SUCCESS RATES (mse below thresh (1.0e-25))")
+    print(printer.text_table(props, dim_rows, dim_cols, fun_successRateMseOnly, d_cols=";"))
+    text = post(
+        printer.latex_table(props, dim_rows, dim_cols, fun_successRateMseOnly, layered_headline=True, vertical_border=vb))
+    latex_successRatesMseOnly = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
+
     print("SUCCESS RATES (mse below thresh (1.0e-25) + properties met)")
     print(printer.text_table(props, dim_rows, dim_cols, fun_successRate, d_cols=";"))
     text = post(
@@ -239,7 +247,8 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
     latex_sizesOnlySuccessful = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
 
     subsects_main = [
-        ("Status (correctly finished runs)", latex_status, reporting.color_scheme_red_r),
+        ("Status (correctly finished runs)", latex_status, reversed(reporting.color_scheme_red)),
+        ("Success rates (mse below thresh (1.0e-25))", latex_successRatesMseOnly, reporting.color_scheme_teal),
         ("Success rates (mse below thresh (1.0e-25) + properties met)", latex_successRates, reporting.color_scheme_green),
         ("Success rates (properties met)", latex_propertiesMet, reporting.color_scheme_green),
         ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),

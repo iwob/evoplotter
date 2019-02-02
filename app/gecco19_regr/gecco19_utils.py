@@ -189,6 +189,9 @@ def is_approximated_solution(p):
 def get_num_optimal(props):
     props2 = [p for p in props if is_verified_solution(p)]
     return len(props2)
+def get_num_optimalOnlyMse(props):
+    props2 = [p for p in props if float(p["result.best.mse"]) <= float(p["optThreshold"])]
+    return len(props2)
 
 def get_num_allPropertiesMet(props):
     props2 = [p for p in props if p["result.best.verificationDecision"] == "unsat"]
@@ -204,6 +207,11 @@ def fun_successRate_full(filtered):
 def get_successRate(filtered):
     num_opt = get_num_optimal(filtered)
     return float(num_opt) / float(len(filtered))
+def fun_successRateMseOnly(filtered):
+    if len(filtered) == 0:
+        return "-"
+    sr = get_num_optimalOnlyMse(filtered) / float(len(filtered))
+    return "{0}".format("%0.2f" % round(sr, 2))
 def fun_successRate(filtered):
     if len(filtered) == 0:
         return "-"

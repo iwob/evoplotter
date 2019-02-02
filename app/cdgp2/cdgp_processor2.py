@@ -527,7 +527,7 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
 
 
     subsects_main = [
-        ("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
+        ("Status (correctly finished processes)", latex_status, reversed(reporting.color_scheme_red)),
         ("Success rates", latex_successRates, reporting.color_scheme_green),
         ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
         ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
@@ -555,6 +555,8 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
         content = []
         vspace = reporting.BlockLatex(r"\vspace{0.75cm}"+"\n")
         for title, table, cs in subsects:
+            if isinstance(cs, reporting.ColorScheme3):
+                cs = cs.toBlockLatex()
             sub = reporting.SectionRelative(title, contents=[cs, reporting.BlockLatex(table + "\n"), vspace])
             content.append(sub)
         return content

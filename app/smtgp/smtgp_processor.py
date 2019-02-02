@@ -266,12 +266,14 @@ def print_table(props, dim_rows, dim_cols):
 
     report = reporting.ReportPDF()
     section1 = reporting.Section("Experiments", [])
-    subsects = [("Status (correctly finished processes)", textStatus, reporting.color_scheme_red_r),
+    subsects = [("Status (correctly finished processes)", textStatus, reversed(reporting.color_scheme_red)),
                 ("Number of optimal solutions (max=100)", textNumOptimal, reporting.color_scheme_green),
                 ("Average fitness", textAvgFitness, reporting.color_scheme_green),
                 ("Average runtime", textAvgRuntime, reporting.color_scheme_blue),
                 ("Ratio of unknowns", textRatioOfUnknowns, reporting.color_scheme_yellow)]
     for title, table, cs in subsects:
+        if isinstance(cs, reporting.ColorScheme3):
+            cs = cs.toBlockLatex()
         sub = reporting.Subsection(title, [cs, reporting.BlockLatex(table + "\n")])
         section1.add(sub)
     report.add(section1)

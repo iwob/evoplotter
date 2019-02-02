@@ -264,7 +264,7 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     # print(text + "\n\n")
 
     section = reporting.Section(title, [])
-    subsects = [("Status (correctly finished processes)", latex_status, reporting.color_scheme_red_r),
+    subsects = [("Status (correctly finished processes)", latex_status, reversed(reporting.color_scheme_red)),
                 ("Success rates", latex_successRates, reporting.color_scheme_green),
                 ("Average best-of-run ratio of passed tests", latex_avgBestOfRunFitness, reporting.color_scheme_green),
                 ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
@@ -277,6 +277,8 @@ def create_section_with_results(title, desc, folders, numRuns=10, use_bench_simp
     bl_desc = reporting.BlockLatex(desc + "\n")
     section.add(bl_desc)
     for title, table, cs in subsects:
+        if isinstance(cs, reporting.ColorScheme3):
+            cs = cs.toBlockLatex()
         sub = reporting.Subsection(title, [cs, reporting.BlockLatex(table + "\n")])
         section.add(sub)
     section.add(reporting.BlockLatex(r"\vspace{1cm}" + "\n"))

@@ -199,54 +199,59 @@ class FloatFigure:
 
 
 
-# By default color schemes color high values and go down to white with lower values.
-# If _r is appended to the color scheme name, then colored are low values instead.
 
-color_scheme_gray_light = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{colorMedium}{rgb}{0.9, 0.9, 0.9} % gray
-\definecolor{colorHigh}{rgb}{0.75, 0.75, 0.75} % gray
-""")
-color_scheme_blue = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{colorMedium}{rgb}{0.83, 0.89, 0.98} % light blue
-\definecolor{colorHigh}{rgb}{0.63, 0.79, 0.95} % blue
-""")
-color_scheme_green = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{colorMedium}{rgb}{0.76, 0.98, 0.76} % light green
-\definecolor{colorHigh}{rgb}{0.66, 0.90, 0.66} % green
-""")
-color_scheme_green_r = BlockLatex(r"""\definecolor{colorLow}{rgb}{0.66, 0.90, 0.66} % green
-\definecolor{colorMedium}{rgb}{0.76, 0.98, 0.76} % light green
-\definecolor{colorHigh}{rgb}{1.0, 1.0, 1.0} % white
-""")
-color_scheme_yellow = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{colorMedium}{rgb}{0.98, 0.91, 0.71} % light yellow
-\definecolor{colorHigh}{rgb}{1.0, 0.75, 0.0} % yellow
-""")
-color_scheme_violet = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{colorMedium}{rgb}{0.85, 0.65, 0.92} % light violet
-\definecolor{colorHigh}{rgb}{0.65, 0.45, 0.85} % violet
-""")
-color_scheme_teal = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{colorMedium}{rgb}{0.67, 0.87, 0.88} % light teal
-\definecolor{colorHigh}{rgb}{0.47, 0.72, 0.73} % teal
-""")
-color_scheme_brown = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{colorMedium}{rgb}{0.96, 0.8, 0.62} % light teal
-\definecolor{colorHigh}{rgb}{0.76, 0.6, 0.42} % teal
-""")
-color_scheme_red = BlockLatex(r"""\definecolor{colorLow}{rgb}{1.0, 1.0, 1.0} % white
-\definecolor{colorMedium}{rgb}{0.95, 0.6, 0.6} % light red
-\definecolor{colorHigh}{rgb}{0.8, 0, 0} % red
-""")
-color_scheme_red_r = BlockLatex(r"""\definecolor{colorLow}{rgb}{0.8, 0, 0} % red
-\definecolor{colorMedium}{rgb}{0.95, 0.6, 0.6} % light red
-\definecolor{colorHigh}{rgb}{1.0, 1.0, 1.0} % white
-""")
-color_scheme_red2yellow2green = BlockLatex(r"""\definecolor{colorLow}{rgb}{0.94, 0.5, 0.5} % red
-\definecolor{colorMedium}{rgb}{1.0, 1.0, 0.0} % yellow
-\definecolor{colorHigh}{rgb}{0.56, 0.93, 0.56} % green
-""")
-color_scheme_green2yellow2red = BlockLatex(r"""\definecolor{colorLow}{rgb}{0.56, 0.93, 0.56} % green
-\definecolor{colorMedium}{rgb}{1.0, 1.0, 0.0} % yellow
-\definecolor{colorHigh}{rgb}{0.94, 0.5, 0.5} % red
-""")
+class ColorScheme3:
+    def __init__(self, colors, comments=None, nameLow="colorLow", nameMedium="colorMedium", nameHigh="colorHigh"):
+        if comments is None:
+            comments = ["", "", ""]
+        assert isinstance(colors, list), "ColorScheme expects a dictionary with RGB values associated with color names."
+        assert len(colors) == 3, "ColorScheme must be composed from exactly three colors."
+        assert isinstance(comments, list)
+        assert len(comments) == 3
+        self.colors = colors
+        self.comments = comments
+        self.nameLow = nameLow
+        self.nameMedium = nameMedium
+        self.nameHigh = nameHigh
+
+    def getColorNames(self):
+        return [self.nameLow, self.nameMedium, self.nameHigh]
+
+    def toBlockLatex(self):
+        return BlockLatex(self.__str__())
+
+    def __reversed__(self):
+        newColors = list(reversed(self.colors[:]))
+        newComments = list(reversed(self.comments[:]))
+        return ColorScheme3(newColors, comments=newComments, nameLow=self.nameLow,
+                            nameMedium=self.nameMedium, nameHigh=self.nameHigh)
+
+    def __str__(self):
+        text = ""
+        for rgb, comment, colorName in zip(self.colors, self.comments, self.getColorNames()):
+            comment = " % {0}".format(comment) if comment != "" else ""
+            text += "\definecolor{" + str(colorName) + "}{rgb}{" + str(rgb) + "}" + str(comment) + "\n"
+        return text
+
+
+color_scheme_darkgreen = ColorScheme3(["1.0, 1.0, 1.0", "0.3, 0.6, 0.3", "0.0, 0.4, 0.0"],
+                                      ["white", "light green", "dark green"])
+color_scheme_gray_light = ColorScheme3(["1.0, 1.0, 1.0", "0.9, 0.9, 0.9", "0.75, 0.75, 0.75"],
+                                       ["white", "light gray", "gray"])
+color_scheme_blue = ColorScheme3(["1.0, 1.0, 1.0", "0.83, 0.89, 0.98", "0.63, 0.79, 0.95"],
+                                 ["white", "light blue", "blue"])
+color_scheme_green = ColorScheme3(["1.0, 1.0, 1.0", "0.76, 0.98, 0.76", "0.66, 0.90, 0.66"],
+                                  ["white", "light green", "green"])
+color_scheme_yellow = ColorScheme3(["1.0, 1.0, 1.0", "0.98, 0.91, 0.71", "1.0, 0.75, 0.0"],
+                                 ["white", "light yellow", "yellow"])
+color_scheme_violet = ColorScheme3(["1.0, 1.0, 1.0", "0.85, 0.65, 0.92", "0.65, 0.45, 0.85"],
+                                   ["white", "light violet", "violet"])
+color_scheme_teal = ColorScheme3(["1.0, 1.0, 1.0", "0.67, 0.87, 0.88", "0.47, 0.72, 0.73"],
+                                 ["white", "light teal", "teal"])
+color_scheme_brown = ColorScheme3(["1.0, 1.0, 1.0", "0.96, 0.8, 0.62", "0.76, 0.6, 0.42"],
+                                  ["white", "light brown", "brown"])
+color_scheme_red = ColorScheme3(["1.0, 1.0, 1.0", "0.95, 0.6, 0.6", "0.8, 0, 0"],
+                                ["white", "light red", "red"])
+
+color_scheme_red2yellow2green = ColorScheme3(["0.94, 0.5, 0.5", "1.0, 1.0, 0.0", "0.56, 0.93, 0.56"],
+                                             ["red", "yellow", "green"])
