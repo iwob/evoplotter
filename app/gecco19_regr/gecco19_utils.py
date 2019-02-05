@@ -168,7 +168,7 @@ def save_listings(props, dim_rows, dim_cols):
 
 
 def normalized_total_time(p, max_time=3600000):
-    """If time was longer than max_time, then return max_time, otherwise return time."""
+    """If time was longer than max_time, then return max_time, otherwise return time. Time is counted in miliseconds."""
     if "cdgp.wasTimeout" in p and p["cdgp.wasTimeout"] == "true":
         v = 3600000
     else:
@@ -320,13 +320,13 @@ def get_avg_runtimeOnlySuccessful(props):
     if len(props) == 0:
         return "-"
     else:
-        vals = [float(normalized_total_time(p)) / 1000.0 for p in props if is_verified_solution(p)]
+        vals = [float(normalized_total_time(p, max_time=1800000)) / 1000.0 for p in props if is_verified_solution(p)]
         return get_avg_runtime_helper(vals)
 def get_avg_runtime(props):
     if len(props) == 0:
         return "-"
     else:
-        vals = [float(normalized_total_time(p)) / 1000.0 for p in props]
+        vals = [float(normalized_total_time(p, max_time=1800000)) / 1000.0 for p in props]
         return get_avg_runtime_helper(vals)
 def get_avg_generation(props):
     if len(props) == 0:
@@ -408,11 +408,11 @@ def print_solved_in_time(props, upper_time):
         if p["result.best.isOptimal"] == "false":
             continue
         num += 1
-        if int(normalized_total_time(p)) <= upper_time:
+        if int(normalized_total_time(p, max_time=1800000)) <= upper_time:
             solved += 1
 
     for p in props:
-        if int(normalized_total_time(p)) <= upper_time:
+        if int(normalized_total_time(p, max_time=1800000)) <= upper_time:
             solvedRuns += 1
     print("\nRuns which ended under {0} s:  {1} / {2}  ({3} %)".format(upper_time / 1000.0, solvedRuns, len(props), solvedRuns / len(props)))
     print("Optimal solutions found under {0} s:  {1} / {2}  ({3} %)\n".format(upper_time / 1000.0, solved, num, solved / num))
