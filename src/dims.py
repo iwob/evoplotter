@@ -188,6 +188,12 @@ class Config(object):
         for c in self.filters:
             yield c
 
+    def __getitem__(self, item):
+        return self.filters[item]
+
+    def __delitem__(self, key):
+        del self.filters[key]
+
     def __lt__(self, other):
         n_other = "_".join(x[0] for x in other.filters)
         n_self = "_".join([x[0] for x in self.filters])
