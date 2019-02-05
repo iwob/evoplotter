@@ -229,3 +229,7 @@ class Config(object):
             if not f[1](p):
                 return False
         return True
+
+
+
+dim_empty = Dim([Config(("", lambda p: True))])
