@@ -130,6 +130,18 @@ class Dim(object):
             configs.append(Config(el, lambda p, key=key, el=el: p[key] == el, **kwargs))
         return Dim(configs)
 
+    @classmethod
+    def from_dict_postprocess(cls, props, key, fun):
+        """Creates a Dim object by collecting all unique values under the specified
+        key in the dictionaries after the retrieved values are processed in a specified way."""
+        values = utils.get_unique_values(props, lambda p: p[key])
+        values = {fun(x) for x in values}
+        configs = []
+        for v in values:
+            kwargs = {key: v}
+            configs.append(Config(v, lambda p, key=key, v=v, fun=fun: fun(p[key]) == v, **kwargs))
+        return Dim(configs)
+
 
 
 
