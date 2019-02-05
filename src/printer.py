@@ -389,7 +389,7 @@ def latex_table_wrapper(tableBody, dim_cols, latexize_underscores=True, vertical
 
 
 def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layered_headline=False,
-                vertical_border=1, first_col_align="l"):
+                vertical_border=1, first_col_align="l", headerRowNames=None):
     """Returns code of a LaTeX table (tabular environment) created from the given dimensions.
 
     :param props: (dict) all props gathered in the experiment.
@@ -405,12 +405,14 @@ def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layer
     :param vertical_border: (int) mode of the vertical borders in the table. Bigger the number,
      more dense the vertical borders. Range of values: 0 - 2.
     :param first_col_align: (str) alignment of the first column, that is row labels.
+    :param headerRowNames: (list[str]) a list of names of the rows of the header.
     :return: (str) code of the LaTeX table.
     """
     assert isinstance(dim_rows, dims.Dim)
     assert isinstance(dim_cols, dims.Dim)
 
-    body = latex_table_header(dim_cols, layered_headline, d_cols=" & ", d_rows="\\\\\n", vertical_border=vertical_border)
+    body = latex_table_header(dim_cols, layered_headline=layered_headline, d_cols=" & ", d_rows="\\\\\n",
+                              vertical_border=vertical_border, headerRowNames=headerRowNames)
     body += text_table_body(props, dim_rows, dim_cols, fun, d_cols=" & ", d_rows="\\\\\n")
 
     text = latex_table_wrapper(body, dim_cols, latexize_underscores=latexize_underscores, vertical_border=vertical_border,
@@ -419,7 +421,7 @@ def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layer
 
 
 def latex_table_header_cells(cells, layered_headline=False, d_cols=" & ", d_rows="\\\\\n",
-                       vertical_border=0, horizontal_border=1, tabFirstCol=True, useBooktabs=False):
+                             vertical_border=0, horizontal_border=1, tabFirstCol=True, useBooktabs=False):
     """Produces header for a LaTeX table. In the case of generating layered headline, columns
     dimension is assumed to contain Configs with the same number of filters and corresponding
     configs placed on the same positions (this will always be correct, if '*' was used to
@@ -436,7 +438,7 @@ def latex_table_header_cells(cells, layered_headline=False, d_cols=" & ", d_rows
 
 
 def latex_table_header(dim_cols, layered_headline=False, d_cols=" & ", d_rows="\\\\\n",
-                       vertical_border=0, useBooktabs=False):
+                       vertical_border=0, useBooktabs=False, headerRowNames=None):
     """Produces header for a LaTeX table. In the case of generating layered headline, columns
     dimension is assumed to contain Configs with the same number of filters and corresponding
     configs placed on the same positions (this will always be correct, if '*' was used to
@@ -444,7 +446,8 @@ def latex_table_header(dim_cols, layered_headline=False, d_cols=" & ", d_rows="\
     """
     if layered_headline:
         return latex_table_header_multilayered(dim_cols, d_cols=d_cols, d_rows=d_rows,
-                                               vertical_border=vertical_border, useBooktabs=useBooktabs)
+                                               vertical_border=vertical_border, useBooktabs=useBooktabs,
+                                               headerRowNames=headerRowNames)
     else:
         return latex_table_header_one_layer(dim_cols, d_cols=d_cols, d_rows=d_rows,
                                             vertical_border=vertical_border)
@@ -484,13 +487,35 @@ def latex_table_header_multilayered_cells(cells_cols, d_cols=" & ", d_rows="\\\\
 
 
 def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", vertical_border=0, horizontal_border=1,
-                                    tabFirstCol=True, useBooktabs=False):
+                                    tabFirstCol=True, useBooktabs=False, headerRowNames=None):
+    """Produces a multi-layered header of the LaTeX table. Multi-layered means that there is some
+     hierarchy to dimensions of the experiment and the subdimensions will be presented under their
+     parent dimension.
+
+    :param dim_cols: (Dim) dimensions of the columns.
+    :param d_cols: (str) separator for columns.
+    :param d_rows: (str) separator for rows.
+    :param vertical_border: (int) takes values from 0 to 2. Bigger the number, the more dense vertical
+     border would be.
+    :param horizontal_border: (int) takes values from 0 to 2. Bigger the number, the more dense horizontal
+     border would be.
+    :param tabFirstCol: (bool) if true, then column headers will start from the second column instead of the
+     the first. Scenarios in which tabFirstCol should be false are rather rare.
+    :param useBooktabs: (bool) if true, then instead of \hline in the middle \midrule will be used.
+    :param headerRowNames: (list[str]) a list of names of the rows of the header.
+    :return: (str) header of the table in LaTeX.
+    """
+
     assert isinstance(dim_cols, dims.Dim)
     num_layers = max([len(c.filters) for c in dim_cols.configs])  # num of layers in the example filter
+    if headerRowNames is None:
+        headerRowNames = [""] * num_layers
+    assert isinstance(headerRowNames, list)
+    assert len(headerRowNames) >= num_layers, "headerRowNames has {0} entries, but it should have as many entries as layers to be created ({1})".format(len(headerRowNames), num_layers)
 
     # Going from the highest layer to the lowest.
     def produce_lines(dimens, layer_no):
-        if layer_no == num_layers -1: #len(dimens[0]) == 1 or ...
+        if layer_no == num_layers - 1: #len(dimens[0]) == 1 or ...
             # Only a single row, use a simplified routine.
 
             headerCells = []
@@ -503,7 +528,7 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
                         align = "|" + align
                 headerCells.append(r"\multicolumn{1}{" + align + "}{" + d.get_caption() + "}")
 
-            firstColSep = d_cols if tabFirstCol else ""
+            firstColSep = headerRowNames[layer_no] + d_cols if tabFirstCol else ""
             if horizontal_border >= 1:
                 ender = r"\hline" + "\n" if not useBooktabs else r"\midrule" + "\n"
             else:
@@ -544,7 +569,7 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
                 subconfigs_queue.append(dims.Config("", lambda p: False))
 
         if tabFirstCol:
-            text += d_cols
+            text += headerRowNames[layer_no] + d_cols
         text += d_cols.join(buffer) + d_rows
         text += produce_lines(dims.Dim(subconfigs_queue), layer_no + 1)
         return text
