@@ -13,6 +13,12 @@ def simplify_benchmark_name(name):
     return name.replace("_3", "_03").replace("_5", "_05")
 
 
+def benchmark_get_num_tests(name):
+    i_dot = name.rfind(".")
+    i_us = name.rfind("_")
+    return name[i_us+1:i_dot]
+
+
 
 def p_method_for(name):
     return lambda p, name=name: p["method"] == name
@@ -21,7 +27,7 @@ def p_matches_dict(p, d):
         if p[k] != v:
             return False
     return True
-def p_method_for_dict(d):
+def p_dict_matcher(d):
     assert isinstance(d, dict)
     d = d.copy()
     return lambda p, d=d: p_matches_dict(p, d)
@@ -35,6 +41,8 @@ def p_sel_tourn(p):
     return p["selection"] == "tournament"
 def p_testsRatio_equalTo(ratio):
     return lambda p, ratio=ratio: p["testsRatio"] == ratio
+def p_benchmarkNumTests_equalTo(x):
+    return lambda p, x=x: benchmark_get_num_tests(p["benchmark"]) == x
 
 
 
@@ -42,13 +50,13 @@ dim_true = Dim(Config("All", lambda p: True, method=None))
 # dim_methodCDGP = Dim([Config("CDGP", p_method_for("CDGP"), method="CDGP")])
 # dim_methodGP = Dim([Config("GP", p_method_for("GP"), method="GP")])
 dim_methodCDGP = Dim([
-    Config("CDGP", p_method_for_dict({"method":"CDGP","partialConstraintsInFitness":"false"}), method="CDGP"),
-    Config("$CDGP_{props}$", p_method_for_dict({"method":"CDGP","partialConstraintsInFitness":"true"}), method="CDGPprops"),
+    Config("CDGP", p_dict_matcher({"method": "CDGP", "partialConstraintsInFitness": "false"}), method="CDGP"),
+    Config("$CDGP_{props}$", p_dict_matcher({"method": "CDGP", "partialConstraintsInFitness": "true"}), method="CDGPprops"),
 ])
 dim_methodGP = Dim([
-    Config("$GP_{500}$", p_method_for_dict({"method":"GP","populationSize":"500"}), method="GP500"),
-    # Config("$GP_{1000}$", p_method_for_dict({"method": "GP", "populationSize": "1000"}), method="GP1000"),
-    # Config("$GP_{5000}$", p_method_for_dict({"method": "GP", "populationSize": "5000"}), method="GP5000"),
+    Config("$GP$", p_dict_matcher({"method": "GP", "populationSize": "500"}), method="GP500"),
+    # Config("$GP_{1000}$", p_dict_matcher({"method": "GP", "populationSize": "1000"}), method="GP1000"),
+    # Config("$GP_{5000}$", p_dict_matcher({"method": "GP", "populationSize": "5000"}), method="GP5000"),
 ])
 dim_method = dim_methodCDGP + dim_methodGP
 dim_sel = Dim([#Config("$Tour$", p_sel_tourn, selection="tournament"),
@@ -56,18 +64,19 @@ dim_sel = Dim([#Config("$Tour$", p_sel_tourn, selection="tournament"),
 # dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
 #                    Config("$generational$", p_generational, evolutionMode="generational")])
 dim_evoMode = Dim([Config("$generational$", p_generational, evolutionMode="generational")])
-# dim_testsRatio = Dim([Config("$0.8$", p_testsRatio_equalTo("0.8"), testsRatio="0.8"),
-#                       Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0")])
-dim_testsRatio = Dim([Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0")])
-# dim_sa = Dim([Config("$CDGP$", p_GP),
-# 			    Config("$CDGP^{ss}$", p_steadyState),
-#               Config("$CDGP_{lex}$", p_lexicase),
-#               Config("$CDGP_{lex}^{ss}$", p_LexicaseSteadyState)])
-dim_optThreshold = Dim([
-    Config("$optTr=0.01$", p_method_for_dict({"optThresholdC": "0.01"}), optThreshold="0.01"),
-    Config("$optTr=0.1$", p_method_for_dict({"optThresholdC": "0.1"}), optThreshold="0.1"),
+dim_testsRatio = Dim([
+    # Config("$0.8$", p_testsRatio_equalTo("0.8"), testsRatio="0.8"),
+    Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0"),
 ])
-
+dim_optThreshold = Dim([
+    Config("$0.01$", p_dict_matcher({"optThresholdC": "0.01"}), optThreshold="0.01"),
+    Config("$0.1$", p_dict_matcher({"optThresholdC": "0.1"}), optThreshold="0.1"),
+])
+dim_benchmarkNumTests = Dim([
+    Config("$3$", p_benchmarkNumTests_equalTo("3"), benchmarkNumTests="3"),
+    Config("$5$", p_benchmarkNumTests_equalTo("5"), benchmarkNumTests="5"),
+    Config("$10$", p_benchmarkNumTests_equalTo("10"), benchmarkNumTests="10"),
+])
 
 
 
@@ -205,53 +214,53 @@ def create_section_and_plots(title, desc, props, subsects, figures_list, exp_pre
 
 
 
-def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
+def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRowNames):
     vb = 1  # vertical border
 
     print("STATUS")
     text = post(
-        printer.latex_table(props, dim_rows, dim_cols, get_num_computed, layered_headline=True, vertical_border=vb))
+        printer.latex_table(props, dim_rows, dim_cols, get_num_computed, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     latex_status = printer.table_color_map(text, 0.0, numRuns / 2, numRuns, "colorLow", "colorMedium", "colorHigh")
 
     # print("SUCCESS RATES (mse below thresh)")
     # print(printer.text_table(props, dim_rows, dim_cols, fun_successRateMseOnly, d_cols=";"))
     # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, fun_successRateMseOnly, layered_headline=True, vertical_border=vb))
+    #     printer.latex_table(props, dim_rows, dim_cols, fun_successRateMseOnly, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     # latex_successRatesMseOnly = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 
     print("SUCCESS RATES (mse below thresh + properties met)")
     print(printer.text_table(props, dim_rows, dim_cols, fun_successRate, d_cols=";"))
     text = post(
-        printer.latex_table(props, dim_rows, dim_cols, fun_successRate, layered_headline=True, vertical_border=vb))
+        printer.latex_table(props, dim_rows, dim_cols, fun_successRate, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 
     print("SUCCESS RATES (properties met)")
     print(printer.text_table(props, dim_rows, dim_cols, fun_allPropertiesMet, d_cols=";"))
     text = post(
-        printer.latex_table(props, dim_rows, dim_cols, fun_allPropertiesMet, layered_headline=True, vertical_border=vb))
+        printer.latex_table(props, dim_rows, dim_cols, fun_allPropertiesMet, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     latex_propertiesMet = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 
     print("AVG RUNTIME")
     text = post(
-        printer.latex_table(props, dim_rows, dim_cols, get_avg_runtime, layered_headline=True, vertical_border=vb))
+        printer.latex_table(props, dim_rows, dim_cols, get_avg_runtime, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     latex_avgRuntime = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
 
     print("AVG RUNTIME (SUCCESSFUL)")
     text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_runtimeOnlySuccessful, layered_headline=True,
-                                    vertical_border=vb))
+                                    vertical_border=vb, headerRowNames=headerRowNames))
     latex_avgRuntimeOnlySuccessful = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium",
                                                              "colorHigh")
 
     # print("SUCCESS RATES (FULL INFO)")
-    # text = post(printer.latex_table(props, dim_rows, dim_cols, fun_successRates_full, layered_headline=True, vertical_border=vb))
+    # text = post(printer.latex_table(props, dim_rows, dim_cols, fun_successRates_full, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
 
     # print("AVG SIZES")
-    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_stats_size, layered_headline=True, vertical_border=vb))
+    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_stats_size, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     # latex_sizes = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
 
     print("AVG SIZES (SUCCESSFUL)")
     text = post(printer.latex_table(props, dim_rows, dim_cols, get_stats_sizeOnlySuccessful, layered_headline=True,
-                                    vertical_border=vb))
+                                    vertical_border=vb, headerRowNames=headerRowNames))
     latex_sizesOnlySuccessful = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
 
     subsects_main = [
@@ -269,58 +278,58 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns):
 
 
 
-def create_subsection_cdgp_specific(props, dim_rows, dim_cols):
+def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
     vb = 1  # vertical border
 
     print("AVG BEST-OF-RUN FITNESS (MSE)")
     text = post(
-        printer.latex_table(props, dim_rows, dim_cols, get_avg_mse, layered_headline=True, vertical_border=vb))
+        printer.latex_table(props, dim_rows, dim_cols, get_avg_mse, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     latex_avgBestOfRunFitness = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 
     print("AVG TOTAL TESTS")
     text = post(
-        printer.latex_table(props, dim_rows, dim_cols, get_avg_totalTests, layered_headline=True, vertical_border=vb))
+        printer.latex_table(props, dim_rows, dim_cols, get_avg_totalTests, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     latex_avgTotalTests = printer.table_color_map(text, 0.0, 1000.0, 2000.0, "colorLow", "colorMedium", "colorHigh")
 
     # print("AVG RUNTIME PER PROGRAM")
     # text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_runtimePerProgram, layered_headline=True,
-    #                                 vertical_border=vb))
+    #                                 vertical_border=vb, headerRowNames=headerRowNames))
     # latex_avgRuntimePerProgram = printer.table_color_map(text, 0.01, 1.0, 2.0, "colorLow", "colorMedium", "colorHigh")
 
     print("AVG GENERATION")
     text = post(
-        printer.latex_table(props, dim_rows, dim_cols, get_avg_generation, layered_headline=True, vertical_border=vb))
+        printer.latex_table(props, dim_rows, dim_cols, get_avg_generation, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     latex_avgGeneration = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
 
     # print("AVG EVALUATED SOLUTIONS")
     # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluated, layered_headline=True, vertical_border=vb))
+    #     printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluated, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     # latex_avgEvaluated = printer.table_color_map(text, 500.0, 25000.0, 100000.0, "colorLow", "colorMedium", "colorHigh")
 
     # print("AVG EVALUATED SOLUTIONS (SUCCESSFUL)")
     # text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluatedSuccessful, layered_headline=True,
-    #                                 vertical_border=vb))
+    #                                 vertical_border=vb, headerRowNames=headerRowNames))
     # latex_avgEvaluatedSuccessful = printer.table_color_map(text, 500.0, 25000.0, 100000.0, "colorLow", "colorMedium",
     #                                                         "colorHigh")
 
     print("MAX SOLVER TIME")
     text = post(printer.latex_table(props, dim_rows, dim_cols, get_stats_maxSolverTime, layered_headline=True,
-                                    vertical_border=vb))
+                                    vertical_border=vb, headerRowNames=headerRowNames))
     latex_maxSolverTimes = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 
     print("AVG SOLVER TIME")
     text = post(printer.latex_table(props, dim_rows, dim_cols, get_stats_avgSolverTime, layered_headline=True,
-                                    vertical_border=vb))
+                                    vertical_border=vb, headerRowNames=headerRowNames))
     latex_avgSolverTimes = printer.table_color_map(text, 0.0, 0.015, 0.03, "colorLow", "colorMedium", "colorHigh")
 
     print("AVG NUM SOLVER CALLS")
     text = post(printer.latex_table(props, dim_rows, dim_cols, get_avgSolverTotalCalls, layered_headline=True,
-                                    vertical_border=vb))
+                                    vertical_border=vb, headerRowNames=headerRowNames))
     latex_avgSolverTotalCalls = printer.table_color_map(text, 1e1, 1e2, 1e4, "colorLow", "colorMedium", "colorHigh")
 
     print("NUM SOLVER CALLS > 0.5s")
     text = post(printer.latex_table(props, dim_rows, dim_cols, get_numSolverCallsOverXs, layered_headline=True,
-                                    vertical_border=vb))
+                                    vertical_border=vb, headerRowNames=headerRowNames))
     latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 50, 100, "colorLow", "colorMedium", "colorHigh")
 
     subsects_cdgp = [
@@ -422,16 +431,65 @@ def prepare_report(sects, fname, exp_prefix, simple_bench_names=True, print_stat
 
 
 
+
+def prepare_report_for_dims(props, dim_rows, dim_cols, sects, fname, exp_prefix,
+                            print_status_matrix=True, paperwidth=75, include_all_row=True,
+                            dim_cols_listings=None):
+    """Creating a LaTeX report of the results, where in each table data are presented along the
+    sam dimensions."""
+    report = reporting.ReportPDF(geometry_params="[paperwidth={0}cm, paperheight=40cm, margin=0.3cm]".format(paperwidth))
+
+    dim_rows = dim_rows.sort()
+    if include_all_row:
+        dim_rows += dim_true
+
+    latex_sects = []
+    for title, desc, folders, subs, figures in sects:
+        if print_status_matrix:
+            d = dim_rows * dim_cols
+
+            matrix = produce_status_matrix(d, props)
+            print("\n****** Status matrix:")
+            print(matrix + "\n")
+            print("Saving status matrix to file: {0}".format(STATUS_FILE_NAME))
+            save_to_file(STATUS_FILE_NAME, matrix)
+
+
+        if dim_cols_listings is not None:
+            save_listings(props, dim_rows, dim_cols_listings)
+
+
+        subsects = []
+        for fun, args in subs:
+            if args[0] is None:  # no dimensions for rows, take benchmarks as the default
+                args[0] = dim_rows
+            args2 = [props] + args
+            subsects.append(fun(*args2))
+
+        s = create_section_and_plots(title, desc, props, subsects, figures, exp_prefix)
+        latex_sects.append(s)
+
+    for s in latex_sects:
+        if s is not None:
+            report.add(s)
+    print("\n\nGenerating PDF report ...")
+    cwd = os.getcwd()
+    os.chdir("results/")
+    report.save_and_compile(fname)
+    os.chdir(cwd)
+
+
+
 def reports_exp3():
     # folders = ["exp3_physics3", "exp3_physics5"]
-    folders = ["exp3aut_physics3_first", "exp3aut_physics5_first"]
+    folders = ["EXP3_aut"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
-    dimColsCdgp = dim_optThreshold * (dim_methodCDGP * dim_testsRatio + dim_methodGP)
-    dimColsShared = dimColsCdgp
+    dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_testsRatio) * dim_optThreshold
+    headerRowNames = ["", r"$\alpha$", "$optThreshold$"]
     subs = [
-        (create_subsection_shared_stats, [None, dimColsShared, 25]),
-        (create_subsection_cdgp_specific, [None, dimColsCdgp]),
+        (create_subsection_shared_stats, [None, dim_cols, 25, headerRowNames]),
+        (create_subsection_cdgp_specific, [None, dim_cols, headerRowNames]),
     ]
     figures = [
         "figures/ratioMSE.pdf"
@@ -441,8 +499,11 @@ def reports_exp3():
     ]
     sects = [(title, desc, folders, subs, figures)]
 
-    prepare_report(sects, "cdgp_r_exp3.tex", "e3", paperwidth=40, include_all_row=True, dim_cols_listings=dimColsShared)
+    prepare_report(sects, "cdgp_r_exp3.tex", "e3", paperwidth=40, include_all_row=True, dim_cols_listings=dim_cols)
 
+    props = load_correct_props(folders)
+    dim_rows = get_benchmarks_from_props(props, simple_names=True) * dim_benchmarkNumTests
+    # prepare_report_for_dims(props, dim_rows, dim_cols, sects, "cdgp_r_exp3_dims.tex", "e3_dims", paperwidth=40, include_all_row=True, dim_cols_listings=dim_cols)
 
 
 if __name__ == "__main__":
