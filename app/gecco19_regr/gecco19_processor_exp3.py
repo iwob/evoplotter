@@ -10,7 +10,8 @@ def simplify_benchmark_name(name):
     """Shortens or modifies the path of the benchmark in order to make the table more readable."""
     i = name.rfind("/")
     name = name if i == -1 else name[i+1:]
-    return name.replace("_3", "_03").replace("_5", "_05")
+    name = name[:name.rfind(".")]
+    return name.replace("_3", "_03").replace("_5", "_05").replace("resistance_par", "res").replace("gravity", "gr")
 
 
 def benchmark_get_num_tests(name):
@@ -19,22 +20,48 @@ def benchmark_get_num_tests(name):
     return name[i_us+1:i_dot]
 
 
+def benchmark_shorter(name):
+    name = simplify_benchmark_name(name)
+    i_us = name.rfind("_")
+    x = name[:i_us]
+    return x
+
+
 def sort_benchmark_dim(d):
     assert isinstance(d, Dim)
     def s(config1):
         name1 = config1[0][0] # name of the first filter
-        name1 = name1[name1.rfind("/")+1:].replace("resistance_par", "resistancePar")
-        name1 = name1[:name1.rfind(".")]
+        name1 = name1[name1.rfind("/")+1:]
+        # name1 = name1[:name1.rfind(".")]
         bfamily1 = name1[:name1.find("_")]
-        b_constr1 = name1[name1.find("_")+1:name1.rfind("_")]
+        if name1.count('_') == 2:
+            b_constr1 = name1[name1.find("_")+1:name1.rfind("_")]
+        elif name1.count('_') == 1:
+            b_constr1 = name1[name1.find("_")+1:]
+        else:
+            raise Exception("Unexpected number of '_' in benchmark name.")
 
         constr_precedence = ["", "b", "c1", "c2", "m", "s", "c", "bm", "bs", "ms", "ms", "bms", "sc"]
-        benchValues = {"gravity":100, "resistancePar2":200, "resistancePar3":300}
+        benchValues = {"gravity":100, "gr":100, "res2":200, "res3":300}
 
         value = benchValues.get(bfamily1, 0)
         return value + constr_precedence.index(b_constr1)
 
     return Dim(sorted(d.configs, key=s))
+
+
+def get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=False):
+    if ignoreNumTests:
+        dim_benchmarks = Dim.from_dict_postprocess(props, "benchmark", fun=benchmark_shorter)
+    else:
+        dim_benchmarks = Dim.from_dict(props, "benchmark")
+        if simple_names:
+            configs = [Config(simplify_benchmark_name(c.get_caption()), c.filters[0][1],
+                              benchmark=c.get_caption()) for c in dim_benchmarks.configs]
+            dim_benchmarks = Dim(configs)
+            # dim_benchmarks.sort()
+    return sort_benchmark_dim(dim_benchmarks)
+
 
 
 
@@ -93,9 +120,9 @@ dim_optThreshold = Dim([
     Config("$0.1$", p_dict_matcher({"optThresholdC": "0.1"}), optThreshold="0.1"),
 ])
 dim_benchmarkNumTests = Dim([
-    Config("$3$", p_benchmarkNumTests_equalTo("3"), benchmarkNumTests="3"),
-    Config("$5$", p_benchmarkNumTests_equalTo("5"), benchmarkNumTests="5"),
-    Config("$10$", p_benchmarkNumTests_equalTo("10"), benchmarkNumTests="10"),
+    Config("$3$ tests", p_benchmarkNumTests_equalTo("3"), benchmarkNumTests="3"),
+    Config("$5$ tests", p_benchmarkNumTests_equalTo("5"), benchmarkNumTests="5"),
+    Config("$10$ tests", p_benchmarkNumTests_equalTo("10"), benchmarkNumTests="10"),
 ])
 
 
@@ -208,7 +235,10 @@ def get_content_of_subsections(subsects):
     return content
 
 def post(s):
-    return s.replace("{ccccccccccccc}", "{rrrrrrrrrrrrr}").replace("{rrr", "{lrr").replace(r"\_{lex}", "_{lex}").replace(r"\_{", "_{")
+    s = s.replace("{ccccccccccccc}", "{rrrrrrrrrrrrr}").replace("{rrr", "{lrr")\
+         .replace(r"\_{lex}", "_{lex}").replace(r"\_{", "_{").replace("resistance_par", "res")\
+         .replace("gravity", "gr")
+    return s
 
 
 
@@ -262,7 +292,7 @@ def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowN
 def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRowNames):
     vb = 1  # vertical border
     variants = [p_benchmarkNumTests_equalTo("3"), p_benchmarkNumTests_equalTo("5"), p_benchmarkNumTests_equalTo("10")]
-
+    dim_rows_v2 = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True) + dim_true
 
 
     print("STATUS")
@@ -271,6 +301,10 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
     # text = post(
     #     printer.latex_table(props, dim_rows, dim_cols, get_num_computed, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     # latex_status = printer.table_color_map(text, 0.0, numRuns / 2, numRuns, "colorLow", "colorMedium", "colorHigh")
+
+    print("STATUS v2")
+    latex_status_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, get_num_computed, headerRowNames+[""],
+                                                 cv0=0.0, cv1=numRuns / 2, cv2=numRuns)
 
     # print("SUCCESS RATES (mse below thresh)")
     # print(printer.text_table(props, dim_rows, dim_cols, fun_successRateMseOnly, d_cols=";"))
@@ -285,6 +319,10 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
     # text = post(
     #     printer.latex_table(props, dim_rows, dim_cols, fun_successRate, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     # latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
+
+    print("SUCCESS RATES (mse below thresh + properties met) [version 2]")
+    latex_successRates_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, fun_successRate, headerRowNames+[""],
+                                                    cv0=0.0, cv1=0.5, cv2=1.0)
 
     print("SUCCESS RATES (properties met)")
     latex_propertiesMet = create_single_table_bundle(props, dim_rows, dim_cols, fun_allPropertiesMet, headerRowNames,
@@ -322,8 +360,10 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
 
     subsects_main = [
         ("Status (correctly finished runs)", latex_status, reversed(reporting.color_scheme_red)),
+        ("Status (correctly finished runs) [version 2]", latex_status_v2, reversed(reporting.color_scheme_red)),
         # ("Success rates (mse below thresh)", latex_successRatesMseOnly, reporting.color_scheme_teal),
         ("Success rates (mse below thresh + properties met)", latex_successRates, reporting.color_scheme_darkgreen),
+        ("Success rates (mse below thresh + properties met) [version 2]", latex_successRates_v2, reporting.color_scheme_darkgreen),
         ("Success rates (properties met)", latex_propertiesMet, reporting.color_scheme_green),
         ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
         ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
@@ -419,17 +459,6 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
     ]
     return reporting.Subsection("CDGP Statistics", get_content_of_subsections(subsects_cdgp))
 
-
-
-def get_benchmarks_from_props(props, simple_names=True):
-    dim_benchmarks = Dim.from_dict(props, "benchmark")
-    if simple_names:
-        configs = [Config(simplify_benchmark_name(c.get_caption()), c.filters[0][1],
-                          benchmark=c.get_caption()) for c in
-                   dim_benchmarks.configs]
-        dim_benchmarks = Dim(configs)
-        dim_benchmarks.sort()
-    return sort_benchmark_dim(dim_benchmarks)
 
 
 _prev_props = None
