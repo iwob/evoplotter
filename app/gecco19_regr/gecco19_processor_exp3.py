@@ -303,7 +303,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
     # latex_status = printer.table_color_map(text, 0.0, numRuns / 2, numRuns, "colorLow", "colorMedium", "colorHigh")
 
     print("STATUS v2")
-    latex_status_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, get_num_computed, headerRowNames+[""],
+    latex_status_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, get_num_computed, [""]+headerRowNames,
                                                  cv0=0.0, cv1=numRuns / 2, cv2=numRuns)
 
     # print("SUCCESS RATES (mse below thresh)")
@@ -321,7 +321,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
     # latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 
     print("SUCCESS RATES (mse below thresh + properties met) [version 2]")
-    latex_successRates_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, fun_successRate, headerRowNames+[""],
+    latex_successRates_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, fun_successRate, [""]+headerRowNames,
                                                     cv0=0.0, cv1=0.5, cv2=1.0)
 
     print("SUCCESS RATES (properties met)")
