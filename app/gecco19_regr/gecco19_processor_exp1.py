@@ -399,8 +399,8 @@ def reports_exp1():
 
 
 if __name__ == "__main__":
-    ensure_clear_dir("results/")
-    ensure_dir("results/figures/")
-    ensure_dir("results/listings/")
+    utils.ensure_clear_dir("results/")
+    utils.ensure_dir("results/figures/")
+    utils.ensure_dir("results/listings/")
 
     reports_exp1()

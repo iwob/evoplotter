@@ -13,11 +13,6 @@ STATUS_FILE_NAME = "status.txt"
 OPT_SOLUTIONS_FILE_NAME = "opt_solutions.txt"
 
 
-def ensure_dir(file_path):
-    directory = os.path.dirname(file_path)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
 def save_to_file(file_path, content):
     file = open(file_path, "w")
     file.write(content)
@@ -704,6 +699,6 @@ def reports_e1():
 
 
 if __name__ == "__main__":
-    ensure_dir("figures/")
+    utils.ensure_dir("figures/")
 
     reports_e1()

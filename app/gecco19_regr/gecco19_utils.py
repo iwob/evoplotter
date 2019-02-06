@@ -10,25 +10,6 @@ STATUS_FILE_NAME = "results/status.txt"
 OPT_SOLUTIONS_FILE_NAME = "opt_solutions.txt"
 
 
-def ensure_dir(file_path):
-    assert file_path[-1] == "/"  # directory path must end with "/", otherwise it's not recognized
-    directory = os.path.dirname(file_path)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-def ensure_clear_dir(file_path):
-    assert file_path[-1] == "/"  # directory path must end with "/", otherwise it's not recognized
-    directory = os.path.dirname(file_path)
-    if os.path.exists(directory):
-        shutil.rmtree(directory, ignore_errors=False)
-    os.makedirs(directory)
-
-def save_to_file(file_path, content):
-    file = open(file_path, "w")
-    file.write(content)
-    file.close()
-
-
 def delete_logs(props, pred, verbose=True, simulate=False):
     for p in props:
         if "evoplotter.file" in p and pred(p):
@@ -137,7 +118,7 @@ def save_listings(props, dim_rows, dim_cols):
     """Saves listings of various useful info to separate text files."""
     assert isinstance(dim_rows, Dim)
     assert isinstance(dim_cols, Dim)
-    ensure_dir("results/listings/errors/")
+    utils.ensure_dir("results/listings/errors/")
 
     # Saving optimal verified solutions
     for dr in dim_rows:

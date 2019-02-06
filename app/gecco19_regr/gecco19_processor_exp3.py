@@ -6,6 +6,7 @@ from src.dims import *
 from gecco19_utils import *
 
 
+
 def simplify_benchmark_name(name):
     """Shortens or modifies the path of the benchmark in order to make the table more readable."""
     i = name.rfind("/")
@@ -292,19 +293,23 @@ def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowN
 def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRowNames):
     vb = 1  # vertical border
     variants = [p_benchmarkNumTests_equalTo("3"), p_benchmarkNumTests_equalTo("5"), p_benchmarkNumTests_equalTo("10")]
-    dim_rows_v2 = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True) + dim_true
+    dim_rows_v2 = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True)
+
+    # ----------------------------------------------------
+    # Cleaning experiment. Here, because dimension can be easily constructed.
+    # utils.cleanExperiment(props, dim_rows_v2 * dim_benchmarkNumTests * dim_cols, target_dir="./exp3_final/", maxRuns=numRuns)
+    # ----------------------------------------------------
+
+    dim_rows_v2 += dim_true  # dim_true config shouldn't be created in cleaned experiments
 
 
     print("STATUS")
     latex_status = create_single_table_bundle(props, dim_rows, dim_cols, get_num_computed, headerRowNames,
                                               cv0=0.0, cv1=numRuns / 2, cv2=numRuns, tableVariants=variants)
-    # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, get_num_computed, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_status = printer.table_color_map(text, 0.0, numRuns / 2, numRuns, "colorLow", "colorMedium", "colorHigh")
 
-    print("STATUS v2")
-    latex_status_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, get_num_computed, [""]+headerRowNames,
-                                                 cv0=0.0, cv1=numRuns / 2, cv2=numRuns)
+    # print("STATUS v2")
+    # latex_status_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, get_num_computed, [""]+headerRowNames,
+    #                                              cv0=0.0, cv1=numRuns / 2, cv2=numRuns)
 
     # print("SUCCESS RATES (mse below thresh)")
     # print(printer.text_table(props, dim_rows, dim_cols, fun_successRateMseOnly, d_cols=";"))
@@ -314,38 +319,27 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
 
     print("SUCCESS RATES (mse below thresh + properties met)")
     latex_successRates = create_single_table_bundle(props, dim_rows, dim_cols, fun_successRate, headerRowNames,
-                                              cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants)
-    # print(printer.text_table(props, dim_rows, dim_cols, fun_successRate, d_cols=";"))
-    # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, fun_successRate, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_successRates = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
+                                                    cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants)
 
     print("SUCCESS RATES (mse below thresh + properties met) [version 2]")
     latex_successRates_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, fun_successRate, [""]+headerRowNames,
-                                                    cv0=0.0, cv1=0.5, cv2=1.0)
+                                                       cv0=0.0, cv1=0.5, cv2=1.0)
 
     print("SUCCESS RATES (properties met)")
     latex_propertiesMet = create_single_table_bundle(props, dim_rows, dim_cols, fun_allPropertiesMet, headerRowNames,
                                               cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants)
-    # print(printer.text_table(props, dim_rows, dim_cols, fun_allPropertiesMet, d_cols=";"))
-    # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, fun_allPropertiesMet, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_propertiesMet = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
+
+    print("SUCCESS RATES (properties met) [version 2]")
+    latex_propertiesMet_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, fun_allPropertiesMet, [""]+headerRowNames,
+                                              cv0=0.0, cv1=0.5, cv2=1.0)
 
     print("AVG RUNTIME")
     latex_avgRuntime = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_runtime, headerRowNames,
                                               cv0=0.0, cv1=900.0, cv2=1800.0, tableVariants=variants)
-    # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, get_avg_runtime, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgRuntime = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium", "colorHigh")
 
     print("AVG RUNTIME (SUCCESSFUL)")
     latex_avgRuntimeOnlySuccessful = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_runtimeOnlySuccessful, headerRowNames,
                                                   cv0=0.0, cv1=900.0, cv2=1800.0, tableVariants=variants)
-    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_runtimeOnlySuccessful, layered_headline=True,
-    #                                 vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgRuntimeOnlySuccessful = printer.table_color_map(text, 0.0, 1800.0, 3600.0, "colorLow", "colorMedium",
-    #                                                          "colorHigh")
 
     # print("AVG SIZES")
     # latex_sizes = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_size, headerRowNames,
@@ -354,17 +348,15 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
     print("AVG SIZES (SUCCESSFUL)")
     latex_sizesOnlySuccessful = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_sizeOnlySuccessful, headerRowNames,
                                                            cv0=0.0, cv1=100.0, cv2=200.0, tableVariants=variants)
-    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_stats_sizeOnlySuccessful, layered_headline=True,
-    #                                 vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_sizesOnlySuccessful = printer.table_color_map(text, 0.0, 100.0, 200.0, "colorLow", "colorMedium", "colorHigh")
 
     subsects_main = [
         ("Status (correctly finished runs)", latex_status, reversed(reporting.color_scheme_red)),
-        ("Status (correctly finished runs) [version 2]", latex_status_v2, reversed(reporting.color_scheme_red)),
+        # ("Status (correctly finished runs) [version 2]", latex_status_v2, reversed(reporting.color_scheme_red)),
         # ("Success rates (mse below thresh)", latex_successRatesMseOnly, reporting.color_scheme_teal),
         ("Success rates (mse below thresh + properties met)", latex_successRates, reporting.color_scheme_darkgreen),
         ("Success rates (mse below thresh + properties met) [version 2]", latex_successRates_v2, reporting.color_scheme_darkgreen),
         ("Success rates (properties met)", latex_propertiesMet, reporting.color_scheme_green),
+        ("Success rates (properties met) [version 2]", latex_propertiesMet_v2, reporting.color_scheme_green),
         ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
         ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
         # ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow),
@@ -493,14 +485,13 @@ def prepare_report(sects, fname, exp_prefix, simple_bench_names=True, print_stat
 
 
         if print_status_matrix:
-            d = dim_benchmarks * dim_methodGP * dim_sel * dim_evoMode +\
-                dim_benchmarks * dim_methodCDGP * dim_sel * dim_evoMode * dim_testsRatio
+            d = dim_benchmarks * (dim_methodGP * dim_sel * dim_evoMode + dim_methodCDGP * dim_sel * dim_evoMode * dim_testsRatio)
 
             matrix = produce_status_matrix(d, props)
             print("\n****** Status matrix:")
             print(matrix + "\n")
             print("Saving status matrix to file: {0}".format(STATUS_FILE_NAME))
-            save_to_file(STATUS_FILE_NAME, matrix)
+            utils.save_to_file(STATUS_FILE_NAME, matrix)
 
 
         dim_rows = dim_benchmarks #.sort()
@@ -553,7 +544,7 @@ def prepare_report_for_dims(props, dim_rows, dim_cols, sects, fname, exp_prefix,
             print("\n****** Status matrix:")
             print(matrix + "\n")
             print("Saving status matrix to file: {0}".format(STATUS_FILE_NAME))
-            save_to_file(STATUS_FILE_NAME, matrix)
+            utils.save_to_file(STATUS_FILE_NAME, matrix)
 
 
         if dim_cols_listings is not None:
@@ -582,8 +573,8 @@ def prepare_report_for_dims(props, dim_rows, dim_cols, sects, fname, exp_prefix,
 
 
 def reports_exp3():
-    # folders = ["exp3_physics3", "exp3_physics5"]
-    folders = ["EXP3_aut"]
+    # folders = ["EXP3_aut"]
+    folders = ["exp3_final"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
     dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_testsRatio) * dim_optThreshold
@@ -608,9 +599,9 @@ def reports_exp3():
 
 
 if __name__ == "__main__":
-    ensure_clear_dir("results/")
-    ensure_dir("results/figures/")
-    ensure_dir("results/listings/")
-    ensure_dir("results/listings/errors/")
+    utils.ensure_clear_dir("results/")
+    utils.ensure_dir("results/figures/")
+    utils.ensure_dir("results/listings/")
+    utils.ensure_dir("results/listings/errors/")
 
     reports_exp3()
