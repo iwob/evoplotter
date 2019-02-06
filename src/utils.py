@@ -1,4 +1,6 @@
 import os
+import shutil
+from . import dims
 
 
 
@@ -106,7 +108,6 @@ def str2list(s, sep=", "):
     return [float(x) for x in s.split(sep)]
 
 
-
 def isfloat(value):
     """Checks, if the given number is a float."""
     try:
@@ -114,3 +115,64 @@ def isfloat(value):
         return True
     except ValueError:
         return False
+
+
+def ensure_dir(file_path):
+    assert file_path[-1] == "/", "directory path must end with '/'"
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+
+def ensure_clear_dir(file_path):
+    assert file_path[-1] == "/", "directory path must end with '/'"
+    directory = os.path.dirname(file_path)
+    if os.path.exists(directory):
+        shutil.rmtree(directory, ignore_errors=False)
+    os.makedirs(directory)
+
+
+def save_to_file(file_path, content):
+    file = open(file_path, "w")
+    file.write(content)
+    file.close()
+
+
+def cleanExperiment(props, dim, target_dir, maxRuns, key_file="evoplotter.file"):
+    """Takes a list of dictionaries storing experiment's results and the dimension, and creates
+     a new folder with experiments where results are stored hierarchically as defined by
+     dimensions of the experiment.
+
+    :param props: (list[dict]) list of dictionaries to be processed.
+    :param dim: (Dim) dimension which will determine the structure of the target directory.
+    :param target_dir: (str) path to a directory which will be created in order to store the
+     cleaned results.
+    :param maxRuns: (int) maximum number of property files which would land in a single created
+     directory in the cleaned results.
+    :param key_file: (str) a key under which is stored the location of the original file of the
+     properties dict. That file will be copied to appropriate target_dir subfolder.
+    """
+    assert isinstance(props, list)
+    assert isinstance(dim, dims.Dim)
+    assert target_dir[-1] == "/", "directory path must end with '/'"
+    ensure_clear_dir(target_dir)
+
+    def normalize_name(name):
+        pairs = {"$":"", "/":"", "\\":"", " ":"", "\t":"", "}":"", "{":""}
+        for k, v in pairs.items():
+            name = name.replace(k, pairs[k])
+        return name
+
+    for config in dim.configs:
+        accum_path = target_dir
+        for name, filter in config:
+            accum_path += normalize_name(name) + "/"
+            ensure_dir(accum_path)
+
+        # at this point accum_path is the path to the folder for a given config
+        data = config.filter_props(props)[:maxRuns]  # take only first maxRuns dicts
+        for p in data:
+            assert key_file in p, "Key containing the path of the file was not present in the dictionary!"
+            p_full_path = p[key_file]
+            p_name = p_full_path[p_full_path.rfind("/")+1:]
+            shutil.copy(p_full_path, accum_path + p_name)
