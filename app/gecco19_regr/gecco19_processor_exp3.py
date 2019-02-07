@@ -94,7 +94,7 @@ def p_true(p):
 
 
 
-dim_true = Dim(Config("All", lambda p: True, method=None))
+dim_true = Dim(Config("mean", lambda p: True, method=None))
 # dim_methodCDGP = Dim([Config("CDGP", p_method_for("CDGP"), method="CDGP")])
 # dim_methodGP = Dim([Config("GP", p_method_for("GP"), method="GP")])
 dim_methodCDGP = Dim([
@@ -265,7 +265,8 @@ def create_section_and_plots(title, desc, props, subsects, figures_list, exp_pre
 
 
 def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowNames, cv0, cv1, cv2, vb=1,
-                               tableVariants=None, onlyNonemptyRows=True, tablePostprocessor=post):
+                               tableVariants=None, onlyNonemptyRows=True, tablePostprocessor=post,
+                               printTextTable=False):
     if tableVariants is None:
         tableVariants = [p_true]
     assert isinstance(tableVariants, list)
@@ -281,6 +282,11 @@ def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowN
         tableText = tablePostprocessor(
             printer.latex_table(props_variant, dim_rows_variant, dim_cols, cellLambda, layered_headline=True,
                                 vertical_border=vb, headerRowNames=headerRowNames))
+
+        if printTextTable:
+            print("VARIANT: " + str(variant))
+            print(printer.text_table(props, dim_rows_variant, dim_cols, cellLambda, d_cols=";"))
+
         text += r"\noindent"
         text += printer.table_color_map(tableText, cv0, cv1, cv2, "colorLow", "colorMedium", "colorHigh")
         # text += "\n"
@@ -319,7 +325,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
 
     print("SUCCESS RATES (mse below thresh + properties met)")
     latex_successRates = create_single_table_bundle(props, dim_rows, dim_cols, fun_successRate, headerRowNames,
-                                                    cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants)
+                                                    cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants, printTextTable=True)
 
     print("SUCCESS RATES (mse below thresh + properties met) [version 2]")
     latex_successRates_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, fun_successRate, [""]+headerRowNames,
@@ -327,7 +333,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
 
     print("SUCCESS RATES (properties met)")
     latex_propertiesMet = create_single_table_bundle(props, dim_rows, dim_cols, fun_allPropertiesMet, headerRowNames,
-                                              cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants)
+                                              cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants, printTextTable=True)
 
     print("SUCCESS RATES (properties met) [version 2]")
     latex_propertiesMet_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, fun_allPropertiesMet, [""]+headerRowNames,
