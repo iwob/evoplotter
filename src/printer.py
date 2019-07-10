@@ -524,7 +524,9 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
                     align = "c"
                 else:
                     align = "c|"
-                    if i == 0:  # use of multicolumn for meta-information requires this
+                    # Necessary, because apparently multicolumn{c|} overrides {|l|}
+                    # on the border of the table
+                    if i == 0:
                         align = "|" + align
                 headerCells.append(r"\multicolumn{1}{" + align + "}{" + d.get_caption() + "}")
 
@@ -553,7 +555,11 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
             align = "c"
             if vertical_border >= 1:
                 align += "|"
-                if i == 0:  # this is currently by | in tabular arg  #2: use of multicolumn for meta-information requires this
+                # if i != 0:
+                #     align += "|"
+                # Necessary, because apparently multicolumn{c|} overrides {|l|}
+                # on the border of the table
+                if i == 0:
                     align = "|" + align
             ftext = r"\multicolumn{" + str(foccurs) + "}{" + align + "}{" + fname + "}" # \multicolumn{6}{c}{$EPS$}
             buffer.append(ftext)

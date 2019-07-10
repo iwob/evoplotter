@@ -53,7 +53,7 @@ def generateTableRemovedCols(verticalBorder, horizontalBorder, useBooktabs):
 
 def generateReport(tableGenerator):
     report = reporting.ReportPDF()
-    report.add(reporting.color_scheme_gray_light)
+    report.add(reporting.color_scheme_gray_light.toBlockLatex())
 
     verticalBorder_list = [0, 1, 2]
     horizontalBorder_list = [0, 1, 2]
