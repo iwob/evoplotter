@@ -304,6 +304,16 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
     # By default: dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_testsRatio) * dim_optThreshold
 
     tables = [
+        # TableGenerator(fun_successRateMseOnly, dim_rows_v2,
+        #                (dim_methodGP + dim_methodCDGP),
+        #                headerRowNames=[""],
+        #                title="Success rates (mse below thresh)",
+        #                color_scheme=reporting.color_scheme_violet,
+        #                default_color_thresholds=(0.0, 0.5, 1.0),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
+
+
         TableGenerator(fun_successRate, dim_rows_v2,
                        dim_benchmarkNumTests * (dim_methodGP + dim_methodCDGP),
                        headerRowNames=["", ""],

@@ -227,8 +227,22 @@ def get_num_optimal(props):
     return len(props2)
 def get_num_optimalOnlyMse(props):
     # "cdgp.optThreshold" in p and
-    props2 = [p for p in props if float(p["result.best.mse"]) <= float(p["cdgp.optThreshold"])]
-    return len(props2)
+    for p in props:
+        if "optThreshold" not in p:
+            print(str(p))
+    # Sometimes it is 'optThreshold', and sometimes 'cdgp.optThreshold'...
+    # props2 = [p for p in props if float(p["result.best.mse"]) <= float(p["optThreshold"])]
+    num = 0
+    for p in props:
+        if "optThreshold" in p:
+            tr = p["optThreshold"]
+        elif "optThreshold" in p:
+            tr = p["cdgp.optThreshold"]
+        else:
+            raise Exception("No optThreshold in log file")
+        if float(p["result.best.mse"]) <= tr:
+            num += 1
+    return num
 
 def get_num_allPropertiesMet(props):
     props2 = [p for p in props if p["result.best.verificationDecision"] == "unsat"]
