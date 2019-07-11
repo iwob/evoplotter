@@ -295,80 +295,163 @@ def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowN
 
 
 
+def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowNames):
+    vb = 1  # vertical border
+    variants = None
+    dim_rows_v2 = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True)
+    dim_rows_v2 += dim_true
+
+    # By default: dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_testsRatio) * dim_optThreshold
+
+    tables = [
+        TableGenerator(fun_successRate, dim_rows_v2,
+                       dim_benchmarkNumTests * (dim_methodGP + dim_methodCDGP),
+                       headerRowNames=["", ""],
+                       title="Success rates (mse below thresh + properties met)",
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(fun_successRate, dim_rows_v2,
+                       (dim_methodGP + dim_methodCDGP) * dim_benchmarkNumTests,
+                       headerRowNames=["", ""],
+                       title="Success rates (mse below thresh + properties met)",
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(fun_successRate, dim_rows_v2,
+                       dim_optThreshold * (dim_methodGP + dim_methodCDGP),
+                       headerRowNames=["tolerance", ""],
+                       title="Success rates (mse below thresh + properties met)",
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(fun_successRate, dim_rows_v2,
+                       (dim_methodGP + dim_methodCDGP),
+                       headerRowNames=[""],
+                       title="Success rates (mse below thresh + properties met)",
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+
+
+        TableGenerator(fun_allPropertiesMet, dim_rows_v2,
+                       dim_benchmarkNumTests * (dim_methodGP + dim_methodCDGP),
+                       headerRowNames=["", ""],
+                       title="Success rates (properties met)",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(fun_allPropertiesMet, dim_rows_v2,
+                       (dim_methodGP + dim_methodCDGP) * dim_benchmarkNumTests,
+                       headerRowNames=["", ""],
+                       title="Success rates (properties met)",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        # TableGenerator(fun_allPropertiesMet, dim_rows_v2,
+        #                dim_benchmarkNumTests * dim_optThreshold * (dim_methodGP + dim_methodCDGP),
+        #                headerRowNames=["", "tolerance", ""],
+        #                title="Success rates (properties met)",
+        #                color_scheme=reporting.color_scheme_green,
+        #                default_color_thresholds=(0.0, 0.5, 1.0),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
+        TableGenerator(fun_allPropertiesMet, dim_rows_v2,
+                       dim_optThreshold * (dim_methodGP + dim_methodCDGP),
+                       headerRowNames=["tolerance", ""],
+                       title="Success rates (properties met)",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(fun_allPropertiesMet, dim_rows_v2,
+                       (dim_methodGP + dim_methodCDGP),
+                       headerRowNames=[""],
+                       title="Success rates (properties met)",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+    ]
+
+    subsects_main = []
+    for t in tables:
+        tup = (t.title, t.apply(props), t.color_scheme)
+        subsects_main.append(tup)
+
+    return reporting.Subsection("Tests of different data aggregation in tables", get_content_of_subsections(subsects_main))
+
+
+
 
 def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRowNames):
     vb = 1  # vertical border
     variants = [p_benchmarkNumTests_equalTo("3"), p_benchmarkNumTests_equalTo("5"), p_benchmarkNumTests_equalTo("10")]
     dim_rows_v2 = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True)
+    dim_rows_v2 += dim_true
 
     # ----------------------------------------------------
     # Cleaning experiment. Here, because dimension can be easily constructed.
-    # utils.cleanExperiment(props, dim_rows_v2 * dim_benchmarkNumTests * dim_cols, target_dir="./exp3_final/", maxRuns=numRuns)
+    # dim_rows_v3 = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True)
+    # utils.cleanExperiment(props, dim_rows_v3 * dim_benchmarkNumTests * dim_cols, target_dir="./exp3_final/", maxRuns=numRuns)
     # ----------------------------------------------------
 
-    dim_rows_v2 += dim_true  # dim_true config shouldn't be created in cleaned experiments
-
-
-    print("STATUS")
-    latex_status = create_single_table_bundle(props, dim_rows, dim_cols, get_num_computed, headerRowNames,
-                                              cv0=0.0, cv1=numRuns / 2, cv2=numRuns, tableVariants=variants)
-
-    # print("STATUS v2")
-    # latex_status_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, get_num_computed, [""]+headerRowNames,
-    #                                              cv0=0.0, cv1=numRuns / 2, cv2=numRuns)
-
-    # print("SUCCESS RATES (mse below thresh)")
-    # print(printer.text_table(props, dim_rows, dim_cols, fun_successRateMseOnly, d_cols=";"))
-    # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, fun_successRateMseOnly, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_successRatesMseOnly = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-
-    print("SUCCESS RATES (mse below thresh + properties met)")
-    latex_successRates = create_single_table_bundle(props, dim_rows, dim_cols, fun_successRate, headerRowNames,
-                                                    cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants, printTextTable=True)
-
-    print("SUCCESS RATES (mse below thresh + properties met) [version 2]")
-    latex_successRates_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, fun_successRate, [""]+headerRowNames,
-                                                       cv0=0.0, cv1=0.5, cv2=1.0)
-
-    print("SUCCESS RATES (properties met)")
-    latex_propertiesMet = create_single_table_bundle(props, dim_rows, dim_cols, fun_allPropertiesMet, headerRowNames,
-                                              cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants, printTextTable=True)
-
-    print("SUCCESS RATES (properties met) [version 2]")
-    latex_propertiesMet_v2 = create_single_table_bundle(props, dim_rows_v2, dim_benchmarkNumTests * dim_cols, fun_allPropertiesMet, [""]+headerRowNames,
-                                              cv0=0.0, cv1=0.5, cv2=1.0)
-
-    print("AVG RUNTIME")
-    latex_avgRuntime = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_runtime, headerRowNames,
-                                              cv0=0.0, cv1=900.0, cv2=1800.0, tableVariants=variants)
-
-    print("AVG RUNTIME (SUCCESSFUL)")
-    latex_avgRuntimeOnlySuccessful = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_runtimeOnlySuccessful, headerRowNames,
-                                                  cv0=0.0, cv1=900.0, cv2=1800.0, tableVariants=variants)
-
-    # print("AVG SIZES")
-    # latex_sizes = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_size, headerRowNames,
-    #                                          cv0=0.0, cv1=100.0, cv2=200.0, tableVariants=variants)
-
-    print("AVG SIZES (SUCCESSFUL)")
-    latex_sizesOnlySuccessful = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_sizeOnlySuccessful, headerRowNames,
-                                                           cv0=0.0, cv1=100.0, cv2=200.0, tableVariants=variants)
-
-    subsects_main = [
-        ("Status (correctly finished runs)", latex_status, reversed(reporting.color_scheme_red)),
-        # ("Status (correctly finished runs) [version 2]", latex_status_v2, reversed(reporting.color_scheme_red)),
-        # ("Success rates (mse below thresh)", latex_successRatesMseOnly, reporting.color_scheme_teal),
-        ("Success rates (mse below thresh + properties met)", latex_successRates, reporting.color_scheme_darkgreen),
-        ("Success rates (mse below thresh + properties met) [version 2]", latex_successRates_v2, reporting.color_scheme_darkgreen),
-        ("Success rates (properties met)", latex_propertiesMet, reporting.color_scheme_green),
-        ("Success rates (properties met) [version 2]", latex_propertiesMet_v2, reporting.color_scheme_green),
-        ("Average runtime [s]", latex_avgRuntime, reporting.color_scheme_violet),
-        ("Average runtime (only successful) [s]", latex_avgRuntimeOnlySuccessful, reporting.color_scheme_violet),
-        # ("Average sizes of best of runs (number of nodes)", latex_sizes, reporting.color_scheme_yellow),
-        ("Average sizes of best of runs (number of nodes) (only successful)", latex_sizesOnlySuccessful,
-         reporting.color_scheme_yellow),
+    tables = [
+        TableGenerator(get_num_computed, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Status (correctly finished runs)",
+                       color_scheme=reversed(reporting.color_scheme_red),
+                       default_color_thresholds=(0.0, numRuns/2, numRuns),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(fun_successRate, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Success rates (mse below thresh + properties met)",
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(fun_allPropertiesMet, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Success rates (properties met)",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Average runtime [s]",
+                       color_scheme=reporting.color_scheme_violet,
+                       default_color_thresholds=(0.0, 900.0, 1800.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Average runtime (only successful) [s]",
+                       color_scheme=reporting.color_scheme_violet,
+                       default_color_thresholds=(0.0, 900.0, 1800.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        # TableGenerator(get_stats_size, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Average sizes of best of runs (number of nodes)",
+        #                color_scheme=reporting.color_scheme_yellow,
+        #                default_color_thresholds=(0.0, 100.0, 200.0),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
+        TableGenerator(get_stats_sizeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Average sizes of best of runs (number of nodes) (only successful)",
+                       color_scheme=reporting.color_scheme_yellow,
+                       default_color_thresholds=(0.0, 100.0, 200.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
     ]
+
+    subsects_main = []
+    for t in tables:
+        tup = (t.title, t.apply(props), t.color_scheme)
+        subsects_main.append(tup)
+
     return reporting.Subsection("Shared Statistics", get_content_of_subsections(subsects_main))
 
 
@@ -588,6 +671,7 @@ def reports_exp3():
     subs = [
         (create_subsection_shared_stats, [None, dim_cols, 25, headerRowNames]),
         (create_subsection_cdgp_specific, [None, dim_cols, headerRowNames]),
+        (create_subsection_aggregation_tests, [None, dim_cols, headerRowNames]),
     ]
     figures = [
         "figures/ratioMSE.pdf"
@@ -608,6 +692,7 @@ if __name__ == "__main__":
     utils.ensure_clear_dir("results/")
     utils.ensure_dir("results/figures/")
     utils.ensure_dir("results/listings/")
+    # utils.ensure_dir("results/tables/")
     utils.ensure_dir("results/listings/errors/")
 
     reports_exp3()
