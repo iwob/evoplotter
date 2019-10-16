@@ -1,9 +1,9 @@
+from app.gpem19.gpem19_utils import *
 from src import utils
 from src import plotter
 from src import printer
 from src import reporting
 from src.dims import *
-from gecco19_utils import *
 
 
 
@@ -12,7 +12,9 @@ def simplify_benchmark_name(name):
     i = name.rfind("/")
     name = name if i == -1 else name[i+1:]
     name = name[:name.rfind(".")]
-    return name.replace("_3", "_03").replace("_5", "_05").replace("resistance_par", "res").replace("gravity", "gr")
+    name = name[:name.rfind("_")]
+    # return name.replace("resistance_par", "res").replace("gravity", "gr")
+    return name.replace("resistance_par", "res")
 
 
 def benchmark_get_num_tests(name):
@@ -31,23 +33,7 @@ def benchmark_shorter(name):
 def sort_benchmark_dim(d):
     assert isinstance(d, Dim)
     def s(config1):
-        name1 = config1[0][0] # name of the first filter
-        name1 = name1[name1.rfind("/")+1:]
-        # name1 = name1[:name1.rfind(".")]
-        bfamily1 = name1[:name1.find("_")]
-        if name1.count('_') == 2:
-            b_constr1 = name1[name1.find("_")+1:name1.rfind("_")]
-        elif name1.count('_') == 1:
-            b_constr1 = name1[name1.find("_")+1:]
-        else:
-            raise Exception("Unexpected number of '_' in benchmark name.")
-
-        constr_precedence = ["", "b", "c1", "c2", "m", "s", "c", "bm", "bs", "ms", "ms", "bms", "sc"]
-        benchValues = {"gravity":100, "gr":100, "res2":200, "res3":300}
-
-        value = benchValues.get(bfamily1, 0)
-        return value + constr_precedence.index(b_constr1)
-
+        return config1.get_caption()  # sort benchmarks by their names
     return Dim(sorted(d.configs, key=s))
 
 
@@ -87,8 +73,6 @@ def p_sel_tourn(p):
     return p["selection"] == "tournament"
 def p_testsRatio_equalTo(ratio):
     return lambda p, ratio=ratio: p["testsRatio"] == ratio
-def p_benchmarkNumTests_equalTo(x):
-    return lambda p, x=x: benchmark_get_num_tests(p["benchmark"]) == x
 def p_true(p):
     return True
 
@@ -98,8 +82,8 @@ dim_true = Dim(Config("mean", lambda p: True, method=None))
 # dim_methodCDGP = Dim([Config("CDGP", p_method_for("CDGP"), method="CDGP")])
 # dim_methodGP = Dim([Config("GP", p_method_for("GP"), method="GP")])
 dim_methodCDGP = Dim([
-    Config("CDGP", p_dict_matcher({"method": "CDGP", "partialConstraintsInFitness": "false"}), method="CDGP"),
-    Config("$CDGP_{props}$", p_dict_matcher({"method": "CDGP", "partialConstraintsInFitness": "true"}), method="CDGPprops"),
+    Config("CDGP", p_dict_matcher({"method": "CDGP"}), method="CDGP"),
+    Config("$CDGP_{props}$", p_dict_matcher({"method": "CDGPprops"}), method="CDGPprops"),
 ])
 dim_methodGP = Dim([
     Config("$GP$", p_dict_matcher({"method": "GP", "populationSize": "500"}), method="GP500"),
@@ -111,20 +95,21 @@ dim_sel = Dim([#Config("$Tour$", p_sel_tourn, selection="tournament"),
                Config("$Lex$", p_sel_lexicase, selection="lexicase")])
 # dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
 #                    Config("$generational$", p_generational, evolutionMode="generational")])
-dim_evoMode = Dim([Config("$generational$", p_generational, evolutionMode="generational")])
+dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState")])
 dim_testsRatio = Dim([
     # Config("$0.8$", p_testsRatio_equalTo("0.8"), testsRatio="0.8"),
     Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0"),
 ])
 dim_optThreshold = Dim([
     Config("$0.01$", p_dict_matcher({"optThresholdC": "0.01"}), optThreshold="0.01"),
-    Config("$0.1$", p_dict_matcher({"optThresholdC": "0.1"}), optThreshold="0.1"),
+    # Config("$0.1$", p_dict_matcher({"optThresholdC": "0.1"}), optThreshold="0.1"),
 ])
 dim_benchmarkNumTests = Dim([
-    Config("$3$ tests", p_benchmarkNumTests_equalTo("3"), benchmarkNumTests="3"),
-    Config("$5$ tests", p_benchmarkNumTests_equalTo("5"), benchmarkNumTests="5"),
-    Config("$10$ tests", p_benchmarkNumTests_equalTo("10"), benchmarkNumTests="10"),
+    Config("$10$ tests", p_dict_matcher({"sizeTrainSet": "10"}), benchmarkNumTests="10"),
+    Config("$100$ tests", p_dict_matcher({"sizeTrainSet": "100"}), benchmarkNumTests="100"),
 ])
+variants_benchmarkNumTests = [p_dict_matcher({"sizeTrainSet": "10"}), p_dict_matcher({"sizeTrainSet": "100"})]
+
 
 
 
@@ -402,14 +387,15 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
 
 def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRowNames):
     vb = 1  # vertical border
-    variants = [p_benchmarkNumTests_equalTo("3"), p_benchmarkNumTests_equalTo("5"), p_benchmarkNumTests_equalTo("10")]
+    variants = None  # variants_benchmarkNumTests
     dim_rows_v2 = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True)
     dim_rows_v2 += dim_true
 
     # ----------------------------------------------------
-    # Cleaning experiment. Here, because dimension can be easily constructed.
+    # Cleaning experiment here, because dimension can be easily constructed.
     # dim_rows_v3 = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True)
     # utils.reorganizeExperimentFiles(props, dim_rows_v3 * dim_benchmarkNumTests * dim_cols, target_dir="./exp3_final/", maxRuns=numRuns)
+    # utils.deleteFilesByPredicate(props, lambda p: len(p["maxGenerations"]) > 7, simulate=False)
     # ----------------------------------------------------
 
     tables = [
@@ -429,6 +415,18 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
                        title="Success rates (properties met)",
                        color_scheme=reporting.color_scheme_green,
                        default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(get_avg_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Training set: MSE",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 1e2, 1e4),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(get_avg_testMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Test set: MSE",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 1e2, 1e4),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=headerRowNames,
@@ -468,7 +466,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
 
 def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
     vb = 1  # vertical border
-    variants = [p_benchmarkNumTests_equalTo("3"), p_benchmarkNumTests_equalTo("5"), p_benchmarkNumTests_equalTo("10")]
+    variants = variants_benchmarkNumTests
 
     print("AVG BEST-OF-RUN FITNESS (MSE)")
     latex_avgBestOfRunFitness = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_mse, headerRowNames,
@@ -575,7 +573,9 @@ def prepare_report(sects, fname, exp_prefix, simple_bench_names=True, print_stat
 
         print("\nFiltered Info:")
         for p in props:
-            if "result.best.verificationDecision" not in p:
+            # if "nguyen4" in p["benchmark"]:
+            #     print("file: {0}".format(p["thisFileName"]))
+            if float(p["result.best.testMSE"]) > 2432971527315918274461803655258245399.0:
                 print("file: {0}".format(p["thisFileName"]))
 
 
@@ -671,12 +671,11 @@ def prepare_report_for_dims(props, dim_rows, dim_cols, sects, fname, exp_prefix,
 
 
 
-def reports_exp3():
-    # folders = ["EXP3_aut"]
-    folders = ["exp3_final"]
+def reports_exp0():
+    folders = ["gpem_exp0", "gpem_exp0_fix1"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
-    dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_testsRatio) * dim_optThreshold
+    dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_testsRatio) * dim_benchmarkNumTests # * dim_optThreshold
     headerRowNames = ["", r"$\alpha$", "tolerance"]
     subs = [
         (create_subsection_shared_stats, [None, dim_cols, 25, headerRowNames]),
@@ -691,7 +690,7 @@ def reports_exp3():
     ]
     sects = [(title, desc, folders, subs, figures)]
 
-    prepare_report(sects, "cdgp_r_exp3.tex", "e3", paperwidth=55, include_all_row=True, dim_cols_listings=dim_cols)
+    prepare_report(sects, "cdgp_exp0.tex", "e0", paperwidth=55, include_all_row=True, dim_cols_listings=dim_cols)
 
     # props = load_correct_props(folders)
     # dim_rows = get_benchmarks_from_props(props, simple_names=True) * dim_benchmarkNumTests
@@ -705,4 +704,4 @@ if __name__ == "__main__":
     # utils.ensure_dir("results/tables/")
     utils.ensure_dir("results/listings/errors/")
 
-    reports_exp3()
+    reports_exp0()
