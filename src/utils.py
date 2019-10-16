@@ -138,7 +138,7 @@ def save_to_file(file_path, content):
     file.close()
 
 
-def cleanExperiment(props, dim, target_dir, maxRuns, key_file="evoplotter.file"):
+def reorganizeExperimentFiles(props, dim, target_dir, maxRuns, key_file="evoplotter.file"):
     """Takes a list of dictionaries storing experiment's results and the dimension, and creates
      a new folder with experiments where results are stored hierarchically as defined by
      dimensions of the experiment.
@@ -176,3 +176,26 @@ def cleanExperiment(props, dim, target_dir, maxRuns, key_file="evoplotter.file")
             p_full_path = p[key_file]
             p_name = p_full_path[p_full_path.rfind("/")+1:]
             shutil.copy(p_full_path, accum_path + p_name)
+
+
+
+def deleteFilesByPredicate(props, predicate, simulate=False, verbose=True, key_file="evoplotter.file"):
+    """Deletes all physical files meeting a predicate for a list of dictionaries storing
+     experiment's results.
+
+    :param props: (list[dict]) list of dictionaries to be processed.
+    :param predicate: (lambda) a boolean function specifying which files are to be removed.
+    :param simulate: (bool) if true, then files won't be removed from disk.
+    :param verbose: (bool) if true, then names of the deleted files will be printed on screen.
+    :param key_file: (str) a key under which is stored the location of the original file of the
+     properties dict.
+    """
+    assert isinstance(props, list)
+
+    for p in props:
+        if key_file in p and predicate(p):
+            path = p[key_file]
+            if not simulate:
+                os.remove(path)
+            if verbose:
+                print("File removed: {0}".format(path))
