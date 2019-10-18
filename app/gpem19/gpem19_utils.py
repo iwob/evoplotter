@@ -184,7 +184,7 @@ def save_listings(props, dim_rows, dim_cols):
             for p in props_final:
                 fname = p["thisFileName"].replace("/home/ibladek/workspace/GECCO19/gecco19/", "")
                 best = p["result.best"]
-                fit = float(p["result.best.mse"])
+                fit = float(p["result.best.trainMSE"])
                 if fit >= 1e-15:
                     f.write("{0}\t\t\t(FILE: {1}) (MSE: {2})\n".format(best, fname, fit))
                 else:
@@ -224,7 +224,7 @@ def get_num_optimalOnlyMse(props):
         if "optThreshold" not in p:
             print(str(p))
     # Sometimes it is 'optThreshold', and sometimes 'cdgp.optThreshold'...
-    # props2 = [p for p in props if float(p["result.best.mse"]) <= float(p["optThreshold"])]
+    # props2 = [p for p in props if float(p["result.best.trainMSE"]) <= float(p["optThreshold"])]
     num = 0
     for p in props:
         if "optThreshold" in p:
@@ -233,7 +233,7 @@ def get_num_optimalOnlyMse(props):
             tr = p["cdgp.optThreshold"]
         else:
             raise Exception("No optThreshold in log file")
-        if float(p["result.best.mse"]) <= tr:
+        if float(p["result.best.trainMSE"]) <= tr:
             num += 1
     return num
 
@@ -343,14 +343,6 @@ def get_avg_totalTests(props):
             x = 0.0
         return str(int(round(x))) #"%0.1f" % x
 mse_dformat = "%0.4f"
-def get_avg_mse(props):
-    vals = []
-    for p in props:
-        vals.append(float(p["result.best.mse"]))
-    if len(vals) == 0:
-        return "-"  # -1.0, -1.0
-    else:
-        return mse_dformat % np.mean(vals)  # , np.std(vals)
 def get_avg_trainMSE(props):
     vals = []
     for p in props:

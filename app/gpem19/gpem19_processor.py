@@ -124,7 +124,7 @@ def plot_figures(props, exp_prefix):
         print("No props: plots were not generated.")
         return
 
-    getter_mse = lambda p: float(p["result.best.mse"])
+    getter_mse = lambda p: float(p["result.best.trainMSE"])
     predicate = lambda v, v_xaxis: v <= v_xaxis
     N = 50  # number of points per plot line
     r = (0.0, 1e0)
@@ -491,13 +491,6 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
     # variants = variants_benchmarkNumTests
     variants = None
 
-    print("AVG BEST-OF-RUN FITNESS (MSE)")
-    latex_avgBestOfRunFitness = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_mse, headerRowNames,
-                                                           cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants)
-    # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, get_avg_mse, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgBestOfRunFitness = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-
     print("AVG TOTAL TESTS")
     latex_avgTotalTests = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_totalTests, headerRowNames,
                                                      cv0=0.0, cv1=1000.0, cv2=2000.0, tableVariants=variants)
@@ -557,7 +550,6 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
     # latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 50, 100, "colorLow", "colorMedium", "colorHigh")
 
     subsects_cdgp = [
-        ("Average best-of-run MSE", latex_avgBestOfRunFitness, reporting.color_scheme_green),
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
         ("Average generation (all)", latex_avgGeneration, reporting.color_scheme_teal),
         #("Average generation (only successful)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
