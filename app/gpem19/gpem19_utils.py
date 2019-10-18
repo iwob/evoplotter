@@ -342,6 +342,7 @@ def get_avg_totalTests(props):
         if x < 1e-5:
             x = 0.0
         return str(int(round(x))) #"%0.1f" % x
+mse_dformat = "%0.4f"
 def get_avg_mse(props):
     vals = []
     for p in props:
@@ -349,7 +350,7 @@ def get_avg_mse(props):
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
     else:
-        return "%0.5f" % np.mean(vals)  # , np.std(vals)
+        return mse_dformat % np.mean(vals)  # , np.std(vals)
 def get_avg_trainMSE(props):
     vals = []
     for p in props:
@@ -357,7 +358,15 @@ def get_avg_trainMSE(props):
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
     else:
-        return "%0.5f" % np.mean(vals)  # , np.std(vals)
+        return mse_dformat % np.mean(vals)  # , np.std(vals)
+def get_median_trainMSE(props):
+    vals = []
+    for p in props:
+        vals.append(float(p["result.best.trainMSE"]))
+    if len(vals) == 0:
+        return "-"  # -1.0, -1.0
+    else:
+        return mse_dformat % np.median(vals)  # , np.std(vals)
 def get_avg_testMSE(props):
     vals = []
     for p in props:
@@ -365,7 +374,24 @@ def get_avg_testMSE(props):
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
     else:
-        return "%0.5f" % np.mean(vals)  # , np.std(vals)
+        return mse_dformat % np.mean(vals)  # , np.std(vals)
+def get_median_testMSE(props):
+    vals = []
+    for p in props:
+        vals.append(float(p["result.best.testMSE"]))
+    if len(vals) == 0:
+        return "-"  # -1.0, -1.0
+    else:
+        return "%0.4f" % np.median(vals)  # , np.std(vals)
+def get_avg_doneAlgRestarts(props):
+    vals = []
+    for p in props:
+        if "cdgp.doneAlgRestarts" in p:
+            vals.append(float(p["cdgp.doneAlgRestarts"]))
+    if len(vals) == 0:
+        return "-"  # -1.0, -1.0
+    else:
+        return "%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_runtime_helper(vals):
     if len(vals) == 0:
         return "n/a"  # -1.0, -1.0

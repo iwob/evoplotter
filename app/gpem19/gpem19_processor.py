@@ -78,7 +78,7 @@ def p_true(p):
 
 
 
-dim_true = Dim(Config("mean", lambda p: True, method=None))
+dim_true = Dim(Config("ALL", lambda p: True, method=None))
 # dim_methodCDGP = Dim([Config("CDGP", p_method_for("CDGP"), method="CDGP")])
 # dim_methodGP = Dim([Config("GP", p_method_for("GP"), method="GP")])
 dim_methodCDGP = Dim([
@@ -103,6 +103,10 @@ dim_testsRatio = Dim([
 dim_optThreshold = Dim([
     Config("$0.01$", p_dict_matcher({"optThresholdC": "0.01"}), optThreshold="0.01"),
     # Config("$0.1$", p_dict_matcher({"optThresholdC": "0.1"}), optThreshold="0.1"),
+])
+dim_numGensBeforeRestart = Dim([
+    Config("$250$k", p_dict_matcher({"maxGenerations": "250000"}), optThreshold="250000"),
+    Config("$50$k", p_dict_matcher({"maxGenerations": "50000"}), optThreshold="50000"),
 ])
 dim_benchmarkNumTests = Dim([
     Config("$10$ tests", p_dict_matcher({"sizeTrainSet": "10"}), benchmarkNumTests="10"),
@@ -417,14 +421,26 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
                        default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
+        TableGenerator(get_median_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Training set: MSE  (median)",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 1e2, 1e4),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
         TableGenerator(get_avg_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Training set: MSE",
+                       title="Training set: MSE  (avg)",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 1e2, 1e4),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(get_median_testMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Test set: MSE  (median)",
                        color_scheme=reporting.color_scheme_green,
                        default_color_thresholds=(0.0, 1e2, 1e4),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(get_avg_testMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Test set: MSE",
+                       title="Test set: MSE  (avg)",
                        color_scheme=reporting.color_scheme_green,
                        default_color_thresholds=(0.0, 1e2, 1e4),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
@@ -439,6 +455,12 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
                        title="Average runtime (only successful) [s]",
                        color_scheme=reporting.color_scheme_violet,
                        default_color_thresholds=(0.0, 900.0, 1800.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(get_avg_doneAlgRestarts, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Number of algorithm restarts  (avg)",
+                       color_scheme=reporting.color_scheme_gray_light,
+                       default_color_thresholds=(0.0, 1e2, 1e4),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         # TableGenerator(get_stats_size, dim_rows, dim_cols, headerRowNames=headerRowNames,
@@ -466,7 +488,8 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
 
 def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
     vb = 1  # vertical border
-    variants = variants_benchmarkNumTests
+    # variants = variants_benchmarkNumTests
+    variants = None
 
     print("AVG BEST-OF-RUN FITNESS (MSE)")
     latex_avgBestOfRunFitness = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_mse, headerRowNames,
@@ -675,8 +698,8 @@ def reports_exp0():
     folders = ["gpem_exp0", "gpem_exp0_fix1"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
-    dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_testsRatio) * dim_benchmarkNumTests # * dim_optThreshold
-    headerRowNames = ["", r"$\alpha$", "tolerance"]
+    dim_cols = dim_numGensBeforeRestart * (dim_methodGP + dim_methodCDGP) * dim_benchmarkNumTests # * dim_optThreshold
+    headerRowNames = ["maxGens", "", "tolerance"]
     subs = [
         (create_subsection_shared_stats, [None, dim_cols, 25, headerRowNames]),
         (create_subsection_cdgp_specific, [None, dim_cols, headerRowNames]),
@@ -690,7 +713,7 @@ def reports_exp0():
     ]
     sects = [(title, desc, folders, subs, figures)]
 
-    prepare_report(sects, "cdgp_exp0.tex", "e0", paperwidth=55, include_all_row=True, dim_cols_listings=dim_cols)
+    prepare_report(sects, "cdgp_exp0.tex", "e0", paperwidth=100, include_all_row=True, dim_cols_listings=dim_cols)
 
     # props = load_correct_props(folders)
     # dim_rows = get_benchmarks_from_props(props, simple_names=True) * dim_benchmarkNumTests
