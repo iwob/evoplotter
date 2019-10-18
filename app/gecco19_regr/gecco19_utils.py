@@ -1,4 +1,5 @@
 import os
+import math
 import shutil
 from src import utils
 from src.dims import *
@@ -267,6 +268,45 @@ def fun_successRateMseOnly(filtered):
     else:
         sr = n / float(len(filtered))
         return "{0}".format("%0.2f" % round(sr, 2))
+def fun_average_mse(filtered):
+    res = 0.0
+    num = 0
+    # Sometimes there was "inf" in the results. We will ignore those elements.
+    for p in filtered:
+        x = float(p["result.best.mse"])
+        if not "n" in str(x):
+            res += x
+            num += 1
+        else:
+            print("Nan encountered")
+    if num == 0:
+        return "-"
+    else:
+        return res / num
+def fun_average_mse_sd(filtered):
+    """Returns average together with standard deviation."""
+    res = 0.0
+    num = 0
+    # Sometimes there was "inf" in the results. We will ignore those elements.
+    for p in filtered:
+        x = float(p["result.best.mse"])
+        if not "n" in str(x):
+            res += x
+            num += 1
+        else:
+            print("Nan encountered")
+    avg = res / num
+    sd = 0.0
+    for p in filtered:
+        x = float(p["result.best.mse"])
+        if not "n" in str(x):
+            sd += (x - avg) ** 2.0
+    sd = math.sqrt(sd / num)
+    if num == 0:
+        return "-"
+    else:
+        return r"${0} \pm{1}$".format(avg, sd)
+
 def fun_successRate(filtered):
     if len(filtered) == 0:
         return "-"
