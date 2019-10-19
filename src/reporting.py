@@ -238,6 +238,8 @@ color_scheme_darkgreen = ColorScheme3(["1.0, 1.0, 1.0", "0.3, 0.6, 0.3", "0.0, 0
                                       ["white", "light green", "dark green"])
 color_scheme_gray_light = ColorScheme3(["1.0, 1.0, 1.0", "0.9, 0.9, 0.9", "0.75, 0.75, 0.75"],
                                        ["white", "light gray", "gray"])
+color_scheme_gray_dark = ColorScheme3(["1.0, 1.0, 1.0", "0.75, 0.75, 0.75", "0.5, 0.5, 0.5"],
+                                       ["white", "light gray", "gray"])
 color_scheme_blue = ColorScheme3(["1.0, 1.0, 1.0", "0.83, 0.89, 0.98", "0.63, 0.79, 0.95"],
                                  ["white", "light blue", "blue"])
 color_scheme_green = ColorScheme3(["1.0, 1.0, 1.0", "0.76, 0.98, 0.76", "0.66, 0.90, 0.66"],

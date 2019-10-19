@@ -619,7 +619,7 @@ def decorate_table(table_text, convert_fun, d_cols=" & ", d_rows="\\\\\n"):
 
 
 def table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor="colorLow", MidColor="colorMedium",
-                    MaxColor="colorHigh"):
+                    MaxColor="colorHigh", funValueExtractor=None):
     """Creates a table with cells colored depending on their values ("color map"). Colored will be only
     cells containing numbers.
 
@@ -633,14 +633,19 @@ def table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor="colorLow", 
     :param MidColor: (str) name of the LaTeX color representing the middle value. This color is also used for
      gradient, that is closer a given cell value is to the MidNumber, more MidColor'ed it becomes.
     :param MaxColor: (str) name of the LaTeX color representing the highest value.
+    :param funValueExtractor: (lambda) a function applied to cell's text returning the value based on which
+     color will be computed. Content of a cell will remain unchanged.
     :return: (str) text of the table with added \cellcolor commands with appropriate colors as arguments.
     """
+    if funValueExtractor is None:
+        funValueExtractor = lambda x: x
     def color_cell(s):
-        if s == "-" or s == "-" or s.strip().lower() == "nan" or not utils.isfloat(s.strip()):
+        extracted = str(funValueExtractor(s)).strip()
+        if s == "-" or s.strip().lower() == "nan" or not utils.isfloat(extracted):
             return s
         else:
             # Computing color gradient.
-            val = float(s.strip())
+            val = float(extracted)
             if val > MidNumber:
                 PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber-MidNumber), 100.0), 0.0)
                 color = "{0}!{1:.1f}!{2}".format(MaxColor, PercentColor, MidColor)
