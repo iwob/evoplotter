@@ -85,8 +85,8 @@ class TableHeader(TableHeaderInterface):
 
         # Each cell of the header is a list of captions of a given Config.
         # Cells of header are associated with the respective columns of the table.
-        # Removing a column means that it's header cell also will be removed.
-        # Adding a column means adding it's header cell.
+        # Removing a column means that its header cell also will be removed.
+        # Adding a column means adding its header cell.
         self.cells = dimCols.get_captions_list()
 
         self.layeredHeadline = layeredHeadline
