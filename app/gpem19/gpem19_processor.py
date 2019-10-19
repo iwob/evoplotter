@@ -1,3 +1,4 @@
+import os
 from app.gpem19.gpem19_utils import *
 from src import utils
 from src import plotter
@@ -402,6 +403,13 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
     # utils.deleteFilesByPredicate(props, lambda p: len(p["maxGenerations"]) > 7, simulate=False)
     # ----------------------------------------------------
 
+    def scNotColorValueExtractor(s):
+        if s == "-" or "10^{" not in s:
+            return s
+        else:
+            r = s.split("10^{")
+            return r[1][:-2]
+
     tables = [
         TableGenerator(get_num_computed, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Status (correctly finished runs)",
@@ -421,30 +429,44 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
                        default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
+        TableGenerator(fun_mseBelowThresh, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Success rates (mse below thresh)",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
         TableGenerator(get_median_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Training set: MSE  (median)",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 1e2, 1e4),
+                       color_scheme=reporting.color_scheme_gray_dark,
+                       default_color_thresholds=(-10.0, 0.0, 10.0),
+                       color_value_extractor=scNotColorValueExtractor,
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        TableGenerator(get_avg_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Training set: MSE  (avg)",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 1e2, 1e4),
-                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       ),
+        # TableGenerator(get_avg_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Training set: MSE  (avg)",
+        #                color_scheme=reporting.color_scheme_green,
+        #                default_color_thresholds=(0.0, 1e2, 1e4),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
         TableGenerator(get_median_testMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Test set: MSE  (median)",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 1e2, 1e4),
+                       color_scheme=reporting.color_scheme_gray_dark,
+                       default_color_thresholds=(-10.0, 0.0, 10.0),
+                       color_value_extractor=scNotColorValueExtractor,
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        TableGenerator(get_avg_testMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Test set: MSE  (avg)",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 1e2, 1e4),
-                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       ),
+        # TableGenerator(get_median_testMSE_noScNot, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Test set: MSE  (median) (noScNot)",
+        #                color_scheme=reporting.color_scheme_green,
+        #                default_color_thresholds=(0.0, 1e2, 1e4),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
+        # TableGenerator(get_avg_testMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Test set: MSE  (avg)",
+        #                color_scheme=reporting.color_scheme_green,
+        #                default_color_thresholds=(0.0, 1e2, 1e4),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
         TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average runtime [s]",
                        color_scheme=reporting.color_scheme_violet,
@@ -687,7 +709,7 @@ def prepare_report_for_dims(props, dim_rows, dim_cols, sects, fname, exp_prefix,
 
 
 def reports_exp0():
-    folders = ["gpem_exp0", "gpem_exp0_fix1"]
+    folders = ["gpem_exp0", "gpem_exp0_fix1", "exp0_maxGen100"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
     dim_cols = dim_numGensBeforeRestart * (dim_methodGP + dim_methodCDGP) * dim_benchmarkNumTests # * dim_optThreshold

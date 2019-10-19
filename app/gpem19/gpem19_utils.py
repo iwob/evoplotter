@@ -1,5 +1,3 @@
-import os
-import shutil
 from src import utils
 from src.dims import *
 from src import printer
@@ -16,7 +14,7 @@ class TableGenerator:
     """Generates table from data."""
     def __init__(self, f_cell, dim_rows, dim_cols, headerRowNames, title="", color_scheme=None,
                  table_postprocessor=None, vertical_border=1, table_variants=None,
-                 default_color_thresholds=None, layered_headline=True,
+                 default_color_thresholds=None, layered_headline=True, color_value_extractor=None,
                  only_nonempty_rows=True, **kwargs):
         self.f_cell = f_cell
         self.dim_rows = dim_rows
@@ -30,6 +28,7 @@ class TableGenerator:
         self.table_variants = table_variants if table_variants is not None else [lambda p: True]
         self.default_color_thresholds = default_color_thresholds
         self.layered_headline = layered_headline
+        self.color_value_extractor = color_value_extractor
         self.only_nonempty_rows = only_nonempty_rows
         self.init_kwargs = kwargs.copy()
 
@@ -50,7 +49,7 @@ class TableGenerator:
             ct = new_color_thresholds if new_color_thresholds is not None else self.default_color_thresholds
             if self.color_scheme is not None and ct is not None:
                 cv0, cv1, cv2 = ct
-                txt = printer.table_color_map(txt, cv0, cv1, cv2, "colorLow", "colorMedium", "colorHigh")
+                txt = printer.table_color_map(txt, cv0, cv1, cv2, "colorLow", "colorMedium", "colorHigh", funValueExtractor=self.color_value_extractor)
 
             text += r"\noindent"
             text += txt
@@ -179,7 +178,7 @@ def save_listings(props, dim_rows, dim_cols):
         for dc in dim_cols:
             f.write("{0}\n".format(dc.get_caption()))
             f_errors.write("{0}\n".format(dc.get_caption())) # TODO: finish
-            props_final = [p for p in dc.filter_props(props_bench) if is_verified_solution(p)]
+            props_final = [p for p in dc.filter_props(props_bench) if is_optimal_solution(p)]
 
             for p in props_final:
                 fname = p["thisFileName"].replace("/home/ibladek/workspace/GECCO19/gecco19/", "")
@@ -204,9 +203,9 @@ def normalized_total_time(p, max_time=3600000):
         v = int(float(p["result.totalTimeSystem"]))
     return max_time if v > max_time else v
 
-def is_verified_solution(p):
-    k = "result.best.verificationDecision"
-    return p["result.best.isOptimal"] == "true" and p[k] == "unsat"
+def is_optimal_solution(p):
+    return p["result.best.correctVerification"] == "true" and\
+           p["result.best.correctTests"] == "true"
 
 def is_approximated_solution(p):
     """Checks if the MSE was below the threshold."""
@@ -216,7 +215,7 @@ def is_approximated_solution(p):
     return p["result.best.isOptimal"] == "true" and p[k] == "unsat"
 
 def get_num_optimal(props):
-    props2 = [p for p in props if is_verified_solution(p)]
+    props2 = [p for p in props if is_optimal_solution(p)]
     return len(props2)
 def get_num_optimalOnlyMse(props):
     # "cdgp.optThreshold" in p and
@@ -237,8 +236,28 @@ def get_num_optimalOnlyMse(props):
             num += 1
     return num
 
+def scNotClearTrailingZeros(a):
+    tab = a.split('E')
+    if "-" in tab[1]:
+        r = a.split('E-')[1]
+        return tab[0].rstrip('0').rstrip('.') + 'E-' + r[:-1].lstrip('0') + r[-1]
+    else:
+        r = a.split('E')[1]
+        return tab[0].rstrip('0').rstrip('.') + 'E' + r[:-1].lstrip('0') + r[-1]
+def scientificNotationLatex(x):
+    s = "%0.1E" % x
+    if "E" not in s:
+        s += "E0"
+    s = "$" + s.replace("E+", "E")
+    s = scNotClearTrailingZeros(s)
+    s = s.replace("E", "\cdot 10^{") + "}$"
+    return s
+
 def get_num_allPropertiesMet(props):
-    props2 = [p for p in props if p["result.best.verificationDecision"] == "unsat"]
+    props2 = [p for p in props if p["result.best.correctVerification"] == "true"]
+    return len(props2)
+def get_num_mseBelowThresh(props):
+    props2 = [p for p in props if p["result.best.correctTests"] == "true"]
     return len(props2)
 
 def get_num_computed(filtered):
@@ -271,6 +290,12 @@ def fun_allPropertiesMet(filtered):
     num_opt = get_num_allPropertiesMet(filtered)
     sr = float(num_opt) / float(len(filtered))
     return "{0}".format("%0.2f" % round(sr, 2))
+def fun_mseBelowThresh(filtered):
+    if len(filtered) == 0:
+        return "-"
+    num_opt = get_num_mseBelowThresh(filtered)
+    sr = float(num_opt) / float(len(filtered))
+    return "{0}".format("%0.2f" % round(sr, 2))
 def get_stats_size(props):
     vals = [float(p["result.best.size"]) for p in props]
     if len(vals) == 0:
@@ -278,7 +303,7 @@ def get_stats_size(props):
     else:
         return str(int(round(np.mean(vals)))) #, np.std(vals)
 def get_stats_sizeOnlySuccessful(props):
-    vals = [float(p["result.best.size"]) for p in props if is_verified_solution(p)]
+    vals = [float(p["result.best.size"]) for p in props if is_optimal_solution(p)]
     if len(vals) == 0:
         return "-"#-1.0, -1.0
     else:
@@ -358,7 +383,8 @@ def get_median_trainMSE(props):
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
     else:
-        return mse_dformat % np.median(vals)  # , np.std(vals)
+        # return mse_dformat % np.median(vals)  # , np.std(vals)
+        return scientificNotationLatex(np.median(vals))
 def get_avg_testMSE(props):
     vals = []
     for p in props:
@@ -374,7 +400,15 @@ def get_median_testMSE(props):
     if len(vals) == 0:
         return "-"  # -1.0, -1.0
     else:
-        return "%0.4f" % np.median(vals)  # , np.std(vals)
+        return scientificNotationLatex(np.median(vals))  # , np.std(vals)
+def get_median_testMSE_noScNot(props):
+    vals = []
+    for p in props:
+        vals.append(float(p["result.best.testMSE"]))
+    if len(vals) == 0:
+        return "-"  # -1.0, -1.0
+    else:
+        return mse_dformat % np.median(vals)  # , np.std(vals)
 def get_avg_doneAlgRestarts(props):
     vals = []
     for p in props:
@@ -397,7 +431,7 @@ def get_avg_runtimeOnlySuccessful(props):
     if len(props) == 0:
         return "-"
     else:
-        vals = [float(normalized_total_time(p, max_time=1800000)) / 1000.0 for p in props if is_verified_solution(p)]
+        vals = [float(normalized_total_time(p, max_time=1800000)) / 1000.0 for p in props if is_optimal_solution(p)]
         return get_avg_runtime_helper(vals)
 def get_avg_runtime(props):
     if len(props) == 0:
@@ -419,7 +453,7 @@ def get_avg_generationSuccessful(props):
     if len(props) == 0:
         return "-"
     else:
-        vals = [float(p["result.best.generation"]) for p in props if is_verified_solution(p)]
+        vals = [float(p["result.best.generation"]) for p in props if is_optimal_solution(p)]
         if len(vals) == 0:
             return "n/a"  # -1.0, -1.0
         else:
@@ -439,7 +473,7 @@ def get_avg_evaluatedSuccessful(props):
         return "-"
     vals = []
     for p in props:
-        if is_verified_solution(p):
+        if is_optimal_solution(p):
             if p["evolutionMode"] == "steadyState":
                 vals.append(float(p["result.totalGenerations"]))
             else:
