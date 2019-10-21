@@ -106,8 +106,9 @@ dim_optThreshold = Dim([
     # Config("$0.1$", p_dict_matcher({"optThresholdC": "0.1"}), optThreshold="0.1"),
 ])
 dim_numGensBeforeRestart = Dim([
-    Config("$250$k", p_dict_matcher({"maxGenerations": "250000"}), optThreshold="250000"),
+    # Config("$250$k", p_dict_matcher({"maxGenerations": "250000"}), optThreshold="250000"),
     Config("$50$k", p_dict_matcher({"maxGenerations": "50000"}), optThreshold="50000"),
+    # Config("$25$k", p_dict_matcher({"maxGenerations": "25000"}), optThreshold="25000"),
 ])
 dim_benchmarkNumTests = Dim([
     Config("$10$ tests", p_dict_matcher({"sizeTrainSet": "10"}), benchmarkNumTests="10"),
@@ -418,7 +419,7 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(fun_successRate, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Success rates (mse below thresh + properties met)",
+                       title="Success rates (properties met + mse below thresh)",
                        color_scheme=reporting.color_scheme_darkgreen,
                        default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
@@ -709,7 +710,9 @@ def prepare_report_for_dims(props, dim_rows, dim_cols, sects, fname, exp_prefix,
 
 
 def reports_exp0():
-    folders = ["gpem_exp0", "gpem_exp0_fix1", "exp0_maxGen100"]
+    # "gpem_exp0" - excluded (older code version; too many gens before restart)
+    # "exp0_maxGen50" - excluded (a little worse than 100 gens)
+    folders = ["gpem_exp0_fix1", "exp0_maxGen100", "exp0_keijzer", "exp0_until100"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
     dim_cols = dim_numGensBeforeRestart * (dim_methodGP + dim_methodCDGP) * dim_benchmarkNumTests # * dim_optThreshold
