@@ -96,10 +96,15 @@ def create_errors_listing(error_props, filename):
     f.close()
 
 
-def create_errors_solver_listing(error_props, filename):
+def create_errors_solver_listing(error_props, filename, pred=None):
+    if pred is None:
+        pred = lambda x: True
     f = open("results/listings/{0}".format(filename), "w")
     print("Creating log of errors ({0})...".format(filename))
     for i, p in enumerate(error_props):
+        if not pred(p):  # ignore properties with certain features, e.g., types of errors
+            continue
+
         if i > 0:
             f.write("\n" + ("-" * 50) + "\n\n")
 

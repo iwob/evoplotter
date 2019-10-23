@@ -84,6 +84,9 @@ dim_true = Dim(Config("ALL", lambda p: True, method=None))
 # dim_methodGP = Dim([Config("GP", p_method_for("GP"), method="GP")])
 dim_methodCDGP = Dim([
     Config("CDGP", p_dict_matcher({"method": "CDGP"}), method="CDGP"),
+    # Config("$CDGP_{props}$", p_dict_matcher({"method": "CDGPprops"}), method="CDGPprops"),
+])
+dim_methodCDGPprops = Dim([
     Config("$CDGP_{props}$", p_dict_matcher({"method": "CDGPprops"}), method="CDGPprops"),
 ])
 dim_methodGP = Dim([
@@ -91,7 +94,7 @@ dim_methodGP = Dim([
     # Config("$GP_{1000}$", p_dict_matcher({"method": "GP", "populationSize": "1000"}), method="GP1000"),
     # Config("$GP_{5000}$", p_dict_matcher({"method": "GP", "populationSize": "5000"}), method="GP5000"),
 ])
-dim_method = dim_methodCDGP + dim_methodGP
+dim_method = dim_methodCDGP + dim_methodCDGPprops + dim_methodGP
 dim_sel = Dim([#Config("$Tour$", p_sel_tourn, selection="tournament"),
                Config("$Lex$", p_sel_lexicase, selection="lexicase")])
 # dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
@@ -113,6 +116,10 @@ dim_numGensBeforeRestart = Dim([
 dim_benchmarkNumTests = Dim([
     Config("$10$ tests", p_dict_matcher({"sizeTrainSet": "10"}), benchmarkNumTests="10"),
     Config("$100$ tests", p_dict_matcher({"sizeTrainSet": "100"}), benchmarkNumTests="100"),
+])
+dim_weight = Dim([
+    Config("$1$", p_dict_matcher({"partialConstraintsWeight": "1"}), benchmarkNumTests="1"),
+    Config("$5$", p_dict_matcher({"partialConstraintsWeight": "5"}), benchmarkNumTests="5"),
 ])
 variants_benchmarkNumTests = [p_dict_matcher({"sizeTrainSet": "10"}), p_dict_matcher({"sizeTrainSet": "100"})]
 
@@ -306,7 +313,7 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
 
 
         TableGenerator(fun_successRate, dim_rows_v2,
-                       dim_benchmarkNumTests * (dim_methodGP + dim_methodCDGP),
+                       dim_benchmarkNumTests * dim_method,
                        headerRowNames=["", ""],
                        title="Success rates (mse below thresh + properties met)",
                        color_scheme=reporting.color_scheme_darkgreen,
@@ -314,7 +321,7 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(fun_successRate, dim_rows_v2,
-                       (dim_methodGP + dim_methodCDGP) * dim_benchmarkNumTests,
+                       dim_method * dim_benchmarkNumTests,
                        headerRowNames=["", ""],
                        title="Success rates (mse below thresh + properties met)",
                        color_scheme=reporting.color_scheme_darkgreen,
@@ -322,7 +329,7 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(fun_successRate, dim_rows_v2,
-                       dim_optThreshold * (dim_methodGP + dim_methodCDGP),
+                       dim_optThreshold * dim_method,
                        headerRowNames=["tolerance", ""],
                        title="Success rates (mse below thresh + properties met)",
                        color_scheme=reporting.color_scheme_darkgreen,
@@ -330,7 +337,7 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(fun_successRate, dim_rows_v2,
-                       (dim_methodGP + dim_methodCDGP),
+                       dim_method,
                        headerRowNames=[""],
                        title="Success rates (mse below thresh + properties met)",
                        color_scheme=reporting.color_scheme_darkgreen,
@@ -340,7 +347,7 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
 
 
         TableGenerator(fun_allPropertiesMet, dim_rows_v2,
-                       dim_benchmarkNumTests * (dim_methodGP + dim_methodCDGP),
+                       dim_benchmarkNumTests * dim_method,
                        headerRowNames=["", ""],
                        title="Success rates (properties met)",
                        color_scheme=reporting.color_scheme_green,
@@ -348,7 +355,7 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(fun_allPropertiesMet, dim_rows_v2,
-                       (dim_methodGP + dim_methodCDGP) * dim_benchmarkNumTests,
+                       dim_method * dim_benchmarkNumTests,
                        headerRowNames=["", ""],
                        title="Success rates (properties met)",
                        color_scheme=reporting.color_scheme_green,
@@ -356,7 +363,7 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         # TableGenerator(fun_allPropertiesMet, dim_rows_v2,
-        #                dim_benchmarkNumTests * dim_optThreshold * (dim_methodGP + dim_methodCDGP),
+        #                dim_benchmarkNumTests * dim_optThreshold * dim_method,
         #                headerRowNames=["", "tolerance", ""],
         #                title="Success rates (properties met)",
         #                color_scheme=reporting.color_scheme_green,
@@ -364,7 +371,7 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
         #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
         #                ),
         TableGenerator(fun_allPropertiesMet, dim_rows_v2,
-                       dim_optThreshold * (dim_methodGP + dim_methodCDGP),
+                       dim_optThreshold * dim_method,
                        headerRowNames=["tolerance", ""],
                        title="Success rates (properties met)",
                        color_scheme=reporting.color_scheme_green,
@@ -372,7 +379,7 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(fun_allPropertiesMet, dim_rows_v2,
-                       (dim_methodGP + dim_methodCDGP),
+                       dim_method,
                        headerRowNames=[""],
                        title="Success rates (properties met)",
                        color_scheme=reporting.color_scheme_green,
@@ -424,16 +431,29 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
                        default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
+        TableGenerator(get_median_testMSEsuccessRateForThresh_onlyVerified, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Test set: success rate of accepted solutions with MSE below optThreshold  (i.e., no overfitting)",
+                       color_scheme=reporting.color_scheme_red2white2darkgreen,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
         TableGenerator(fun_allPropertiesMet, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Success rates (properties met)",
                        color_scheme=reporting.color_scheme_green,
                        default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        TableGenerator(fun_mseBelowThresh, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Success rates (mse below thresh)",
+        TableGenerator(fun_trainMseBelowThresh, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Training set: success rates (mse below thresh)",
                        color_scheme=reporting.color_scheme_green,
                        default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(get_median_mseOptThresh, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Training set: optThreshold for MSE  (median)",
+                       color_scheme=reporting.color_scheme_violet,
+                       default_color_thresholds=(-10.0, 0.0, 10.0),
+                       color_value_extractor=scNotColorValueExtractor,
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(get_median_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
@@ -622,7 +642,7 @@ def prepare_report(sects, fname, exp_prefix, simple_bench_names=True, print_stat
 
 
         if print_status_matrix:
-            d = dim_benchmarks * (dim_methodGP * dim_sel * dim_evoMode + dim_methodCDGP * dim_sel * dim_evoMode * dim_testsRatio)
+            d = dim_benchmarks * (dim_methodGP * dim_sel * dim_evoMode + (dim_methodCDGP + dim_methodCDGPprops) * dim_sel * dim_evoMode * dim_testsRatio)
 
             matrix = produce_status_matrix(d, props)
             print("\n****** Status matrix:")
@@ -712,11 +732,14 @@ def prepare_report_for_dims(props, dim_rows, dim_cols, sects, fname, exp_prefix,
 def reports_exp0():
     # "gpem_exp0" - excluded (older code version; too many gens before restart)
     # "exp0_maxGen50" - excluded (a little worse than 100 gens)
-    folders = ["gpem_exp0_fix1", "exp0_maxGen100", "exp0_keijzer", "exp0_until100"]
+    folders = ["gpem_exp0_fix1", "exp0_maxGen100", "exp0_keijzer", "exp0_until100", "gpem_e0_pagie1",
+               "exp0_weight5"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
-    dim_cols = dim_numGensBeforeRestart * (dim_methodGP + dim_methodCDGP) * dim_benchmarkNumTests # * dim_optThreshold
-    headerRowNames = ["maxGens", "", "tolerance"]
+    dim_cols = dim_numGensBeforeRestart *\
+               (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
+               dim_benchmarkNumTests # * dim_optThreshold
+    headerRowNames = ["maxEvals", "method", "weight", "tolerance"]
     subs = [
         (create_subsection_shared_stats, [None, dim_cols, 25, headerRowNames]),
         (create_subsection_cdgp_specific, [None, dim_cols, headerRowNames]),

@@ -84,10 +84,15 @@ def create_errors_listing(error_props, filename):
     f.close()
 
 
-def create_errors_solver_listing(error_props, filename):
+def create_errors_solver_listing(error_props, filename, pred=None):
+    if pred is None:
+        pred = lambda x: True
     f = open("results/listings/{0}".format(filename), "w")
     print("Creating log of errors ({0})...".format(filename))
     for i, p in enumerate(error_props):
+        if not pred(p):  # ignore properties with certain features, e.g., types of errors
+            continue
+
         if i > 0:
             f.write("\n" + ("-" * 50) + "\n\n")
 
@@ -96,7 +101,6 @@ def create_errors_solver_listing(error_props, filename):
             content = content_file.read()
             f.write(content)
     f.close()
-
 
 def load_correct_props(folders):
     props_cdgpError = utils.load_properties_dirs(folders, exts=[".cdgp.error"], add_file_path=True)
@@ -130,6 +134,13 @@ def load_correct_props(folders):
 
 
     create_errors_solver_listing(props_cdgpError, "errors_solver.txt")
+    # Terminating program due to time limit may trigger solver manager in CDGP, which shows as solver error.
+    # This type of error can be recognized by the "No line found" message, so we create here a file without those false positives.
+    def predSolverIssue(p):
+        return "No line found" not in p["terminatingException"] and \
+               "model is not available" not in p["terminatingException"]
+    create_errors_solver_listing(props_cdgpError, "errors_solver_issues.txt", predSolverIssue)
+
 
     # Printing names of files which finished with error status or are incomplete.
     if CHECK_CORRECTNESS_OF_FILES:
@@ -203,16 +214,17 @@ def normalized_total_time(p, max_time=3600000):
         v = int(float(p["result.totalTimeSystem"]))
     return max_time if v > max_time else v
 
+def isOptimalVerification(p):
+    return p["result.best.correctVerification"] == "true"
+def isOptimalTests(p):
+    # p["result.best.correctTests"] == "true" is computed wrongly for CDGPprops
+    value = float(p["result.best.trainMSE"])
+    return value < float(p["cdgp.optThresholdMSE"])
 def is_optimal_solution(p):
-    return p["result.best.correctVerification"] == "true" and\
-           p["result.best.correctTests"] == "true"
+    return isOptimalVerification(p) and isOptimalTests(p)
 
-def is_approximated_solution(p):
-    """Checks if the MSE was below the threshold."""
-    tr = float(p["optThreshold"])
-    # TODO: finish
-    k = "result.best.verificationDecision"
-    return p["result.best.isOptimal"] == "true" and p[k] == "unsat"
+
+
 
 def get_num_optimal(props):
     props2 = [p for p in props if is_optimal_solution(p)]
@@ -256,9 +268,15 @@ def scientificNotationLatex(x):
 def get_num_allPropertiesMet(props):
     props2 = [p for p in props if p["result.best.correctVerification"] == "true"]
     return len(props2)
-def get_num_mseBelowThresh(props):
-    props2 = [p for p in props if p["result.best.correctTests"] == "true"]
-    return len(props2)
+def get_num_trainMseBelowThresh(props):
+    # "result.best.correctTests" cannot be trusted, results were wrong
+    # props2 = [p for p in props if p["result.best.correctTests"] == "true"]
+    numSucc = 0
+    for p in props:
+        value = float(p["result.best.trainMSE"])
+        if value < float(p["cdgp.optThresholdMSE"]):
+            numSucc += 1
+    return numSucc
 
 def get_num_computed(filtered):
     return len(filtered)
@@ -290,10 +308,10 @@ def fun_allPropertiesMet(filtered):
     num_opt = get_num_allPropertiesMet(filtered)
     sr = float(num_opt) / float(len(filtered))
     return "{0}".format("%0.2f" % round(sr, 2))
-def fun_mseBelowThresh(filtered):
+def fun_trainMseBelowThresh(filtered):
     if len(filtered) == 0:
         return "-"
-    num_opt = get_num_mseBelowThresh(filtered)
+    num_opt = get_num_trainMseBelowThresh(filtered)
     sr = float(num_opt) / float(len(filtered))
     return "{0}".format("%0.2f" % round(sr, 2))
 def get_stats_size(props):
@@ -361,7 +379,7 @@ def get_numSolverCallsOverXs(props):
 def get_avg_totalTests(props):
     vals = [float(p["tests.total"]) for p in props]
     if len(vals) == 0:
-        return "-"  # -1.0, -1.0
+        return "-"
     else:
         x = np.mean(vals)
         if x < 1e-5:
@@ -373,7 +391,7 @@ def get_avg_trainMSE(props):
     for p in props:
         vals.append(float(p["result.best.trainMSE"]))
     if len(vals) == 0:
-        return "-"  # -1.0, -1.0
+        return "-"
     else:
         return mse_dformat % np.mean(vals)  # , np.std(vals)
 def get_median_trainMSE(props):
@@ -381,7 +399,16 @@ def get_median_trainMSE(props):
     for p in props:
         vals.append(float(p["result.best.trainMSE"]))
     if len(vals) == 0:
-        return "-"  # -1.0, -1.0
+        return "-"
+    else:
+        # return mse_dformat % np.median(vals)  # , np.std(vals)
+        return scientificNotationLatex(np.median(vals))
+def get_median_mseOptThresh(props):
+    vals = []
+    for p in props:
+        vals.append(float(p["cdgp.optThresholdMSE"]))
+    if len(vals) == 0:
+        return "-"
     else:
         # return mse_dformat % np.median(vals)  # , np.std(vals)
         return scientificNotationLatex(np.median(vals))
@@ -390,37 +417,53 @@ def get_avg_testMSE(props):
     for p in props:
         vals.append(float(p["result.best.testMSE"]))
     if len(vals) == 0:
-        return "-"  # -1.0, -1.0
+        return "-"
     else:
         return mse_dformat % np.mean(vals)  # , np.std(vals)
 def get_median_testMSE(props):
-    vals = []
-    for p in props:
-        vals.append(float(p["result.best.testMSE"]))
+    vals = [float(p["result.best.testMSE"]) for p in props]
     if len(vals) == 0:
-        return "-"  # -1.0, -1.0
+        return "-"
     else:
         return scientificNotationLatex(np.median(vals))  # , np.std(vals)
 def get_median_testMSE_noScNot(props):
-    vals = []
-    for p in props:
-        vals.append(float(p["result.best.testMSE"]))
+    vals = [float(p["result.best.testMSE"]) for p in props]
     if len(vals) == 0:
-        return "-"  # -1.0, -1.0
+        return "-"
     else:
         return mse_dformat % np.median(vals)  # , np.std(vals)
+def get_median_testMSEsuccessRateForThresh(props):
+    if len(props) == 0:
+        return "-"
+    else:
+        numSucc = 0.0
+        for p in props:
+            value = float(p["result.best.testMSE"])
+            if value < float(p["cdgp.optThresholdMSE"]):
+                numSucc += 1.0
+        return "%0.2f" % round(numSucc / len(props), 2)
+def get_median_testMSEsuccessRateForThresh_onlyVerified(props):
+    if len(props) == 0:
+        return "-"
+    else:
+        numSucc = 0.0
+        for p in props:
+            value = float(p["result.best.testMSE"])
+            if is_optimal_solution(p) and value < float(p["cdgp.optThresholdMSE"]):
+                numSucc += 1.0
+        return "%0.2f" % round(numSucc / len(props), 2)
 def get_avg_doneAlgRestarts(props):
     vals = []
     for p in props:
         if "cdgp.doneAlgRestarts" in p:
             vals.append(float(p["cdgp.doneAlgRestarts"]))
     if len(vals) == 0:
-        return "-"  # -1.0, -1.0
+        return "-"
     else:
         return "%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_runtime_helper(vals):
     if len(vals) == 0:
-        return "n/a"  # -1.0, -1.0
+        return "n/a"
     else:
         x = np.mean(vals)
         if x >= 10.0:
@@ -455,7 +498,7 @@ def get_avg_generationSuccessful(props):
     else:
         vals = [float(p["result.best.generation"]) for p in props if is_optimal_solution(p)]
         if len(vals) == 0:
-            return "n/a"  # -1.0, -1.0
+            return "n/a"
         else:
             return str(int(round(np.mean(vals))))  # "%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_evaluated(props):
@@ -479,12 +522,12 @@ def get_avg_evaluatedSuccessful(props):
             else:
                 vals.append(float(p["result.totalGenerations"]) * float(p["populationSize"]))
     if len(vals) == 0:
-        return "n/a"  # -1.0, -1.0
+        return "n/a"
     else:
         return str(int(round(np.mean(vals))))  # "%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_runtimePerProgram(props):
     if len(props) == 0:
-        return "-"  # -1.0, -1.0
+        return "-"
     sAvgGen = get_avg_generation(props)
     if sAvgGen == "-" or sAvgGen is None:
         return "-"
