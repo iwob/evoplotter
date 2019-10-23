@@ -257,3 +257,7 @@ color_scheme_red = ColorScheme3(["1.0, 1.0, 1.0", "0.95, 0.6, 0.6", "0.8, 0, 0"]
 
 color_scheme_red2yellow2green = ColorScheme3(["0.94, 0.5, 0.5", "1.0, 1.0, 0.0", "0.56, 0.93, 0.56"],
                                              ["red", "yellow", "green"])
+color_scheme_red2white2green = ColorScheme3(["0.94, 0.5, 0.5", "1.0, 1.0, 1.0", "0.56, 0.93, 0.56"],
+                                            ["red", "white", "green"])
+color_scheme_red2white2darkgreen = ColorScheme3(["0.94, 0.5, 0.5", "1.0, 1.0, 1.0", "0.0, 0.4, 0.0"],
+                                            ["red", "white", "green"])
