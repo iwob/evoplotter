@@ -760,6 +760,31 @@ def reports_exp0():
     # prepare_report_for_dims(props, dim_rows, dim_cols, sects, "cdgp_r_exp3_dims.tex", "e3_dims", paperwidth=40, include_all_row=True, dim_cols_listings=dim_cols)
 
 
+def reports_exp1():
+    folders = ["exp1"]
+    title = "Experiments for regression CDGP (stop: 0.5h)"
+    desc = r""""""
+    dim_cols = dim_numGensBeforeRestart *\
+               (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
+               dim_benchmarkNumTests # * dim_optThreshold
+    headerRowNames = ["maxEvals", "method", "weight", "tolerance"]
+    subs = [
+        (create_subsection_shared_stats, [None, dim_cols, 25, headerRowNames]),
+        (create_subsection_cdgp_specific, [None, dim_cols, headerRowNames]),
+        (create_subsection_aggregation_tests, [None, dim_cols, headerRowNames]),
+    ]
+    figures = [
+        "figures/ratioMSE.pdf"
+        # "figures/e0_ratioEvaluated_correctVsAllRuns.pdf",
+        # "figures/e0_ratioTime_correctVsAllCorrect.pdf",
+        # "figures/e0_ratioTime_endedVsAllEnded.pdf"
+    ]
+    sects = [(title, desc, folders, subs, figures)]
+
+    prepare_report(sects, "cdgp_exp1.tex", "e1", paperwidth=100, include_all_row=True, dim_cols_listings=dim_cols)
+
+
+
 if __name__ == "__main__":
     utils.ensure_clear_dir("results/")
     utils.ensure_dir("results/figures/")
@@ -767,4 +792,5 @@ if __name__ == "__main__":
     # utils.ensure_dir("results/tables/")
     utils.ensure_dir("results/listings/errors/")
 
-    reports_exp0()
+    # reports_exp0()
+    reports_exp1()
