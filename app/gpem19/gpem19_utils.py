@@ -137,8 +137,8 @@ def load_correct_props(folders):
     # Terminating program due to time limit may trigger solver manager in CDGP, which shows as solver error.
     # This type of error can be recognized by the "No line found" message, so we create here a file without those false positives.
     def predSolverIssue(p):
-        return "No line found" not in p["terminatingException"] and \
-               "model is not available" not in p["terminatingException"]
+        return "terminatingException" not in p or \
+               ("No line found" not in p["terminatingException"] and "model is not available" not in p["terminatingException"])
     create_errors_solver_listing(props_cdgpError, "errors_solver_issues.txt", predSolverIssue)
 
 
