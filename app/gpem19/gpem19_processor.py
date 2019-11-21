@@ -785,11 +785,10 @@ def reports_exp1():
 
 
 def reports_exp2():
-    folders = ["exp2"]
+    folders = ["exp2_noRestarts"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
-    dim_cols = dim_numGensBeforeRestart *\
-               (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
+    dim_cols = (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
                dim_benchmarkNumTests # * dim_optThreshold
     headerRowNames = ["maxEvals", "method", "weight", "tolerance"]
     subs = [
