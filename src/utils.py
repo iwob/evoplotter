@@ -103,9 +103,9 @@ def load_properties_dirs(dirs, exts=None, add_file_path=False):
     return res
 
 
-def str2list(s, sep=", "):
+def str2list(s, sep=","):
     """Converts a string representing a list with floats to a Python list object filled with floats."""
-    return [float(x) for x in s.split(sep)]
+    return [float(x.strip()) for x in s.split(sep)]
 
 
 def isfloat(value):

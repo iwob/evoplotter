@@ -383,7 +383,7 @@ def draw_boxplots(props):
 def draw_fitness_progression(props, plot_individual_runs=True):
     dim_variants = Dim(conf_cv)
     dim_variants += dim_fill * dim_usedHoles_ho
-    plotter.plot_fitness_progression_on_benchmarks(props, dim_benchmark, dim_variants, plot_individual_runs=plot_individual_runs)
+    plotter.plot_value_progression_grid(props, dim_benchmark, dim_variants, plot_individual_runs=plot_individual_runs)
 
 
 

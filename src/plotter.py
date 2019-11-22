@@ -153,122 +153,168 @@ def plot_fitness_single_run(prop, keys, legend = None, title = None):
 
 
 
+def plot_value_progression_grid_simple(props, dim_rows, dim_cols, key_values, legend_labels=None, legend_colors=None, title=None,
+                                       unify_xaxis=True, unify_xlim=None, plot_individual_runs=False,
+                                       key_lastGen=None, markevery=2, errorevery=2, savepath=None, opacity=0.5, show_plot=False,
+                                       plot_grid=True):
+    """For each element of the row dimension (usually benchmark) creates a series of subplots for each
+    configuration of the column dimension. On subplots plotted are changes of some value through time.
+    If plot_individual_runs is set to True, each evolution run will be plotted as a distinct line.
 
-def plot_fitness_progression_on_benchmarks(props, dim_benchmarks, dim_variants,
-        key_avgFits="result.stats.avgFitness", key_maxFits=None, plot_max=True, unify_xaxis=True,
-        unify_xlim=None, plot_individual_runs=False, key_lastGen="result.lastGeneration",
-        markevery=2, errorevry=2, savepath=None):
-    """For each benchmark creates a series of subplots for each configuration of the experiment.
-    On subplots plotted are changes of fitness through time. If plot_individual_runs is set to
-    True, each evolution run will be plotted as a distinct line.
+    :param key_values: (list[str]) values used for plotting. They are assumed to be in the format: 'X1,X2,X3,...' where Xi is a number.
+    :param key_lastGen: (str) dict's key used to compute the maximum generation so that all x axes are synchronized.
     """
     assert type(props) == list
-    assert isinstance(dim_benchmarks, dims.Dim)
-    assert isinstance(dim_variants, dims.Dim)
-    if plot_max and key_maxFits is None:
-        key_maxFits = "result.stats.maxFitness" # Use default keys from smtgp.
+    assert isinstance(dim_rows, dims.Dim)
+    assert isinstance(dim_cols, dims.Dim)
+    assert isinstance(key_values, list)
+    if legend_labels is None:
+        legend_labels = ["{0}".format(kv) for kv in key_values]
+    assert isinstance(legend_labels, list) and len(legend_labels) == len(key_values)
+    if legend_colors is None:
+        legend_colors = [(0, 0, 0.5), (0, 0.5, 0), (0.5, 0, 0), (0, 0, 0)]
 
-    nrow = len(dim_benchmarks)
-    ncol = len(dim_variants)
+    nrow = len(dim_rows)
+    ncol = len(dim_cols)
     figsize = (int(3.5*ncol), int(2.75*nrow))
     fig, axes = plt.subplots(nrows=nrow, ncols=ncol, figsize=figsize, facecolor='white')
 
     # fig.tight_layout()
-    fig.suptitle("Fitness Progression Across Benchmarks", fontsize=16)
+    if title is not None:
+        fig.suptitle(title, fontsize=16)
 
-    gray = pltcol.ColorConverter().to_rgba((0, 0, 0), 0.2)
-    green = pltcol.ColorConverter().to_rgba((0, 0.5, 0), 0.2)
-    keys_info = {key_avgFits: ("avg", gray)}
-    if key_maxFits is not None:
-        keys_info[key_maxFits] = ("max", green)
+
+    # legend_info stores information necessary to create a legend and color the plots.
+    legend_info = dict()
+    for key, label, color in zip(key_values, legend_labels, legend_colors):
+        legend_info[key] = (label, pltcol.ColorConverter().to_rgba(color, opacity))
 
     # Remove irrelevant props (data, which will not be plotted).
-    props = (dim_benchmarks * dim_variants).filter_out_outsiders(props)
+    props = (dim_rows * dim_cols).filter_out_outsiders(props)
 
-    xlim_db = None
+    xlim_row = None
     if unify_xaxis:
         if unify_xlim is not None:
-            xlim_db = unify_xlim
+            xlim_row = unify_xlim
         else:
             # Compute maximum x-axis value for all props which are relevant.
-            max_generations = max([int(p[key_lastGen]) for p in props])
-            xlim_db = [0, max_generations]
+            if key_lastGen is not None:
+                max_generations = max([int(p[key_lastGen]) for p in props])
+            else:
+                max_generations = max([ max([int(p[k].count(",")) for p in props]) for k in key_values ])
+            xlim_row = [0, max_generations]
+
 
     i = 0
-    for db in dim_benchmarks:
-        print("Plotting row {0}/{1}: {2}".format(i, len(dim_benchmarks)-1, db.filters[0][0]))
-        props_db = db.filter_props(props)
-        bench_maxFit = db.filters[0][2]  # Getting max fitness of the benchmark.
-        ylim_db = [0, bench_maxFit]
+    maxValue = None
+    for config_row in dim_rows:
+        props_row = config_row.filter_props(props)
         j = 0
-        for dv in dim_variants:
-            props_dbdv = dv.filter_props(props_db)
-            _plot_fitness_progression_on_benchmarks_subplot(fig, axes, i, j, props_dbdv, db, dv, keys_info, xlim_db, ylim_db, plot_individual_runs=plot_individual_runs, key_lastGen=key_lastGen, key_avgFits=key_avgFits, markevery=markevery, errorevry=errorevry)
+        for config_col in dim_cols:
+            axes[i, j].margins(0.01)  # Pad margins so that markers don't get clipped by the axes
+            axes[i, j].spines['top'].set_visible(False)
+            axes[i, j].spines['right'].set_visible(False)
+            axes[i, j].set_axis_bgcolor('white')
+            if plot_grid:
+                axes[i, j].grid("on")
+            else:
+                axes[i, j].grid("off")
+
+            props_rc = config_col.filter_props(props_row)
+            d_series_to_plot = {k: [utils.str2list(p[k]) for p in props_rc] for k in legend_info}
+
+            max_y = max([ max([max(s) for s in d_series_to_plot[k] ])  for k in d_series_to_plot ])
+            if maxValue is None or maxValue < max_y:
+                maxValue = max_y
+
+            if plot_individual_runs:
+                _progression_grid_subplot_individualRuns(fig, axes, i, j, legend_info, d_series_to_plot,
+                                                         row_header=config_row.get_caption(),
+                                                         col_header=config_col.get_caption(),
+                                                         markevery=markevery)
+            else:
+                _progression_grid_subplot_avgs(fig, axes, i, j, legend_info, d_series_to_plot,
+                                               row_header=config_row.get_caption(),
+                                               col_header=config_col.get_caption(),
+                                               markevery=markevery, errorevery=errorevery)
             j += 1
+
+        # Update lims
+        ylim_row = [0, maxValue]
+        for ii in range(len(dim_rows)):
+            for jj in range(len(dim_cols)):
+                if xlim_row is not None:
+                    axes[ii, jj].set_xlim(xlim_row)
+                if ylim_row is not None:
+                    axes[ii, jj].set_ylim(ylim_row)
+        maxValue = None
         i += 1
 
-    if plot_individual_runs:
-        legend_patches = []
-        for k in sorted(keys_info.keys()):
-            name, color = keys_info[k]
-            patch = mpatches.Patch(color=color, label=name)
-            legend_patches.append(patch)
-        legend_patches = list(reversed(legend_patches))
-        plt.legend(handles=legend_patches, loc='center right', bbox_to_anchor = (0,0,0.975,1), bbox_transform = plt.gcf().transFigure)
+    # Set legend
+    legend_patches = []
+    for k in sorted(legend_info.keys()):
+        name, color = legend_info[k]
+        patch = mpatches.Patch(color=color, label=name)
+        legend_patches.append(patch)
+    legend_patches = list(reversed(legend_patches))
+    plt.legend(handles=legend_patches, loc='center right', bbox_to_anchor = (0,0,0.975,1), bbox_transform = plt.gcf().transFigure)
 
 
-    if savepath is None:
-        name = "fit_progression_runs.pdf" if plot_individual_runs else "fit_progression_avgs.pdf"
-        savepath = OUTPUT_FOLDER + "/" + name
-    fig.savefig(savepath, facecolor=fig.get_facecolor(), edgecolor="white")
-    plt.show()
+    if savepath is not None:
+        fig.savefig(savepath, facecolor=fig.get_facecolor(), edgecolor="white")
+    if show_plot:
+        plt.show()
 
 
 
 
-def _plot_fitness_progression_on_benchmarks_subplot(fig, axes, i, j, props, benchmark, variant, keys_info, xlim_db=None, ylim_db=None, plot_individual_runs=False, key_lastGen="result.lastGeneration", key_avgFits="result.stats.avgFitness", markevery=2, errorevry=2):
+def _progression_grid_subplot_individualRuns(fig, axes, i, j, legend_info, d_series_to_plot, row_header, col_header, markevery=2):
     """Draws a subplot containing fitness progression through iterations on an intersection
     of a single benchmark and single variant.
+
+    :param d_series_to_plot: (dict[str,list]) A dictionary containing for each key from legend_info a list of series
+     of values to plot.
     """
-    axes[i,j].margins(0.01)  # Pad margins so that markers don't get clipped by the axes
-    axes[i,j].spines['top'].set_visible(False)
-    axes[i,j].spines['right'].set_visible(False)
-    axes[i,j].set_axis_bgcolor('white')
-    axes[i,j].grid("on")
+    assert isinstance(d_series_to_plot, dict)
+    assert all([k in d_series_to_plot for k in legend_info.keys()])
 
     if i == 0:
-        axes[i,j].set_title(variant.get_caption(), fontsize=16)
+        axes[i,j].set_title(col_header, fontsize=16)
     if j == 0:
-        axes[i,j].set_ylabel(benchmark.filters[0][0], fontsize=16)
+        axes[i,j].set_ylabel(row_header, fontsize=16)
 
-    if len(props) > 0:
-        if plot_individual_runs:
-            for k in keys_info:
-                name, color = keys_info[k]
-                series_to_plot = [utils.str2list(p[k]) for p in props]
-                for series in series_to_plot:
-                    x = range(0, len(series))
-                    axes[i,j].plot(x, series, color=color, linewidth=1.0, markevery=markevery)
 
-        else:
-            max_generations = max([int(p[key_lastGen]) for p in props])
-            if xlim_db is not None and xlim_db[1] > max_generations:
-                max_generations = xlim_db[1]
+    for k in legend_info:
+        name, color = legend_info[k]
+        # Plot individual series for each
+        for series in d_series_to_plot[k]:
+            x = range(0, len(series))
+            axes[i,j].plot(x, series, color=color, linewidth=1.0, markevery=markevery)
 
-            series_to_plot = [utils.str2list(p[key_avgFits]) for p in props]
-            # We must pad fitness with optimal values after the run has ended.
-            for series in series_to_plot:
-                series.extend([benchmark.head()[2]] * (max_generations - len(series)))
 
-            averages, errors = get_averages_line(series_to_plot)
-            x = range(0, len(averages))
-            axes[i, j].errorbar(x, averages, color="black", yerr=errors, linewidth=0.5, errorevery=errorevry, markevery=markevery)
-            # axes[i, j].plot(x, averages, color="blue", linewidth=1.0)
 
-    if xlim_db is not None:
-        axes[i,j].set_xlim(xlim_db)
-    if ylim_db is not None:
-        axes[i,j].set_ylim(ylim_db)
+def _progression_grid_subplot_avgs(fig, axes, i, j, legend_info, d_series_to_plot, row_header, col_header, markevery=2, errorevery=2):
+    """Draws a subplot containing fitness progression through iterations on an intersection
+    of a single benchmark and single variant.
+
+    :param d_series_to_plot: (dict[str,list]) A dictionary containing for each key from legend_info a list of series
+     of values to plot.
+    """
+    assert isinstance(d_series_to_plot, dict)
+    assert all([k in d_series_to_plot for k in legend_info.keys()])
+
+    if i == 0:
+        axes[i,j].set_title(col_header, fontsize=16)
+    if j == 0:
+        axes[i,j].set_ylabel(row_header, fontsize=16)
+
+    for k in legend_info:
+        name, color = legend_info[k]
+        averages, errors = get_averages_line(d_series_to_plot[k])
+        x = range(0, len(averages))
+        axes[i, j].errorbar(x, averages, color=color, yerr=errors, linewidth=0.5, errorevery=errorevery, markevery=markevery)
+
+
 
 
 

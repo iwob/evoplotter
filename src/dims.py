@@ -142,6 +142,20 @@ class Dim(object):
             configs.append(Config(v, lambda p, key=key, v=v, fun=fun: fun(p[key]) == v, **kwargs))
         return Dim(configs)
 
+    @classmethod
+    def from_dict_value_match(cls, key, values):
+        """Creates a dimension based on a check if the dictionary contains a given value under the
+        provided key. Dimension spawns all the provided values.
+
+        :param key: (str) a key used to obtain an actual value from the dictionary.
+        :param values: (list[any]) values, which will be matched to the value obtained from the dict."""
+        assert isinstance(key, str)
+        assert isinstance(values, list) and len(values) > 0
+        configs = []
+        for v in values:
+            kwargs = {key: v}
+            configs.append(Config(v, lambda p, key=key, v=v: p[key] == v, **kwargs))
+        return Dim(configs)
 
 
 
@@ -170,14 +184,11 @@ def _generate_filters_helper(cur_dims, cur_filters, cur_values, final_filters, f
 
 
 class Config(object):
-    """Defines a single configuration of the experiment. Config may be partial or
-    complete. Complete config fully describes a variant of the experiment. Partial
-    config may leave some of its aspects unspecified (note: partial configs are
-    useful for aggregating results).
+    """Defines a single configuration of the experiment.
 
     Config is defined as a list of filters. Filter is a tuple containing a name
     and a predicate. Name describes a filter's function/role and is used during
-    drawing of plots, and predicate is used to leave only properties files which
+    drawing of plots, and predicate is used to leave only properties dicts which
     were generated in a run under this configuration. If more than one filter is
     defined, conjunction of all the predicates is considered.
     """
