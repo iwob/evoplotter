@@ -126,103 +126,6 @@ variants_benchmarkNumTests = [p_dict_matcher({"sizeTrainSet": "10"}), p_dict_mat
 
 
 
-def plot_figures(props, exp_prefix):
-    # We want to consider CDGP only
-    props = [p for p in props]
-    if len(props) == 0:
-        print("No props: plots were not generated.")
-        return
-
-    getter_mse = lambda p: float(p["result.best.trainMSE"])
-    predicate = lambda v, v_xaxis: v <= v_xaxis
-    N = 50  # number of points per plot line
-    r = (0.0, 1e0)
-    xs = np.linspace(r[0], r[1], N)
-    xticks = np.arange(r[0], r[1], r[1] / 10)
-    plotter.plot_ratio_meeting_predicate(props, getter_mse, predicate, xs=xs, xticks=xticks,
-                                         show_plot=False,
-                                         title="Ratio of solutions with MSE under the certain level",
-                                         xlabel="MSE",
-                                         series_dim=dim_method,
-                                         xlogscale=False,
-                                         savepath="results/figures/ratioMSE.pdf".format(exp_prefix))
-
-
-    # print_solved_in_time(props, 12 * 3600 * 1000)
-    # print_solved_in_time(props, 6 * 3600 * 1000)
-    # print_solved_in_time(props, 3 * 3600 * 1000)
-    # print_solved_in_time(props, 1 * 3600 * 1000)
-    # print_solved_in_time(props, 0.5 * 3600 * 1000)
-    # print_solved_in_time(props, 0.25 * 3600 * 1000)
-    # print_solved_in_time(props, 0.125 * 3600 * 1000)
-    # print_solved_in_time(props, 600 * 1000)
-
-    # Plot chart of number of found solutions in time
-    # success_props = [p for p in props if is_optimal_solution(p)]
-    # getter = lambda p: float(normalized_total_time(p)) / (60 * 1000)  # take minutes as a unit
-    # predicate = lambda v, v_xaxis: v <= v_xaxis
-    # xs = np.arange(0.0, 5.0 * 60.5 + 1e-9, 5.0) # a point every 5.0 minutes
-    # xticks = np.arange(0.0, 5.0 * 60.0 + 1e-9, 15.0) # a tick every 15 minutes
-    # plotter.plot_ratio_meeting_predicate(success_props, getter, predicate,
-    #                                      xs=xs, xticks=xticks, show_plot=0,
-    #                                      series_dim=dim_method, # "series_dim=None" for a single line
-    #                                      savepath="figures/{0}_ratioTime_correctVsAllCorrect.pdf".format(exp_prefix),
-    #                                      title="Ratio of found correct solutions out of all correct solutions",
-    #                                      xlabel="Runtime [minutes]")
-    # plotter.plot_ratio_meeting_predicate(props, getter, predicate,
-    #                                      xs=xs, xticks=xticks, show_plot=0,
-    #                                      series_dim=dim_method,
-    #                                      savepath="figures/{0}_ratioTime_endedVsAllEnded.pdf".format(exp_prefix),
-    #                                      title="Ratio of ended runs",
-    #                                      xlabel="Runtime [minutes]")
-
-
-    # def get_total_evaluated(p):
-    #     if "evolutionMode" not in p:
-    #         return None
-    #     elif p["evolutionMode"] == "steadyState":
-    #         return int(p["result.totalGenerations"])
-    #     else:
-    #         return int(p["result.totalGenerations"]) * int(p["populationSize"])
-    # xs = np.arange(0.0, 500.0 * 1000.0 + 0.01, 10000)
-    # xticks = np.arange(0.0, 500.0 *1000.0 + 0.01, 50000)
-    # plotter.plot_ratio_meeting_predicate(success_props, get_total_evaluated, predicate,
-    #                                      xs=xs, xticks=xticks, show_plot=0,
-    #                                      series_dim=dim_method,
-    #                                      savepath="figures/{0}_ratioEvaluated_correctVsAllCorrect.pdf".format(exp_prefix),
-    #                                      title="Ratio of found correct solutions out of all found correct solutions in the given config",
-    #                                      xlabel="Number of evaluated solutions")
-    # cond = lambda p: p["result.best.isOptimal"] == "true"
-    # plotter.plot_ratio_meeting_predicate(props, get_total_evaluated, predicate,
-    #                                      condition=cond,
-    #                                      xs=xs, xticks=xticks, show_plot=0,
-    #                                      series_dim=dim_method,
-    #                                      savepath="figures/{0}_ratioEvaluated_correctVsAllRuns.pdf".format(exp_prefix),
-    #                                      title="Ratio of runs which ended with correct solution out of all runs",
-    #                                      xlabel="Number of evaluated solutions")
-
-    # plotter.compare_avg_data_series(props, dim_methodCDGP, "CDGPtestsRatio",
-    #                                 getter_y=get_successRate,
-    #                                 is_aggr=1,
-    #                                 savepath="figures/{0}_q_successRates.pdf".format(exp_prefix),
-    #                                 title="Success rates",
-    #                                 ylabel="Success rate",
-    #                                 xlabel="q")
-
-    # plotter.compare_avg_data_series_d(success_props, dim_methodCDGP, "CDGPtestsRatio", "result.best.size",
-    #                                 savepath="figures/{0}_q_sizes.pdf".format(exp_prefix),
-    #                                 title="Size of found correct solutions",
-    #                                 ylabel="Size",
-    #                                 xlabel="q")
-    #
-    # plotter.compare_avg_data_series_d(props, dim_methodCDGP, "CDGPtestsRatio", "tests.total",
-    #                                 savepath="figures/{0}_q_tests.pdf".format(exp_prefix),
-    #                                 title="Total number of test cases",
-    #                                 ylabel="Total tests",
-    #                                 xlabel="q")
-
-
-
 def get_content_of_subsections(subsects):
     content = []
     vspace = reporting.BlockLatex(r"\vspace{0.75cm}"+"\n")
@@ -241,13 +144,11 @@ def post(s):
 
 
 
-def create_section_and_plots(title, desc, props, subsects, figures_list, exp_prefix):
+def create_section(title, desc, props, subsects, figures_list, exp_prefix):
     assert isinstance(title, str)
     assert isinstance(desc, str)
     assert isinstance(props, list)
     assert isinstance(figures_list, list)
-
-    plot_figures(props, exp_prefix=exp_prefix)
 
     section = reporting.Section(title, [])
     section.add(reporting.BlockLatex(desc + "\n"))
@@ -397,6 +298,42 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
 
 
 
+def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix):
+    if len(props) == 0:
+        print("No props: plots were not generated.")
+        return
+
+    section = reporting.Section("Figures", [])
+
+    getter_mse = lambda p: float(p["result.best.trainMSE"])
+    predicate = lambda v, v_xaxis: v <= v_xaxis
+    N = 50  # number of points per plot line
+    r = (0.0, 1e0)
+    xs = np.linspace(r[0], r[1], N)
+    xticks = np.arange(r[0], r[1], r[1] / 10)
+    savepath = "results/figures/ratioMSE.pdf"
+    plotter.plot_ratio_meeting_predicate(props, getter_mse, predicate, xs=xs, xticks=xticks,
+                                         show_plot=False,
+                                         title="Ratio of solutions with MSE under the certain level",
+                                         xlabel="MSE",
+                                         series_dim=dim_method,
+                                         xlogscale=False,
+                                         savepath=savepath)
+    section.add(reporting.FloatFigure(savepath.replace("results/", "")))
+
+
+    # Illustration of individual runs and their errors on training and validation sets
+    # savepath = "results/figures/progressionGrid.pdf"
+    # dim_rows = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True)
+    # dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_empty + dim_methodCDGPprops * dim_weight) * \
+    #            dim_benchmarkNumTests  # * dim_optThreshold
+    # plotter.plot_value_progression_grid_simple(props, dim_rows, dim_cols, ["cdgp.logTrainSet", "cdgp.logValidSet"], ["train", "valid"],
+    #                                            plot_individual_runs=True,
+    #                                            savepath=savepath)
+    # section.add(reporting.FloatFigure(savepath.replace("results/", "")))
+    return section
+
+
 
 def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRowNames):
     vb = 1  # vertical border
@@ -425,37 +362,31 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
                        default_color_thresholds=(0.0, numRuns/2, numRuns),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        TableGenerator(fun_successRate, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Success rates (properties met + mse below thresh)",
-                       color_scheme=reporting.color_scheme_darkgreen,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       ),
-        TableGenerator(get_median_testMSEsuccessRateForThresh_onlyVerified, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Test set: success rate of accepted solutions with MSE below optThreshold  (i.e., no overfitting)",
-                       color_scheme=reporting.color_scheme_red2white2darkgreen,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       ),
-        TableGenerator(fun_allPropertiesMet, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Success rates (properties met)",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       ),
-        TableGenerator(fun_trainMseBelowThresh, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Training set: success rates (mse below thresh)",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       ),
-        TableGenerator(get_median_mseOptThresh, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Training set: optThreshold for MSE  (median)",
-                       color_scheme=reporting.color_scheme_violet,
-                       default_color_thresholds=(-10.0, 0.0, 10.0),
-                       color_value_extractor=scNotColorValueExtractor,
-                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       ),
+        # TableGenerator(fun_successRate, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Success rates (properties met + mse below thresh)",
+        #                color_scheme=reporting.color_scheme_darkgreen,
+        #                default_color_thresholds=(0.0, 0.5, 1.0),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
+        # TableGenerator(get_median_testMSEsuccessRateForThresh_onlyVerified, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Test set: success rate of accepted solutions with MSE below optThreshold  (i.e., no overfitting)",
+        #                color_scheme=reporting.color_scheme_red2white2darkgreen,
+        #                default_color_thresholds=(0.0, 0.5, 1.0),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
+        # TableGenerator(fun_trainMseBelowThresh, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Training set: success rates (mse below thresh)",
+        #                color_scheme=reporting.color_scheme_green,
+        #                default_color_thresholds=(0.0, 0.5, 1.0),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
+        # TableGenerator(get_median_mseOptThresh, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Training set: optThreshold for MSE  (median)",
+        #                color_scheme=reporting.color_scheme_violet,
+        #                default_color_thresholds=(-10.0, 0.0, 10.0),
+        #                color_value_extractor=scNotColorValueExtractor,
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
         TableGenerator(get_median_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Training set: MSE  (median)",
                        color_scheme=reporting.color_scheme_gray_dark,
@@ -488,6 +419,12 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
         #                default_color_thresholds=(0.0, 1e2, 1e4),
         #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
         #                ),
+        TableGenerator(fun_allPropertiesMet, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Success rates (properties met)",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
         TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average runtime [s]",
                        color_scheme=reporting.color_scheme_violet,
@@ -609,7 +546,7 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
 
 
 _prev_props = None
-def prepare_report(sects, fname, exp_prefix, simple_bench_names=True, print_status_matrix=True, reuse_props=False,
+def prepare_report(sects, filename, exp_prefix, simple_bench_names=True, print_status_matrix=True, reuse_props=False,
                    paperwidth=75, include_all_row=True, dim_cols_listings=None):
     """Creating nice LaTeX report of the results."""
     global _prev_props  # used in case reuse_props was set to True
@@ -666,7 +603,7 @@ def prepare_report(sects, fname, exp_prefix, simple_bench_names=True, print_stat
             args2 = [props] + args
             subsects.append(fun(*args2))
 
-        s = create_section_and_plots(title, desc, props, subsects, figures, exp_prefix)
+        s = create_section(title, desc, props, subsects, figures, exp_prefix)
         latex_sects.append(s)
 
     for s in latex_sects:
@@ -675,7 +612,7 @@ def prepare_report(sects, fname, exp_prefix, simple_bench_names=True, print_stat
     print("\n\nGenerating PDF report ...")
     cwd = os.getcwd()
     os.chdir("results/")
-    report.save_and_compile(fname)
+    report.save_and_compile(filename)
     os.chdir(cwd)
 
 
@@ -715,7 +652,7 @@ def prepare_report_for_dims(props, dim_rows, dim_cols, sects, fname, exp_prefix,
             args2 = [props] + args
             subsects.append(fun(*args2))
 
-        s = create_section_and_plots(title, desc, props, subsects, figures, exp_prefix)
+        s = create_section(title, desc, props, subsects, figures, exp_prefix)
         latex_sects.append(s)
 
     for s in latex_sects:
@@ -729,62 +666,9 @@ def prepare_report_for_dims(props, dim_rows, dim_cols, sects, fname, exp_prefix,
 
 
 
-def reports_exp0():
-    # "gpem_exp0" - excluded (older code version; too many gens before restart)
-    # "exp0_maxGen50" - excluded (a little worse than 100 gens)
-    folders = ["gpem_exp0_fix1", "exp0_maxGen100", "exp0_keijzer", "exp0_until100", "gpem_e0_pagie1",
-               "exp0_weight5"]
-    title = "Experiments for regression CDGP (stop: 0.5h)"
-    desc = r""""""
-    dim_cols = dim_numGensBeforeRestart *\
-               (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
-               dim_benchmarkNumTests # * dim_optThreshold
-    headerRowNames = ["maxEvals", "method", "weight", "tolerance"]
-    subs = [
-        (create_subsection_shared_stats, [None, dim_cols, 25, headerRowNames]),
-        (create_subsection_cdgp_specific, [None, dim_cols, headerRowNames]),
-        (create_subsection_aggregation_tests, [None, dim_cols, headerRowNames]),
-    ]
-    figures = [
-        "figures/ratioMSE.pdf"
-        # "figures/e0_ratioEvaluated_correctVsAllRuns.pdf",
-        # "figures/e0_ratioTime_correctVsAllCorrect.pdf",
-        # "figures/e0_ratioTime_endedVsAllEnded.pdf"
-    ]
-    sects = [(title, desc, folders, subs, figures)]
-
-    prepare_report(sects, "cdgp_exp0.tex", "e0", paperwidth=100, include_all_row=True, dim_cols_listings=dim_cols)
-
-    # props = load_correct_props(folders)
-    # dim_rows = get_benchmarks_from_props(props, simple_names=True) * dim_benchmarkNumTests
-    # prepare_report_for_dims(props, dim_rows, dim_cols, sects, "cdgp_r_exp3_dims.tex", "e3_dims", paperwidth=40, include_all_row=True, dim_cols_listings=dim_cols)
-
-
-def reports_exp1():
-    folders = ["exp1"]
-    title = "Experiments for regression CDGP (stop: 0.5h)"
-    desc = r""""""
-    dim_cols = dim_numGensBeforeRestart *\
-               (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
-               dim_benchmarkNumTests # * dim_optThreshold
-    headerRowNames = ["maxEvals", "method", "weight", "tolerance"]
-    subs = [
-        (create_subsection_shared_stats, [None, dim_cols, 25, headerRowNames]),
-        (create_subsection_cdgp_specific, [None, dim_cols, headerRowNames]),
-        (create_subsection_aggregation_tests, [None, dim_cols, headerRowNames]),
-    ]
-    figures = [
-        "figures/ratioMSE.pdf"
-        # "figures/e0_ratioEvaluated_correctVsAllRuns.pdf",
-        # "figures/e0_ratioTime_correctVsAllCorrect.pdf",
-        # "figures/e0_ratioTime_endedVsAllEnded.pdf"
-    ]
-    sects = [(title, desc, folders, subs, figures)]
-
-    prepare_report(sects, "cdgp_exp1.tex", "e1", paperwidth=100, include_all_row=True, dim_cols_listings=dim_cols)
-
 
 def reports_exp3():
+    exp_prefix = "e3"
     # folders = ["exp2_noRestarts"]  # for the exp2 experiment
     folders = ["exp3"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
@@ -796,16 +680,11 @@ def reports_exp3():
         (create_subsection_shared_stats, [None, dim_cols, 25, headerRowNames]),
         (create_subsection_cdgp_specific, [None, dim_cols, headerRowNames]),
         (create_subsection_aggregation_tests, [None, dim_cols, headerRowNames]),
+        (create_subsection_figures, [None, dim_cols, exp_prefix]),
     ]
-    figures = [
-        "figures/ratioMSE.pdf"
-        # "figures/e0_ratioEvaluated_correctVsAllRuns.pdf",
-        # "figures/e0_ratioTime_correctVsAllCorrect.pdf",
-        # "figures/e0_ratioTime_endedVsAllEnded.pdf"
-    ]
-    sects = [(title, desc, folders, subs, figures)]
+    sects = [(title, desc, folders, subs, [])]
 
-    prepare_report(sects, "cdgp_exp3.tex", "e3", paperwidth=100, include_all_row=True, dim_cols_listings=dim_cols)
+    prepare_report(sects, "cdgp_exp3.tex", exp_prefix, paperwidth=100, include_all_row=True, dim_cols_listings=dim_cols)
 
 
 
@@ -816,6 +695,4 @@ if __name__ == "__main__":
     # utils.ensure_dir("results/tables/")
     utils.ensure_dir("results/listings/errors/")
 
-    # reports_exp0()
-    # reports_exp1()
     reports_exp3()
