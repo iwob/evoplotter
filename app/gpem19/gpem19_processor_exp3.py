@@ -323,14 +323,14 @@ def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix):
 
 
     # Illustration of individual runs and their errors on training and validation sets
-    # savepath = "results/figures/progressionGrid.pdf"
-    # dim_rows = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True)
-    # dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_empty + dim_methodCDGPprops * dim_weight) * \
-    #            dim_benchmarkNumTests  # * dim_optThreshold
-    # plotter.plot_value_progression_grid_simple(props, dim_rows, dim_cols, ["cdgp.logTrainSet", "cdgp.logValidSet"], ["train", "valid"],
-    #                                            plot_individual_runs=True,
-    #                                            savepath=savepath)
-    # section.add(reporting.FloatFigure(savepath.replace("results/", "")))
+    savepath = "results/figures/progressionGrid.pdf"
+    dim_rows = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True)
+    dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_empty + dim_methodCDGPprops * dim_weight) * \
+               dim_benchmarkNumTests  # * dim_optThreshold
+    plotter.plot_value_progression_grid_simple(props, dim_rows, dim_cols, ["cdgp.logTrainSet", "cdgp.logValidSet"], ["train", "valid"],
+                                               plot_individual_runs=False,
+                                               savepath=savepath)
+    section.add(reporting.FloatFigure(savepath.replace("results/", "")))
     return section
 
 
