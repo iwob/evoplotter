@@ -156,13 +156,14 @@ def plot_fitness_single_run(prop, keys, legend = None, title = None):
 def plot_value_progression_grid_simple(props, dim_rows, dim_cols, key_values, legend_labels=None, legend_colors=None, title=None,
                                        unify_xaxis=True, unify_xlim=None, plot_individual_runs=False,
                                        key_lastGen=None, markevery=2, errorevery=2, savepath=None, opacity=0.5, show_plot=False,
-                                       plot_grid=True):
+                                       plot_grid=True, shared_x_axis_scale=False):
     """For each element of the row dimension (usually benchmark) creates a series of subplots for each
     configuration of the column dimension. On subplots plotted are changes of some value through time.
     If plot_individual_runs is set to True, each evolution run will be plotted as a distinct line.
 
     :param key_values: (list[str]) values used for plotting. They are assumed to be in the format: 'X1,X2,X3,...' where Xi is a number.
     :param key_lastGen: (str) dict's key used to compute the maximum generation so that all x axes are synchronized.
+    :param shared_x_axis_scale: (bool) if True, then every subplot will have the same range on the X axis.
     """
     assert type(props) == list
     assert isinstance(dim_rows, dims.Dim)
@@ -206,9 +207,10 @@ def plot_value_progression_grid_simple(props, dim_rows, dim_cols, key_values, le
 
 
     i = 0
-    maxValue = None
     for config_row in dim_rows:
         props_row = config_row.filter_props(props)
+        maxValueY = None
+        minValueY = None
         j = 0
         for config_col in dim_cols:
             axes[i, j].margins(0.01)  # Pad margins so that markers don't get clipped by the axes
@@ -221,11 +223,21 @@ def plot_value_progression_grid_simple(props, dim_rows, dim_cols, key_values, le
                 axes[i, j].grid("off")
 
             props_rc = config_col.filter_props(props_row)
+            # If props_rc is empty, then there is no point in plotting anything
+            if len(props_rc) == 0:
+                continue
+
             d_series_to_plot = {k: [utils.str2list(p[k]) for p in props_rc] for k in legend_info}
 
+            if len(d_series_to_plot) == 0:
+                print("len(d_series_to_plot) == 0")
+
             max_y = max([ max([max(s) for s in d_series_to_plot[k] ])  for k in d_series_to_plot ])
-            if maxValue is None or maxValue < max_y:
-                maxValue = max_y
+            min_y = min([min([min(s) for s in d_series_to_plot[k]]) for k in d_series_to_plot])
+            if maxValueY is None or maxValueY < max_y:
+                maxValueY = max_y
+            if minValueY is None or minValueY < min_y:
+                minValueY = min_y
 
             if plot_individual_runs:
                 _progression_grid_subplot_individualRuns(fig, axes, i, j, legend_info, d_series_to_plot,
@@ -237,17 +249,22 @@ def plot_value_progression_grid_simple(props, dim_rows, dim_cols, key_values, le
                                                row_header=config_row.get_caption(),
                                                col_header=config_col.get_caption(),
                                                markevery=markevery, errorevery=errorevery)
+
+            # Update Y axis value range
+            ylim_row = [minValueY, maxValueY]
+            for jj in range(len(dim_cols)):
+                axes[i, jj].set_ylim(ylim_row)
             j += 1
 
-        # Update lims
-        ylim_row = [0, maxValue]
-        for ii in range(len(dim_rows)):
-            for jj in range(len(dim_cols)):
-                if xlim_row is not None:
-                    axes[ii, jj].set_xlim(xlim_row)
-                if ylim_row is not None:
-                    axes[ii, jj].set_ylim(ylim_row)
-        maxValue = None
+
+        # Update X axis value range
+        if shared_x_axis_scale:
+            for ii in range(len(dim_rows)):
+                for jj in range(len(dim_cols)):
+                    if xlim_row is not None:
+                        axes[ii, jj].set_xlim(xlim_row)
+
+        maxValueY = None
         i += 1
 
     # Set legend
