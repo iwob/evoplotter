@@ -11,11 +11,12 @@ from src.dims import *
 def simplify_benchmark_name(name):
     """Shortens or modifies the path of the benchmark in order to make the table more readable."""
     i = name.rfind("/")
+    name = name.replace("resistance_par", "res")
     name = name if i == -1 else name[i+1:]
-    name = name[:name.rfind(".")]
-    name = name[:name.rfind("_")]
+    name = name[:name.rfind(".")]  # cut off '.sl'
+    name = name[:name.rfind("_")]  # cut off number of tests
     # return name.replace("resistance_par", "res").replace("gravity", "gr")
-    return name.replace("resistance_par", "res")
+    return name
 
 
 def benchmark_get_num_tests(name):
@@ -328,7 +329,7 @@ def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix):
     dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_empty + dim_methodCDGPprops * dim_weight) * \
                dim_benchmarkNumTests  # * dim_optThreshold
     plotter.plot_value_progression_grid_simple(props, dim_rows, dim_cols, ["cdgp.logTrainSet", "cdgp.logValidSet"], ["train", "valid"],
-                                               plot_individual_runs=False,
+                                               plot_individual_runs=True,
                                                savepath=savepath)
     section.add(reporting.FloatFigure(savepath.replace("results/", "")))
     return section

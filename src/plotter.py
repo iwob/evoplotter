@@ -177,7 +177,7 @@ def plot_value_progression_grid_simple(props, dim_rows, dim_cols, key_values, le
 
     nrow = len(dim_rows)
     ncol = len(dim_cols)
-    figsize = (int(3.5*ncol), int(2.75*nrow))
+    figsize = (int(4.25*ncol), int(2.75*nrow))
     fig, axes = plt.subplots(nrows=nrow, ncols=ncol, figsize=figsize, facecolor='white')
 
     # fig.tight_layout()
