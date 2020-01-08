@@ -491,10 +491,10 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
     #     printer.latex_table(props, dim_rows, dim_cols, get_avg_generation, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     # latex_avgGeneration = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
 
-    # print("AVG EVALUATED SOLUTIONS")
-    # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluated, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgEvaluated = printer.table_color_map(text, 500.0, 25000.0, 100000.0, "colorLow", "colorMedium", "colorHigh")
+    print("AVG EVALUATED SOLUTIONS")
+    text = post(
+        printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluated, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
+    latex_avgEvaluated = printer.table_color_map(text, 500.0, 25000.0, 100000.0, "colorLow", "colorMedium", "colorHigh")
 
     # print("AVG EVALUATED SOLUTIONS (SUCCESSFUL)")
     # text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluatedSuccessful, layered_headline=True,
@@ -534,7 +534,7 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
         ("Average generation (all)", latex_avgGeneration, reporting.color_scheme_teal),
         #("Average generation (only successful)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
-        # ("Average evaluated solutions", latex_avgEvaluated, reporting.color_scheme_teal),
+        ("Average evaluated solutions", latex_avgEvaluated, reporting.color_scheme_brown),
         # ("Average evaluated solutions (only successful)", latex_avgEvaluatedSuccessful, reporting.color_scheme_teal),
         # ("Approximate average runtime per program [s]", latex_avgRuntimePerProgram, reporting.color_scheme_brown),
         ("Max solver time per query [s]", latex_maxSolverTimes, reporting.color_scheme_violet),
