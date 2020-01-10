@@ -13,6 +13,8 @@ class ReportPDF(object):
             contents = []
         if packages is None:
             packages = []
+        else:
+            packages = [p if p[0]=="{" and p[-1]=="}" else "{" + p + "}" for p in packages]
         assert isinstance(contents, list)
         assert isinstance(packages, list)
         self.tabcolsep = tabcolsep
