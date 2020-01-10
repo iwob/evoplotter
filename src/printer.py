@@ -217,12 +217,13 @@ class Table(object):
             text += "\n"
         return text
 
-    def render(self, latexizeUnderscores=True, firstColAlign="l"):
+    def render(self, latexizeUnderscores=True, firstColAlign="l", middle_col_align="c"):
         text  = self.renderTableHeader()
         text += self.renderTableBody()
         dimCols = self.dimCols if self.dimCols is not None else dims.Dim.generic_labels(len(self.rows[0]))
         return latex_table_wrapper(text, dimCols, latexize_underscores=latexizeUnderscores, vertical_border=self.verticalBorder,
-                                   horizontal_border=self.horizontalBorder, first_col_align=firstColAlign, tabFirstCol=False, useBooktabs=self.useBooktabs)
+                                   horizontal_border=self.horizontalBorder, first_col_align=firstColAlign,
+                                   middle_col_align=middle_col_align, tabFirstCol=False, useBooktabs=self.useBooktabs)
 
     def __str__(self):
         return self.render()
@@ -354,7 +355,8 @@ def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="
 
 
 def latex_table_wrapper(tableBody, dim_cols, latexize_underscores=True, vertical_border=1, horizontal_border=1,
-                        first_col_align="l", tabFirstCol=True, useBooktabs=False):
+                        first_col_align="l", middle_col_align="c", tabFirstCol=True, useBooktabs=False):
+    r"""Responsible for invoking and closing \tabular environment."""
     assert isinstance(tableBody, str)
     assert isinstance(dim_cols, dims.Dim)
     # Tabular prefix
@@ -363,11 +365,11 @@ def latex_table_wrapper(tableBody, dim_cols, latexize_underscores=True, vertical
     else:
         numCols = len(dim_cols.configs)
     if vertical_border >= 2:
-        alignments = "|{0}|".format(first_col_align) + "|".join("c" * (numCols - 1)) + "|"  # and not layered_headline
+        alignments = "|{0}|".format(first_col_align) + "|".join(middle_col_align * (numCols - 1)) + "|"  # and not layered_headline
     elif vertical_border == 1:
-        alignments = "|{0}|".format(first_col_align) + ("c" * (numCols - 1)) + "|"
+        alignments = "|{0}|".format(first_col_align) + (middle_col_align * (numCols - 1)) + "|"
     else:
-        alignments = first_col_align + ("c" * (numCols - 1))
+        alignments = first_col_align + (middle_col_align * (numCols - 1))
     text = r"\begin{tabular}{" + alignments + "}\n"
     if horizontal_border >= 1:
         text += r"\hline" + "\n" if not useBooktabs else r"\toprule" + "\n"
@@ -389,7 +391,7 @@ def latex_table_wrapper(tableBody, dim_cols, latexize_underscores=True, vertical
 
 
 def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layered_headline=False,
-                vertical_border=1, first_col_align="l", headerRowNames=None):
+                vertical_border=1, first_col_align="l", middle_col_align="c", headerRowNames=None):
     """Returns code of a LaTeX table (tabular environment) created from the given dimensions.
 
     :param props: (dict) all props gathered in the experiment.
@@ -404,7 +406,9 @@ def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layer
      depending on the configuration.
     :param vertical_border: (int) mode of the vertical borders in the table. Bigger the number,
      more dense the vertical borders. Range of values: 0 - 2.
-    :param first_col_align: (str) alignment of the first column, that is row labels.
+    :param first_col_align: (str) alignment of the first column. Used as \tabular arguments.
+    :param middle_col_align: (str) alignment of the middle columns (all beside the first one).
+     Used as \tabular arguments.
     :param headerRowNames: (list[str]) a list of names of the rows of the header.
     :return: (str) code of the LaTeX table.
     """
@@ -416,7 +420,7 @@ def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layer
     body += text_table_body(props, dim_rows, dim_cols, fun, d_cols=" & ", d_rows="\\\\\n")
 
     text = latex_table_wrapper(body, dim_cols, latexize_underscores=latexize_underscores, vertical_border=vertical_border,
-                               first_col_align=first_col_align)
+                               first_col_align=first_col_align, middle_col_align=middle_col_align)
     return text
 
 
