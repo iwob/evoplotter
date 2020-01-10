@@ -166,7 +166,7 @@ def create_section(title, desc, props, subsects, figures_list, exp_prefix):
 
 def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowNames, cv0, cv1, cv2, vb=1,
                                tableVariants=None, onlyNonemptyRows=True, tablePostprocessor=post,
-                               printTextTable=False):
+                               printTextTable=False, middle_col_align="c"):
     if tableVariants is None:
         tableVariants = [p_true]
     assert isinstance(tableVariants, list)
@@ -181,7 +181,7 @@ def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowN
 
         tableText = tablePostprocessor(
             printer.latex_table(props_variant, dim_rows_variant, dim_cols, cellLambda, layered_headline=True,
-                                vertical_border=vb, headerRowNames=headerRowNames))
+                                vertical_border=vb, headerRowNames=headerRowNames, middle_col_align=middle_col_align))
 
         if printTextTable:
             print("VARIANT: " + str(variant))
@@ -530,6 +530,10 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
     #                                 vertical_border=vb, headerRowNames=headerRowNames))
     # latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 50, 100, "colorLow", "colorMedium", "colorHigh")
 
+    print("MOST FREQUENTLY FOUND COUNTEREXAMPLE")
+    latex_freqCounterexamples = create_single_table_bundle(props, dim_rows, dim_cols, get_freqCounterexamples, headerRowNames,
+                                                           cv0=0, cv1=50, cv2=100, tableVariants=variants, middle_col_align="l")
+
     subsects_cdgp = [
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
         ("Average generation (all)", latex_avgGeneration, reporting.color_scheme_teal),
@@ -541,6 +545,7 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
         ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_brown),
         ("Avg number of solver calls (in thousands; 1=1000)", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
         ("Number of solver calls $>$ 0.5s", latex_numSolverCallsOverXs, reporting.color_scheme_blue),
+        ("Most frequently found counterexamples", latex_freqCounterexamples, reporting.color_scheme_violet),
     ]
     return reporting.Subsection("CDGP Statistics", get_content_of_subsections(subsects_cdgp))
 
@@ -551,7 +556,8 @@ def prepare_report(sects, filename, exp_prefix, simple_bench_names=True, print_s
                    paperwidth=75, include_all_row=True, dim_cols_listings=None):
     """Creating nice LaTeX report of the results."""
     global _prev_props  # used in case reuse_props was set to True
-    report = reporting.ReportPDF(geometry_params="[paperwidth={0}cm, paperheight=40cm, margin=0.3cm]".format(paperwidth))
+    report = reporting.ReportPDF(geometry_params="[paperwidth={0}cm, paperheight=40cm, margin=0.3cm]".format(paperwidth),
+                                 packages=["pbox", "makecell"])
     latex_sects = []
     for title, desc, folders, subs, figures in sects:
         print("\nLoading props for: " + title)

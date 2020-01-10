@@ -550,6 +550,51 @@ def get_sum_solverRestarts(props):
         return "0"
     else:
         return str(np.sum(vals))
+def get_freqCounterexamples(props):
+    if len(props) == 0:
+        return "-"
+    import re
+    counterex = {}
+    for p in props:
+        # e.g. "ArrayBuffer((Map(m1 -> 0.0, m2 -> 0.0, r -> 0.0),None), (Map(m1 -> 1.0, m2 -> 2.0, r -> 1.0),None)
+        s = p["tests.collected"]
+        cxs = re.findall("\(Map\((?:[^,]+ -> [^,]+(?:, )?)+\),None\)", s)  # ^ makes to match all charecters other than ','
+        # cxs = <class 'list'>: ['(Map(m1 -> 0.0, m2 -> 0.0, r -> 0.0),None)', '(Map(m1 -> 1.0, m2 -> 2.0, r -> 1.0),None)']
+        for cx in cxs:\
+            # e.g. cx = (Map(m1 -> 0.0, m2 -> 0.0, r -> 0.0),None)
+            if "None" in cx: # we are interested only in the noncomplete tests
+                cx = cx[len("(Map("):-len("),None)")]
+                # cx = 'm1 -> 0.0, m2 -> 0.0, r -> 0.0'
+                fargs = re.findall("[^,]+ -> [^,]+(?:, )?", cx)  # findall returns non-overlapping matches in string
+                fargs = [a.replace(", ", "") for a in fargs]
+                arg_names = [a.split(" -> ")[0]  for a in fargs]
+                fargs.sort(key=lambda a: a.split(" -> ")[0])
+                sargs = ",".join(fargs).replace(" -> ", "=")
+                if sargs in counterex:
+                    counterex[sargs] += 1
+                else:
+                    counterex[sargs] = 1
+    counterex_items = list(counterex.items())
+    if len(counterex_items) == 0:
+        return "n/a"
+    else:
+        counterex_items.sort(key=lambda x: x[1])
+        counterex_items = list(reversed(counterex_items))
+        NUM_SHOWN = 5
+        # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
+        # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
+        #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
+        res = "\\pbox[l][" + str(17 * NUM_SHOWN) + "pt][b]{20cm}{"
+        for i in range(NUM_SHOWN):
+            if i >= len(counterex_items):
+                break
+            if i > 0:
+                res += "\\\\"
+            res += "{0}  ({1})".format(counterex_items[i][0], counterex_items[i][1])
+        res += "}"
+        return res
+
+
 
 def print_solved_in_time(props, upper_time):
     if len(props) == 0:
