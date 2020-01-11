@@ -578,8 +578,8 @@ def get_freqCounterexamples(props):
     if len(counterex_items) == 0:
         return "n/a"
     else:
-        counterex_items.sort(key=lambda x: x[1])
-        counterex_items = list(reversed(counterex_items))
+        counterex_items.sort(key=lambda x: (x[1], x[0]), reverse=True)
+        # counterex_items = list(reversed(counterex_items))
         NUM_SHOWN = 5
         # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
         # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
@@ -590,7 +590,8 @@ def get_freqCounterexamples(props):
                 break
             if i > 0:
                 res += "\\\\"
-            res += "{0}  ({1})".format(counterex_items[i][0], counterex_items[i][1])
+            # res += "{0}  ({1})".format(counterex_items[i][0], counterex_items[i][1])  # absolute value
+            res += "{0}  ({1})".format(counterex_items[i][0], str(round(100.0*float(counterex_items[i][1]) / len(props), 1)) + "\%")  # percentage of runs
         res += "}"
         return res
 

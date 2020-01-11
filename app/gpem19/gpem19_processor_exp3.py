@@ -432,12 +432,12 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Average runtime (only successful) [s]",
-                       color_scheme=reporting.color_scheme_violet,
-                       default_color_thresholds=(0.0, 900.0, 1800.0),
-                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       ),
+        # TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Average runtime (only successful) [s]",
+        #                color_scheme=reporting.color_scheme_violet,
+        #                default_color_thresholds=(0.0, 900.0, 1800.0),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
         TableGenerator(get_avg_doneAlgRestarts, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Number of algorithm restarts  (avg)",
                        color_scheme=reporting.color_scheme_gray_light,
@@ -450,12 +450,30 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
         #                default_color_thresholds=(0.0, 100.0, 200.0),
         #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
         #                ),
-        TableGenerator(get_stats_sizeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Average sizes of best of runs (number of nodes) (only successful)",
-                       color_scheme=reporting.color_scheme_yellow,
-                       default_color_thresholds=(0.0, 100.0, 200.0),
+        # TableGenerator(get_stats_sizeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Average sizes of best of runs (number of nodes) (only successful)",
+        #                color_scheme=reporting.color_scheme_yellow,
+        #                default_color_thresholds=(0.0, 100.0, 200.0),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
+        TableGenerator(get_avg_generation, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Average generation (all)",
+                       color_scheme=reporting.color_scheme_teal,
+                       default_color_thresholds=(0.0, 5000.0, 10000.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
+        TableGenerator(get_avg_evaluated, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Average number of evaluated solutions",
+                       color_scheme=reporting.color_scheme_brown,
+                       default_color_thresholds=(0.0, 5000.0, 10000.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        # TableGenerator(get_avg_evaluatedSuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Average number of evaluated solutions",
+        #                color_scheme=reporting.color_scheme_brown,
+        #                default_color_thresholds=(500.0, 25000.0, 100000.0),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
     ]
 
     subsects_main = []
@@ -472,6 +490,8 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
     # variants = variants_benchmarkNumTests
     variants = None
 
+    props = [p for p in props if p["method"] != "GP"]
+
     print("AVG TOTAL TESTS")
     latex_avgTotalTests = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_totalTests, headerRowNames,
                                                      cv0=0.0, cv1=1000.0, cv2=2000.0, tableVariants=variants)
@@ -484,17 +504,17 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
     #                                 vertical_border=vb, headerRowNames=headerRowNames))
     # latex_avgRuntimePerProgram = printer.table_color_map(text, 0.01, 1.0, 2.0, "colorLow", "colorMedium", "colorHigh")
 
-    print("AVG GENERATION")
-    latex_avgGeneration = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_generation, headerRowNames,
-                                                     cv0=0.0, cv1=100.0, cv2=200.0, tableVariants=variants)
+    # print("AVG GENERATION")
+    # latex_avgGeneration = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_generation, headerRowNames,
+    #                                                  cv0=0.0, cv1=100.0, cv2=200.0, tableVariants=variants)
     # text = post(
     #     printer.latex_table(props, dim_rows, dim_cols, get_avg_generation, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
     # latex_avgGeneration = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
 
-    print("AVG EVALUATED SOLUTIONS")
-    text = post(
-        printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluated, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    latex_avgEvaluated = printer.table_color_map(text, 500.0, 25000.0, 100000.0, "colorLow", "colorMedium", "colorHigh")
+    # print("AVG EVALUATED SOLUTIONS")
+    # text = post(
+    #     printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluated, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
+    # latex_avgEvaluated = printer.table_color_map(text, 500.0, 25000.0, 100000.0, "colorLow", "colorMedium", "colorHigh")
 
     # print("AVG EVALUATED SOLUTIONS (SUCCESSFUL)")
     # text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluatedSuccessful, layered_headline=True,
@@ -536,16 +556,16 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
 
     subsects_cdgp = [
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
-        ("Average generation (all)", latex_avgGeneration, reporting.color_scheme_teal),
+        # ("Average generation (all)", latex_avgGeneration, reporting.color_scheme_teal),
         #("Average generation (only successful)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
-        ("Average evaluated solutions", latex_avgEvaluated, reporting.color_scheme_brown),
+        # ("Average evaluated solutions", latex_avgEvaluated, reporting.color_scheme_brown),
         # ("Average evaluated solutions (only successful)", latex_avgEvaluatedSuccessful, reporting.color_scheme_teal),
         # ("Approximate average runtime per program [s]", latex_avgRuntimePerProgram, reporting.color_scheme_brown),
         ("Max solver time per query [s]", latex_maxSolverTimes, reporting.color_scheme_violet),
         ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_brown),
         ("Avg number of solver calls (in thousands; 1=1000)", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
         ("Number of solver calls $>$ 0.5s", latex_numSolverCallsOverXs, reporting.color_scheme_blue),
-        ("Most frequently found counterexamples", latex_freqCounterexamples, reporting.color_scheme_violet),
+        ("Counterexamples most frequently found for each benchmark and configuration", latex_freqCounterexamples, reporting.color_scheme_violet),
     ]
     return reporting.Subsection("CDGP Statistics", get_content_of_subsections(subsects_cdgp))
 
@@ -681,8 +701,8 @@ def reports_exp3():
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
     dim_cols = (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
-               dim_benchmarkNumTests # * dim_optThreshold
-    headerRowNames = ["maxEvals", "method", "weight", "tolerance"]
+               dim_benchmarkNumTests + dim_true # * dim_optThreshold
+    headerRowNames = ["method", "weight", "tests"]
     subs = [
         (create_subsection_shared_stats, [None, dim_cols, 25, headerRowNames]),
         (create_subsection_cdgp_specific, [None, dim_cols, headerRowNames]),
