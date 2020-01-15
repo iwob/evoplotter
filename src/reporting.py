@@ -8,7 +8,7 @@ class ReportPDF(object):
     """
     GEOM_PARAMS = "[paperwidth=65cm, paperheight=40cm, margin=0.3cm]"
 
-    def __init__(self, contents = None, packages=None, geometry_params=GEOM_PARAMS, tabcolsep=8):
+    def __init__(self, contents = None, packages=None, geometry_params=GEOM_PARAMS, user_declarations="", tabcolsep=8):
         if contents is None:
             contents = []
         if packages is None:
@@ -19,10 +19,11 @@ class ReportPDF(object):
         assert isinstance(packages, list)
         self.tabcolsep = tabcolsep
         self.geometry_params = geometry_params
+        self.user_declarations = user_declarations
         self.root = BlockEnvironment("document", [BlockBundle(contents)])
         self.packages = ["[utf8]{inputenc}",
                          self.geometry_params + "{geometry}",
-                         "[table]{xcolor}",
+                         "[usenames,dvipsnames,table]{xcolor}",
                          "{hyperref}",
                          "{graphicx}",
                          "{booktabs}",
@@ -68,6 +69,8 @@ class ReportPDF(object):
         text += "\n"
         text += r"\DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces" + "\n"
         text += r"\setlength{\tabcolsep}{" + str(self.tabcolsep) + "pt}" + "\n"
+        text += "\n"
+        text += self.user_declarations + "\n"
         text += "\n\n"
         return BlockLatex(text)
 
@@ -206,8 +209,8 @@ class ColorScheme3:
     def __init__(self, colors, comments=None, nameLow="colorLow", nameMedium="colorMedium", nameHigh="colorHigh"):
         if comments is None:
             comments = ["", "", ""]
-        assert isinstance(colors, list), "ColorScheme expects a dictionary with RGB values associated with color names."
-        assert len(colors) == 3, "ColorScheme must be composed from exactly three colors."
+        assert isinstance(colors, list), "ColorScheme3 expects a list with RGB values."
+        assert len(colors) == 3, "ColorScheme3 must be composed from exactly three colors."
         assert isinstance(comments, list)
         assert len(comments) == 3
         self.colors = colors
