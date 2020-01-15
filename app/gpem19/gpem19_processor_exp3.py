@@ -565,7 +565,7 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
         ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_brown),
         ("Avg number of solver calls (in thousands; 1=1000)", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
         ("Number of solver calls $>$ 0.5s", latex_numSolverCallsOverXs, reporting.color_scheme_blue),
-        ("Counterexamples most frequently found for each benchmark and configuration", latex_freqCounterexamples, reporting.color_scheme_violet),
+        ("The most frequently found counterexamples for each benchmark and configuration", latex_freqCounterexamples, reporting.color_scheme_violet),
     ]
     return reporting.Subsection("CDGP Statistics", get_content_of_subsections(subsects_cdgp))
 
@@ -576,8 +576,12 @@ def prepare_report(sects, filename, exp_prefix, simple_bench_names=True, print_s
                    paperwidth=75, include_all_row=True, dim_cols_listings=None):
     """Creating nice LaTeX report of the results."""
     global _prev_props  # used in case reuse_props was set to True
+    user_declarations = """\definecolor{darkred}{rgb}{0.56, 0.05, 0.0}
+\definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0}
+\definecolor{darkblue}{rgb}{0.0, 0.0, 0.55}
+\definecolor{darkorange}{rgb}{0.93, 0.53, 0.18}"""
     report = reporting.ReportPDF(geometry_params="[paperwidth={0}cm, paperheight=40cm, margin=0.3cm]".format(paperwidth),
-                                 packages=["pbox", "makecell"])
+                                 packages=["pbox", "makecell"], user_declarations=user_declarations)
     latex_sects = []
     for title, desc, folders, subs, figures in sects:
         print("\nLoading props for: " + title)
