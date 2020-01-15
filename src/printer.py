@@ -621,6 +621,24 @@ def decorate_table(table_text, convert_fun, d_cols=" & ", d_rows="\\\\\n"):
     return new_text
 
 
+def getLatexColorCode(val, colorNumbers, colorNames):
+    """Creates a Latex color gradient.
+
+    :param val: (float) a value for which color will be computed.
+    :param colorNumbers: (list[float]) three numbers describing the minimum, middle, and maximum of the color scale.
+    :param colorNames: (list[float]) names of the colors.
+    :return: (str) LaTeX color gradient to use for example in cellcolor.
+    """
+    assert len(colorNumbers) == len(colorNames) == 3, "Lists should have eactly three elements."
+    MinNumber, MidNumber, MaxNumber = colorNumbers[0], colorNumbers[1], colorNumbers[2]
+    MinColor, MidColor, MaxColor = colorNames[0], colorNames[1], colorNames[2]
+    if val > MidNumber:
+        PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber - MidNumber), 100.0), 0.0)
+        return "{0}!{1:.1f}!{2}".format(MaxColor, PercentColor, MidColor)
+    else:
+        PercentColor = max(min(100.0 * (MidNumber - val) / (MidNumber - MinNumber), 100.0), 0.0)
+        return "{0}!{1:.1f}!{2}".format(MinColor, PercentColor, MidColor)
+
 
 def table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor="colorLow", MidColor="colorMedium",
                     MaxColor="colorHigh", funValueExtractor=None):
@@ -650,12 +668,7 @@ def table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor="colorLow", 
         else:
             # Computing color gradient.
             val = float(extracted)
-            if val > MidNumber:
-                PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber-MidNumber), 100.0), 0.0)
-                color = "{0}!{1:.1f}!{2}".format(MaxColor, PercentColor, MidColor)
-            else:
-                PercentColor = max(min(100.0 * (MidNumber - val) / (MidNumber - MinNumber), 100.0), 0.0)
-                color = "{0}!{1:.1f}!{2}".format(MinColor, PercentColor, MidColor)
+            color = getLatexColorCode(val, [MinNumber, MidNumber, MaxNumber], [MinColor, MidColor, MaxColor])
             return "\cellcolor{" + color + "}" + s
 
 
