@@ -66,7 +66,9 @@ class Experiment:
 
 def print_props_filenames(props):
     for p in props:
-        if "thisFileName" in p:
+        if "evoplotter.file" in p:
+            print(p["evoplotter.file"])
+        elif "thisFileName" in p:
             print(p["thisFileName"])
         else:
             print("'thisFileName' not specified! Printing content instead: " + str(p))
@@ -102,16 +104,18 @@ def create_errors_solver_listing(error_props, filename, pred=None):
             f.write(content)
     f.close()
 
-def load_correct_props(folders):
+def load_correct_props(folders, exts=None):
+    # if exts is None:
+    #     exts = [".cdgp"]
     props_cdgpError = utils.load_properties_dirs(folders, exts=[".cdgp.error"], add_file_path=True)
-    props0 = utils.load_properties_dirs(folders, exts=[".cdgp"], add_file_path=True)
+    props0 = utils.load_properties_dirs(folders, exts=exts, ignoreExts=[".txt", ".error"], add_file_path=True)
 
     # Delete wrong files
     # utils.deleteFilesByPredicate(props0, lambda p: len(p["maxGenerations"]) > 7, simulate=False)
     # utils.deleteFilesByPredicate(props_cdgpError, lambda p: len(p["maxGenerations"]) > 7, simulate=False)
 
     def is_correct(p):
-        return "result.best.verificationDecision" in p
+        return p["method"] not in {"CDGP", "CDGPprops", "GP"} or "result.best.verificationDecision" in p
 
     # Filtering props so only correct ones are left
     props = [p for p in props0 if is_correct(p)]
@@ -215,13 +219,19 @@ def normalized_total_time(p, max_time=3600000):
     return max_time if v > max_time else v
 
 def isOptimalVerification(p):
-    return p["result.best.correctVerification"] == "true"
+    if "result.best.correctVerification" not in p:
+        return False
+    else:
+        return p["result.best.correctVerification"] == "true"
 def isOptimalTests(p):
     # p["result.best.correctTests"] == "true" is computed wrongly for CDGPprops
     value = float(p["result.best.trainMSE"])
     return value < float(p["cdgp.optThresholdMSE"])
 def is_optimal_solution(p):
-    return isOptimalVerification(p) and isOptimalTests(p)
+    if p["method"] in {"CDGP", "CDGPprops", "GP"}:
+        return isOptimalVerification(p) and isOptimalTests(p)
+    else:
+        return False
 
 
 
@@ -266,7 +276,7 @@ def scientificNotationLatex(x):
     return s
 
 def get_num_allPropertiesMet(props):
-    props2 = [p for p in props if p["result.best.correctVerification"] == "true"]
+    props2 = [p for p in props if "result.best.correctVerification" in p and p["result.best.correctVerification"] == "true"]
     return len(props2)
 def get_num_trainMseBelowThresh(props):
     # "result.best.correctTests" cannot be trusted, results were wrong
@@ -485,13 +495,12 @@ def get_avg_runtime(props):
 def get_avg_generation(props):
     if len(props) == 0:
         return "-"
-    if len(props) > 0 and "result.totalGenerations" not in props[0]:
-        return "-"
-    vals = [float(p["result.totalGenerations"]) for p in props]
-    if len(vals) == 0:
-        return "-"
     else:
-        return str(int(round(np.mean(vals)))) #"%0.1f" % np.mean(vals)  # , np.std(vals)
+        vals = [float(p["result.totalGenerations"]) for p in props if "result.totalGenerations" in p]
+        if len(vals) == 0:
+            return "-"
+        else:
+            return str(int(round(np.mean(vals)))) #"%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_generationSuccessful(props):
     if len(props) == 0:
         return "-"
@@ -506,11 +515,15 @@ def get_avg_evaluated(props):
         return "-"
     vals = []
     for p in props:
-        if p["evolutionMode"] == "steadyState":
-            vals.append(float(p["result.totalGenerations"]))
-        else:
-            vals.append(float(p["result.totalGenerations"]) * float(p["populationSize"]))
-    return str(int(round(np.mean(vals)))) #"%0.1f" % np.mean(vals)  # , np.std(vals)
+        if "evolutionMode" in p:
+            if p["evolutionMode"] == "steadyState":
+                vals.append(float(p["result.totalGenerations"]))
+            else:
+                vals.append(float(p["result.totalGenerations"]) * float(p["populationSize"]))
+    if len(vals) == 0:
+        return "-"
+    else:
+        return str(int(round(np.mean(vals)))) #"%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_evaluatedSuccessful(props):
     if len(props) == 0:
         return "-"
