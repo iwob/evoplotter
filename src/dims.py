@@ -94,7 +94,7 @@ class Dim(object):
 
     def filter_out_outsiders(self, props):
         """Returns properties in which contained are only elements belonging to one of
-        configs in this dimension. Note that dimension values (configs) do not have to
+        the configs in this dimension. Note that dimension values (configs) do not have to
         cover the whole possible space or to be disjoint. This functions allows to remove
         unnecessary configs and thus may reduce computation time.
         """
