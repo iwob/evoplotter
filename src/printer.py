@@ -128,7 +128,7 @@ class EmptyTableHeader(TableHeaderInterface):
 
 class Table(object):
     """
-    Rule: in hierarchical header merged are cells with the same caption on the same level.
+    Rule: in hierarchical header, cells with the same caption on the same level are merged.
     """
     def __init__(self, tableBody, dimCols=None, cellRenderers=None, layeredHeadline=True, verticalBorder=0,
                  horizontalBorder=1, useBooktabs=False):
@@ -490,6 +490,7 @@ def latex_table_header_multilayered_cells(cells_cols, d_cols=" & ", d_rows="\\\\
                                            horizontal_border=horizontal_border, tabFirstCol=tabFirstCol, useBooktabs=useBooktabs)
 
 
+
 def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", vertical_border=0, horizontal_border=1,
                                     tabFirstCol=True, useBooktabs=False, headerRowNames=None):
     """Produces a multi-layered header of the LaTeX table. Multi-layered means that there is some
@@ -517,8 +518,20 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
     assert isinstance(headerRowNames, list)
     assert len(headerRowNames) >= num_layers, "headerRowNames has {0} entries, but it should have as many entries as layers to be created ({1})".format(len(headerRowNames), num_layers)
 
+    def getConfigsTails(dimens):
+        """Removes first filter from every config."""
+        subconfigs_queue = []
+        for conf in dimens:
+            new_filters = conf.filters[1:]
+            if len(new_filters) > 0:
+                subconfigs_queue.append(dims.Config(new_filters))
+            else:
+                # Add dummy config; multiline header needs to know that column's border needs to continue
+                subconfigs_queue.append(dims.Config("", lambda p: False))
+        return subconfigs_queue
+
     # Going from the highest layer to the lowest.
-    def produce_lines(dimens, layer_no):
+    def produce_lines(dimens, layer_no, border_indexes_left):
         if layer_no == num_layers - 1: #len(dimens[0]) == 1 or ...
             # Only a single row, use a simplified routine.
 
@@ -540,18 +553,20 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
             else:
                 ender = "\n"
             return firstColSep + d_cols.join(headerCells) + d_rows + ender
+
         text = ""
         top_filters_list = [] # stores tuples (filter, numContiguous)
         last = None
-        for conf in dimens:
-            if last is None or conf.filters[0] != last:
+        for i, conf in enumerate(dimens):
+            if last is None or conf.filters[0] != last or i in border_indexes_left:
+                border_indexes_left.append(i)  # from now on put border on the left of the column i
                 last = conf.filters[0]
                 top_filters_list.append((conf.filters[0], 1))
             elif conf.filters[0] == last:
                 filt, numCont = top_filters_list[-1]
                 top_filters_list[-1] = (filt, numCont + 1)
 
-        # Producing top-level header.
+        # Producing top-level header
         buffer = []
         for i in range(len(top_filters_list)):
             f, foccurs = top_filters_list[i]
@@ -569,22 +584,16 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
             buffer.append(ftext)
 
         # We need to add subconfigs to the queue. Removing first filter from every config.
-        subconfigs_queue = []
-        for conf in dimens:
-            new_filters = conf.filters[1:]
-            if len(new_filters) > 0:
-                subconfigs_queue.append(dims.Config(new_filters))
-            else:
-                # Add dummy config; multiline header needs to know that column's border needs to continue
-                subconfigs_queue.append(dims.Config("", lambda p: False))
+        subconfigs_queue = getConfigsTails(dimens)
 
         if tabFirstCol:
             text += headerRowNames[layer_no] + d_cols
         text += d_cols.join(buffer) + d_rows
-        text += produce_lines(dims.Dim(subconfigs_queue), layer_no + 1)
+        text += produce_lines(dims.Dim(subconfigs_queue), layer_no + 1, border_indexes_left)
         return text
 
-    return produce_lines(dim_cols, 0)
+    return produce_lines(dim_cols, 0, [])
+
 
 
 
