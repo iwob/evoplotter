@@ -712,7 +712,7 @@ def reports_expR01():
     folders = ["exp3", "regression_results"]
     title = "Experiments for regression CDGP and  baseline regressors from Scikit. A01 - no noise."
     desc = r""""""
-    dim_cols = dim_methodScikit*dim_empty*dim_empty + (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
+    dim_cols = dim_methodScikit + (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
                dim_benchmarkNumTests + dim_true # * dim_optThreshold
     headerRowNames = ["method", "weight", "tests"]
     subs = [
