@@ -442,6 +442,12 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
+        TableGenerator(get_rankingOfBestSolvers(dim_cols, 100), Dim(dim_cols[-1]), dim_rows, headerRowNames=headerRowNames,
+                       title="Best solvers for the given benchmark (median MSE on test set)",
+                       color_scheme=reporting.color_scheme_violet,
+                       default_color_thresholds=(0.0, 900.0, 1800.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
         # TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
         #                title="Average runtime (only successful) [s]",
         #                color_scheme=reporting.color_scheme_violet,
@@ -595,7 +601,7 @@ def reports_expA01():
     dim_rows += dim_rows.dim_true_within("ALL")
 
 
-    dim_cols = dim_methodScikit + (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
+    dim_cols = dim_methodScikit + (dim_methodGP + dim_methodCDGP + dim_methodCDGPprops*dim_weight) *\
                dim_benchmarkNumTests
     dim_cols += dim_cols.dim_true_within()
 
@@ -603,7 +609,7 @@ def reports_expA01():
                dim_benchmarkNumTests
     dim_cols_ea += dim_cols_ea.dim_true_within()
 
-    dim_cols_cdgp = (dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
+    dim_cols_cdgp = (dim_methodCDGP + dim_methodCDGPprops*dim_weight) *\
                dim_benchmarkNumTests
     dim_cols_cdgp += dim_cols_cdgp.dim_true_within()
 

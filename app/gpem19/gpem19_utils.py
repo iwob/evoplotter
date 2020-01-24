@@ -431,11 +431,11 @@ def get_avg_testMSE(props):
     else:
         return mse_dformat % np.mean(vals)  # , np.std(vals)
 def get_median_testMSE(props):
-    vals = [float(p["result.best.testMSE"]) for p in props]
-    if len(vals) == 0:
+    if len(props) == 0:
         return "-"
     else:
-        return scientificNotationLatex(np.median(vals))  # , np.std(vals)
+        median = np.median([float(p["result.best.testMSE"]) for p in props])
+        return scientificNotationLatex(median)  # , np.std(vals)
 def get_median_testMSE_noScNot(props):
     vals = [float(p["result.best.testMSE"]) for p in props]
     if len(vals) == 0:
@@ -592,12 +592,11 @@ def get_freqCounterexamples(props):
         return "n/a"
     else:
         counterex_items.sort(key=lambda x: (x[1], x[0]), reverse=True)
-        # counterex_items = list(reversed(counterex_items))
         NUM_SHOWN = 5
         # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
         # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
         #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
-        res = "\\pbox[l][" + str(17 * NUM_SHOWN) + "pt][b]{20cm}{"
+        res = "\\pbox[l][" + str(17 * min(NUM_SHOWN, len(counterex_items))) + "pt][b]{20cm}{"
         for i in range(NUM_SHOWN):
             if i >= len(counterex_items):
                 break
@@ -610,6 +609,37 @@ def get_freqCounterexamples(props):
         res += "}"
         return res
 
+def get_rankingOfBestSolvers(dim_ranking, NUM_SHOWN=5):
+    def lambda_to_return(props):
+        if len(props) == 0:
+            return "-"
+        valuesList = []
+        for config in dim_ranking:
+            name = config.get_caption()
+            props2 = config.filter_props(props)
+            if len(props2) > 0:
+                v = np.median([float(p["result.best.testMSE"]) for p in props2])
+                valuesList.append((name, float(v)))
+
+        valuesList.sort(key=lambda x: (x[1], x[0]), reverse=False)
+        # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
+        # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
+        #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
+        res = "\\pbox[l][" + str(17 * min(NUM_SHOWN, len(valuesList))) + "pt][c]{15cm}{"
+        for i in range(NUM_SHOWN):
+            if i >= len(valuesList):
+                break
+            if i > 0:
+                res += "\\\\"
+            value = float(valuesList[i][1])
+            valueSc = scientificNotationLatex(value)
+            nameFormatter = lambda x: r"\textcolor{darkblue}{" + str(x) + "}"  if "CDGP" in str(x) else x
+            color = printer.getLatexColorCode(value, [valuesList[0][1], (valuesList[-1][1]+valuesList[0][1])/2.0, valuesList[-1][1]],
+                                              ["darkgreen", "orange", "darkred!50!white"])
+            res += "{0}  ({1})".format(nameFormatter(valuesList[i][0]), r"\textbf{\textcolor{" + color + "}{" + str(valueSc) + "}}")  # percentage of runs
+        res += "}"
+        return res
+    return lambda_to_return
 
 
 def print_solved_in_time(props, upper_time):
