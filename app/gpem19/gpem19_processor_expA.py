@@ -101,7 +101,7 @@ dim_methodGP = Dim([
 ])
 scikit_algs = ["AdaBoostRegressor", "XGBoost", "SGDRegressor", "RandomForestRegressor", "MLPRegressor",
         "LinearSVR", "LinearRegression", "LassoLars", "KernelRidge", "GradientBoostingRegressor"]
-dim_methodScikit = Dim([Config(sa, p_dict_matcher({"method": sa}), method=sa) for sa in scikit_algs])
+dim_methodScikit = Dim([Config(sa.replace("Regressor","").replace("Regression",""), p_dict_matcher({"method": sa}), method=sa) for sa in scikit_algs])
 dim_method = dim_methodScikit + dim_methodCDGP + dim_methodCDGPprops + dim_methodGP
 dim_sel = Dim([#Config("$Tour$", p_sel_tourn, selection="tournament"),
                Config("$Lex$", p_sel_lexicase, selection="lexicase")])
@@ -497,14 +497,11 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
     # variants = variants_benchmarkNumTests
     variants = None
 
-    props = [p for p in props if p["method"] in {"CDGP", "CDGPprops"}]
+    # props = [p for p in props if p["method"] in {"CDGP", "CDGPprops"}]
 
     print("AVG TOTAL TESTS")
     latex_avgTotalTests = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_totalTests, headerRowNames,
                                                      cv0=0.0, cv1=1000.0, cv2=2000.0, tableVariants=variants)
-    # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, get_avg_totalTests, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgTotalTests = printer.table_color_map(text, 0.0, 1000.0, 2000.0, "colorLow", "colorMedium", "colorHigh")
 
     # print("AVG RUNTIME PER PROGRAM")
     # text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_runtimePerProgram, layered_headline=True,
@@ -532,30 +529,18 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
     print("MAX SOLVER TIME")
     latex_maxSolverTimes = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_maxSolverTime, headerRowNames,
                                                      cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants)
-    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_stats_maxSolverTime, layered_headline=True,
-    #                                 vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_maxSolverTimes = printer.table_color_map(text, 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
 
     print("AVG SOLVER TIME")
     latex_avgSolverTimes = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_avgSolverTime, headerRowNames,
                                                       cv0=0.0, cv1=0.015, cv2=0.03, tableVariants=variants)
-    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_stats_avgSolverTime, layered_headline=True,
-    #                                 vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgSolverTimes = printer.table_color_map(text, 0.0, 0.015, 0.03, "colorLow", "colorMedium", "colorHigh")
 
     print("AVG NUM SOLVER CALLS")
     latex_avgSolverTotalCalls = create_single_table_bundle(props, dim_rows, dim_cols, get_avgSolverTotalCalls, headerRowNames,
                                                       cv0=1e1, cv1=1e2, cv2=1e4, tableVariants=variants)
-    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_avgSolverTotalCalls, layered_headline=True,
-    #                                 vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgSolverTotalCalls = printer.table_color_map(text, 1e1, 1e2, 1e4, "colorLow", "colorMedium", "colorHigh")
 
     print("NUM SOLVER CALLS > 0.5s")
     latex_numSolverCallsOverXs = create_single_table_bundle(props, dim_rows, dim_cols, get_numSolverCallsOverXs, headerRowNames,
                                                            cv0=0, cv1=50, cv2=100, tableVariants=variants)
-    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_numSolverCallsOverXs, layered_headline=True,
-    #                                 vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_numSolverCallsOverXs = printer.table_color_map(text, 0, 50, 100, "colorLow", "colorMedium", "colorHigh")
 
     print("MOST FREQUENTLY FOUND COUNTEREXAMPLE")
     latex_freqCounterexamples = create_single_table_bundle(props, dim_rows, dim_cols, get_freqCounterexamples, headerRowNames,
