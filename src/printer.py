@@ -642,10 +642,16 @@ def getLatexColorCode(val, colorNumbers, colorNames):
     MinNumber, MidNumber, MaxNumber = colorNumbers[0], colorNumbers[1], colorNumbers[2]
     MinColor, MidColor, MaxColor = colorNames[0], colorNames[1], colorNames[2]
     if val > MidNumber:
-        PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber - MidNumber), 100.0), 0.0)
+        if MaxNumber == MidNumber:
+            PercentColor = 0.0
+        else:
+            PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber - MidNumber), 100.0), 0.0)
         return "{0}!{1:.1f}!{2}".format(MaxColor, PercentColor, MidColor)
     else:
-        PercentColor = max(min(100.0 * (MidNumber - val) / (MidNumber - MinNumber), 100.0), 0.0)
+        if MinNumber == MidNumber:
+            PercentColor = 0.0
+        else:
+            PercentColor = max(min(100.0 * (MidNumber - val) / (MidNumber - MinNumber), 100.0), 0.0)
         return "{0}!{1:.1f}!{2}".format(MinColor, PercentColor, MidColor)
 
 
