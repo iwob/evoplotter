@@ -539,7 +539,7 @@ def plot_ratio_meeting_predicate(props, getter, predicate, condition=None, serie
 def _compare_fitness_on_benchmarks_subplot(fig, axes, i, benchmark, props, dim_variants, key_fit,
         print_quantities=False, use_latex=False):
     """Draws a subplot containing box-and-wshiskers plot for all variants on a single benchmark."""
-    assert isinstance(benchmark, dims.Config) and len(benchmark) == 1 # only one filter function for benchmark.
+    assert isinstance(benchmark, dims.ConfigList) and len(benchmark) == 1 # only one filter function for benchmark.
     all_data = []
     labels = []
     for config in dim_variants:

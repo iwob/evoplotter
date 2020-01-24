@@ -39,11 +39,11 @@ class Dim(object):
         if isinstance(configs, list):
             self.configs = []
             for c in configs:
-                if isinstance(c, Config):
+                if isinstance(c, ConfigList):
                     self.configs.append(c)
                 elif isinstance(c, tuple):
                     self.configs.append(Config((c[0], c[1])))
-        elif isinstance(configs, Config):
+        elif isinstance(configs, ConfigList):
             self.configs = [configs]
         else:
             raise Exception("Incorrect arguments passed to Dimension!")
@@ -69,7 +69,7 @@ class Dim(object):
             return Dim(generate_configs([self, other]))
 
     def __add__(self, other):
-        if isinstance(other, Config):
+        if isinstance(other, ConfigList):
             configs = self.configs[:]
             configs.append(other)
             return Dim(configs)
@@ -104,6 +104,10 @@ class Dim(object):
         """Sorts this dimension alphabetically on the names of Configs within it."""
         self.configs.sort()
         return self
+
+    def dim_true_within(self, name="ALL"):
+        """Returns a new dimension accepting any configuration accepted by this 'parent' dimension."""
+        return Dim(ConfigOr(name, self.configs))
 
     @classmethod
     def generic_labels(cls, num, prefix="A"):
@@ -164,7 +168,7 @@ def generate_configs(dims_list):
     final_filters = []
     final_values = []
     _generate_filters_helper(dims_list, [], {}, final_filters, final_values)
-    return [Config(flist, **values) for flist, values in zip(final_filters, final_values)]
+    return [ConfigList(flist, **values) for flist, values in zip(final_filters, final_values)]
 
 def _generate_filters_helper(cur_dims, cur_filters, cur_values, final_filters, final_values):
     assert isinstance(cur_filters, list)
@@ -183,26 +187,23 @@ def _generate_filters_helper(cur_dims, cur_filters, cur_values, final_filters, f
 
 
 
-class Config(object):
-    """Defines a single configuration of the experiment.
-
-    Config is defined as a list of filters. Filter is a tuple containing a name
-    and a predicate. Name describes a filter's function/role and is used during
-    drawing of plots, and predicate is used to leave only properties dicts which
-    were generated in a run under this configuration. If more than one filter is
-    defined, conjunction of all the predicates is considered.
-    """
+class ConfigList(object):
+    """ConfigList is defined as a list of filters. A 'filter' is a tuple containing a name
+    and a predicate. Names of the filters are used during generation of plots/tables, and predicate
+    is used to leave only properties dicts which were generated in a run matching this configuration.
+    If more than one filter is defined, conjunction of all predicates is considered."""
     def __init__(self, *filters, **kwargs):
         self.stored_values = kwargs
         if len(filters) == 1:
             if isinstance(filters[0], list):
+                # filters: [(name, lambda)]
                 self.filters = filters[0]
             else:
+                # filters: (name, lambda)
                 self.filters = [filters[0]]
         else:
-            # Create Config with a filter being a tuple of arbitrary length.
+            # filters: name, lambda
             self.filters = [tuple(filters)]
-        assert len(self.filters) > 0, "Trying to create Config with empty filters list!"
 
     def __len__(self):
         return len(self.filters)
@@ -223,7 +224,10 @@ class Config(object):
         return n_self < n_other
 
     def __str__(self):
-        return "Config({0})".format(self.get_caption())
+        return "ConfigList({0})".format(self.get_caption())
+
+    def __call__(self, *args, **kwargs):
+        return self.filter(args[0])
 
     def head(self):
         """Returns the first filter defined in this config. Convenience function."""
@@ -252,7 +256,7 @@ class Config(object):
         return [p for p in props if self.filter(p)]
 
     def filter(self, p):
-        """Checks, if properties file p is satisfied by a conjunction of all filters in this Config."""
+        """Checks, if properties file p is satisfied by a *conjunction* of all filters in this Config."""
         assert isinstance(p, dict), "filter expects property file"
         for f in self.filters:
             if not f[1](p):
@@ -261,4 +265,81 @@ class Config(object):
 
 
 
-dim_empty = Dim([Config(("", lambda p: True))])
+
+class Config(ConfigList):
+    """Defines a single configuration of the experiment. Is equivalent to the tuple (name, filter)."""
+    def __init__(self, name, filter, **kwargs):
+        assert not isinstance(filter, list), "Config associates the name and a particular filter. " \
+                                             "To use multiple filters, please use ConfigOr or ConfigAnd."
+        self.name = name
+        self.filter = filter
+        ConfigList.__init__(self, (name, self), **kwargs)
+
+    def __getitem__(self, item):
+        return self.name if item == 0 else self
+
+    def __call__(self, *args, **kwargs):
+        return self.filter(args[0])
+
+    def __str__(self):
+        return "Config({0})".format(self.get_caption())
+
+    def filter(self, p):
+        return self.filter(p)
+
+
+
+
+class ConfigAnd(ConfigList):
+    """A list of configs composed by conjunction. E.g.: accept solutions both with p=1
+    and p=2 (in this case, impossibility)."""
+    def __init__(self, name, configs, **kwargs):
+        assert isinstance(configs, list), "Configs should be provided as a list."
+        assert len(configs) > 0, "Trying to create ConfigAnd with empty configs list."
+        self.name = name
+        self.configs = configs
+        ConfigList.__init__(self, (name, self), **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        return self.filter(args[0])
+
+    def __str__(self):
+        return "ConfigAnd({0})".format(self.get_caption())
+
+    def filter(self, p):
+        """Checks, if properties file p is satisfied by a *disjunction* of all filters in this Config."""
+        assert isinstance(p, dict), "filter expects property file"
+        for f in self.configs:
+            if not f(p):
+                return False
+        return True
+
+
+
+class ConfigOr(ConfigList):
+    """A list of configs composed by disjunction. E.g.: accept solutions either with p=1 or p=2."""
+    def __init__(self, name, configs, **kwargs):
+        assert isinstance(configs, list), "Configs should be provided as a list."
+        assert len(configs) > 0, "Trying to create ConfigOr with empty configs list."
+        self.name = name
+        self.configs = configs
+        ConfigList.__init__(self, (name, self), **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        return self.filter(args[0])
+
+    def __str__(self):
+        return "ConfigOr({0})".format(self.get_caption())
+
+    def filter(self, p):
+        """Checks, if properties file p is satisfied by a *disjunction* of all filters in this Config."""
+        assert isinstance(p, dict), "filter expects property file"
+        for f in self.configs:
+            if f(p):
+                return True
+        return False
+
+
+
+
+dim_empty = Dim([Config("", lambda p: True)])

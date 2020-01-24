@@ -9,7 +9,7 @@ class TestsDims(unittest.TestCase):
         dim2 = Dim([])
         prod = dim1 * dim2
         self.assertEqual(2, len(prod))
-        self.assertEqual(Config, type(prod[0]))
+        self.assertEqual(True, isinstance(prod[0], ConfigList))
         self.assertEqual("A1", prod[0].get_caption(sep="_"))
         self.assertEqual("1", prod[0].stored_values["valueA"])
         self.assertEqual("A2", prod[1].get_caption(sep="_"))
@@ -22,7 +22,7 @@ class TestsDims(unittest.TestCase):
         dim2 = Dim([Config("B1", lambda p: True)])
         prod = dim1 * dim2
         self.assertEqual(2, len(prod))
-        self.assertEqual(Config, type(prod[0]))
+        self.assertEqual(True, isinstance(prod[0], ConfigList))
         self.assertEqual("A1_B1", prod[0].get_caption(sep="_"))
         self.assertEqual("A2_B1", prod[1].get_caption(sep="_"))
 
@@ -34,7 +34,7 @@ class TestsDims(unittest.TestCase):
                     Config("B2", lambda p: False, valueB="2")])
         prod = dim1 * dim2
         self.assertEqual(4, len(prod))
-        self.assertEqual(Config, type(prod[0]))
+        self.assertEqual(True, isinstance(prod[0], ConfigList))
         self.assertEqual("A1_B1", prod[0].get_caption(sep="_"))
         self.assertEqual("1", prod[0].stored_values["valueA"])
         self.assertEqual("1", prod[0].stored_values["valueB"])
@@ -58,7 +58,7 @@ class TestsDims(unittest.TestCase):
                     Config("C2", lambda p: False)])
         prod = dim1 * dim2 * dim3
         self.assertEqual(8, len(prod))
-        self.assertEqual(Config, type(prod[0]))
+        self.assertEqual(True, isinstance(prod[0], ConfigList))
         self.assertEqual("A1_B1_C1", prod[0].get_caption(sep="_"))
         self.assertEqual("A1_B1_C2", prod[1].get_caption(sep="_"))
         self.assertEqual("A1_B2_C1", prod[2].get_caption(sep="_"))

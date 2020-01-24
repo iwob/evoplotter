@@ -12,7 +12,7 @@ class TestsPrinter(unittest.TestCase):
 
 \usepackage[utf8]{inputenc}
 \usepackage[paperwidth=65cm, paperheight=40cm, margin=0.3cm]{geometry}
-\usepackage[table]{xcolor}
+\usepackage[usenames,dvipsnames,table]{xcolor}
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -20,6 +20,8 @@ class TestsPrinter(unittest.TestCase):
 
 \DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces
 \setlength{\tabcolsep}{8pt}
+
+
 
 
 \begin{document}
@@ -41,7 +43,7 @@ class TestsPrinter(unittest.TestCase):
 
 \usepackage[utf8]{inputenc}
 \usepackage[paperwidth=65cm, paperheight=40cm, margin=0.3cm]{geometry}
-\usepackage[table]{xcolor}
+\usepackage[usenames,dvipsnames,table]{xcolor}
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -49,6 +51,8 @@ class TestsPrinter(unittest.TestCase):
 
 \DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces
 \setlength{\tabcolsep}{8pt}
+
+
 
 
 \begin{document}
@@ -72,7 +76,7 @@ class TestsPrinter(unittest.TestCase):
 
 \usepackage[utf8]{inputenc}
 \usepackage[paperwidth=65cm, paperheight=40cm, margin=0.3cm]{geometry}
-\usepackage[table]{xcolor}
+\usepackage[usenames,dvipsnames,table]{xcolor}
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -80,6 +84,8 @@ class TestsPrinter(unittest.TestCase):
 
 \DeclareUnicodeCharacter{00A0}{~} % replacing non-breaking spaces
 \setlength{\tabcolsep}{8pt}
+
+
 
 
 \begin{document}

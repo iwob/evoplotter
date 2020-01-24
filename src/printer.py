@@ -291,7 +291,7 @@ def text_table_row(props_row, config_row, dim_cols, fun, d_cols="\t", d_rows="\n
     :param d_rows: (str) delimiter separating rows.
     :return: (str) text of the table's row.
     """
-    assert isinstance(config_row, dims.Config)
+    assert isinstance(config_row, dims.ConfigList)
     assert isinstance(dim_cols, dims.Dim)
 
     text = config_row.get_caption() + d_cols # print name of the row
@@ -485,7 +485,7 @@ def latex_table_header_multilayered_cells(cells_cols, d_cols=" & ", d_rows="\\\\
         filters = []
         for c in cell:
             filters.append((c, None))
-        dim_cols = dim_cols + dims.Dim(dims.Config(filters))
+        dim_cols = dim_cols + dims.Dim(dims.ConfigList(filters))
     return latex_table_header_multilayered(dim_cols, d_cols=d_cols, d_rows=d_rows, vertical_border=vertical_border,
                                            horizontal_border=horizontal_border, tabFirstCol=tabFirstCol, useBooktabs=useBooktabs)
 
@@ -524,7 +524,7 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
         for conf in dimens:
             new_filters = conf.filters[1:]
             if len(new_filters) > 0:
-                subconfigs_queue.append(dims.Config(new_filters))
+                subconfigs_queue.append(dims.ConfigList(new_filters))
             else:
                 # Add dummy config; multiline header needs to know that column's border needs to continue
                 subconfigs_queue.append(dims.Config("", lambda p: False))
