@@ -3,6 +3,7 @@ from app.gpem19.gpem19_utils import *
 from src import utils
 from src import plotter
 from src import printer
+from src import templates
 from src import reporting
 from src.dims import *
 
@@ -62,6 +63,8 @@ def p_method_for(name):
     return lambda p, name=name: p["method"] == name
 def p_matches_dict(p, d):
     for k, v in d.items():
+        if k not in p:
+            return False  # throw here an exception if you know that p should always contain k
         if p[k] != v:
             return False
     return True
@@ -343,11 +346,11 @@ def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix):
 
 
 
-def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRowNames):
+def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, headerRowNames):
     vb = 1  # vertical border
     variants = None  # variants_benchmarkNumTests
     dim_rows_v2 = get_benchmarks_from_props(props, ignoreNumTests=True)
-    dim_rows_v2 += dim_true
+    # dim_rows_v2 += dim_true  #TODO: within dict
 
     # ----------------------------------------------------
     # Cleaning experiment here, because dimension can be easily constructed.
@@ -445,18 +448,30 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
         #                default_color_thresholds=(0.0, 900.0, 1800.0),
         #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
         #                ),
-        TableGenerator(get_avg_doneAlgRestarts, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Number of algorithm restarts  (avg)",
-                       color_scheme=reporting.color_scheme_gray_light,
-                       default_color_thresholds=(0.0, 1e2, 1e4),
+    ]
+
+    subsects_main = []
+    for t in tables:
+        tup = (t.title, t.apply(props), t.color_scheme)
+        subsects_main.append(tup)
+
+    return reporting.Subsection(title, get_content_of_subsections(subsects_main))
+
+
+
+def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames):
+    vb = 1  # vertical border
+    variants = None  # variants_benchmarkNumTests
+    dim_rows_v2 = get_benchmarks_from_props(props, ignoreNumTests=True)
+    # dim_rows_v2 += dim_true  # TODO: within dict
+
+    tables = [
+        TableGenerator(get_stats_size, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Average sizes of best of runs (number of nodes)",
+                       color_scheme=reporting.color_scheme_yellow,
+                       default_color_thresholds=(0.0, 100.0, 200.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        # TableGenerator(get_stats_size, dim_rows, dim_cols, headerRowNames=headerRowNames,
-        #                title="Average sizes of best of runs (number of nodes)",
-        #                color_scheme=reporting.color_scheme_yellow,
-        #                default_color_thresholds=(0.0, 100.0, 200.0),
-        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
-        #                ),
         # TableGenerator(get_stats_sizeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
         #                title="Average sizes of best of runs (number of nodes) (only successful)",
         #                color_scheme=reporting.color_scheme_yellow,
@@ -481,6 +496,12 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
         #                default_color_thresholds=(500.0, 25000.0, 100000.0),
         #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
         #                ),
+        TableGenerator(get_avg_doneAlgRestarts, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Number of algorithm restarts  (avg)",
+                       color_scheme=reporting.color_scheme_gray_light,
+                       default_color_thresholds=(0.0, 1e2, 1e4),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
     ]
 
     subsects_main = []
@@ -488,11 +509,11 @@ def create_subsection_shared_stats(props, dim_rows, dim_cols, numRuns, headerRow
         tup = (t.title, t.apply(props), t.color_scheme)
         subsects_main.append(tup)
 
-    return reporting.Subsection("Shared Statistics", get_content_of_subsections(subsects_main))
+    return reporting.Subsection(title, get_content_of_subsections(subsects_main))
 
 
 
-def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
+def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowNames):
     vb = 1  # vertical border
     # variants = variants_benchmarkNumTests
     variants = None
@@ -528,7 +549,7 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
 
     print("MAX SOLVER TIME")
     latex_maxSolverTimes = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_maxSolverTime, headerRowNames,
-                                                     cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants)
+                                                     cv0=0.0, cv1=5.0, cv2=10.0, tableVariants=variants)
 
     print("AVG SOLVER TIME")
     latex_avgSolverTimes = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_avgSolverTime, headerRowNames,
@@ -559,156 +580,50 @@ def create_subsection_cdgp_specific(props, dim_rows, dim_cols, headerRowNames):
         ("Number of solver calls $>$ 0.5s", latex_numSolverCallsOverXs, reporting.color_scheme_blue),
         ("The most frequently found counterexamples for each benchmark and configuration", latex_freqCounterexamples, reporting.color_scheme_violet),
     ]
-    return reporting.Subsection("CDGP Statistics", get_content_of_subsections(subsects_cdgp))
+    return reporting.Subsection(title, get_content_of_subsections(subsects_cdgp))
 
 
 
-_prev_props = None
-def prepare_report(sects, filename, exp_prefix, print_status_matrix=True, reuse_props=False,
-                   paperwidth=75, include_all_row=True, dim_cols_listings=None):
-    """Creating nice LaTeX report of the results."""
-    global _prev_props  # used in case reuse_props was set to True
+def reports_expA01():
+    title = "Experiments for regression CDGP and  baseline regressors from Scikit. A01 - no noise."
+    desc = r""""""
+
+    folders = ["exp3", "regression_results_withNoise"]  # "regression_results_noNoise"
+    props = load_correct_props(folders)
+    standardize_benchmark_names(props)
+    dim_rows = get_benchmarks_from_props(props)
+    dim_rows += dim_rows.dim_true_within("ALL")
+
+
+    dim_cols = dim_methodScikit + (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
+               dim_benchmarkNumTests
+    dim_cols += dim_cols.dim_true_within()
+
+    dim_cols_ea = (dim_methodGP + dim_methodCDGP + dim_methodCDGPprops * dim_weight) * \
+               dim_benchmarkNumTests
+    dim_cols_ea += dim_cols_ea.dim_true_within()
+
+    dim_cols_cdgp = (dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
+               dim_benchmarkNumTests
+    dim_cols_cdgp += dim_cols_cdgp.dim_true_within()
+
+    headerRowNames = ["method", "weight", "tests"]
+    subs = [
+        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
+        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
+        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
+        # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
+        # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
+    ]
+    sects = [(title, desc, subs, [])]
+
+
+    save_listings(props, dim_rows, dim_cols)
     user_declarations = """\definecolor{darkred}{rgb}{0.56, 0.05, 0.0}
 \definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0}
 \definecolor{darkblue}{rgb}{0.0, 0.0, 0.55}
 \definecolor{darkorange}{rgb}{0.93, 0.53, 0.18}"""
-    report = reporting.ReportPDF(geometry_params="[paperwidth={0}cm, paperheight=40cm, margin=0.3cm]".format(paperwidth),
-                                 packages=["pbox", "makecell"], user_declarations=user_declarations)
-    latex_sects = []
-    for title, desc, folders, subs, figures in sects:
-        print("\nLoading props for: " + title)
-        print("Scanned folders:")
-        for f in folders:
-            print(f)
-
-        # Load props
-        if reuse_props:
-            props = _prev_props
-        else:
-            props = load_correct_props(folders)
-            _prev_props = props
-
-        standardize_benchmark_names(props)
-
-        print("\nFiltered Info:")
-        for p in props:
-            # if "nguyen4" in p["benchmark"]:
-            #     print("file: {0}".format(p["thisFileName"]))
-            if float(p["result.best.testMSE"]) > 2432971527315918274461803655258245399.0:
-                print("file: {0}".format(p["thisFileName"]))
-
-
-        # Automatically detect benchmarks used
-        dim_benchmarks = get_benchmarks_from_props(props)
-
-
-        if print_status_matrix:
-            d = dim_benchmarks * (dim_methodGP * dim_sel * dim_evoMode + (dim_methodCDGP + dim_methodCDGPprops) * dim_sel * dim_evoMode * dim_testsRatio)
-
-            matrix = produce_status_matrix(d, props)
-            print("\n****** Status matrix:")
-            print(matrix + "\n")
-            print("Saving status matrix to file: {0}".format(STATUS_FILE_NAME))
-            utils.save_to_file(STATUS_FILE_NAME, matrix)
-
-
-        dim_rows = dim_benchmarks #.sort()
-        if include_all_row:
-            dim_rows += dim_true
-
-        if dim_cols_listings is not None:
-            save_listings(props, dim_rows, dim_cols_listings)
-
-
-        subsects = []
-        for fun, args in subs:
-            if args[0] is None:  # no dimensions for rows, take benchmarks as the default
-                args[0] = dim_rows
-            args2 = [props] + args
-            subsects.append(fun(*args2))
-
-        s = create_section(title, desc, props, subsects, figures, exp_prefix)
-        latex_sects.append(s)
-
-    for s in latex_sects:
-        if s is not None:
-            report.add(s)
-    print("\n\nGenerating PDF report ...")
-    cwd = os.getcwd()
-    os.chdir("results/")
-    report.save_and_compile(filename)
-    os.chdir(cwd)
-
-
-
-
-def prepare_report_for_dims(props, dim_rows, dim_cols, sects, fname, exp_prefix,
-                            print_status_matrix=True, paperwidth=75, include_all_row=True,
-                            dim_cols_listings=None):
-    """Creating a LaTeX report of the results, where in each table data are presented along the
-    sam dimensions."""
-    report = reporting.ReportPDF(geometry_params="[paperwidth={0}cm, paperheight=40cm, margin=0.3cm]".format(paperwidth))
-
-    # dim_rows = dim_rows.sort()
-    if include_all_row:
-        dim_rows += dim_true
-
-    latex_sects = []
-    for title, desc, folders, subs, figures in sects:
-        if print_status_matrix:
-            d = dim_rows * dim_cols
-
-            matrix = produce_status_matrix(d, props)
-            print("\n****** Status matrix:")
-            print(matrix + "\n")
-            print("Saving status matrix to file: {0}".format(STATUS_FILE_NAME))
-            utils.save_to_file(STATUS_FILE_NAME, matrix)
-
-
-        if dim_cols_listings is not None:
-            save_listings(props, dim_rows, dim_cols_listings)
-
-
-        subsects = []
-        for fun, args in subs:
-            if args[0] is None:  # no dimensions for rows, take benchmarks as the default
-                args[0] = dim_rows
-            args2 = [props] + args
-            subsects.append(fun(*args2))
-
-        s = create_section(title, desc, props, subsects, figures, exp_prefix)
-        latex_sects.append(s)
-
-    for s in latex_sects:
-        if s is not None:
-            report.add(s)
-    print("\n\nGenerating PDF report ...")
-    cwd = os.getcwd()
-    os.chdir("results/")
-    report.save_and_compile(fname)
-    os.chdir(cwd)
-
-
-
-
-def reports_expR01():
-    exp_prefix = "e3"
-    # folders = ["exp2_noRestarts"]  # for the exp2 experiment
-    folders = ["exp3", "regression_results"]
-    title = "Experiments for regression CDGP and  baseline regressors from Scikit. A01 - no noise."
-    desc = r""""""
-    dim_cols = dim_methodScikit + (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
-               dim_benchmarkNumTests + dim_true # * dim_optThreshold
-    headerRowNames = ["method", "weight", "tests"]
-    subs = [
-        (create_subsection_shared_stats, [None, dim_cols, 25, headerRowNames]),
-        (create_subsection_cdgp_specific, [None, dim_cols, headerRowNames]),
-        # (create_subsection_aggregation_tests, [None, dim_cols, headerRowNames]),
-        # (create_subsection_figures, [None, dim_cols, exp_prefix]),
-    ]
-    sects = [(title, desc, folders, subs, [])]
-
-    prepare_report(sects, "cdgp_expA01.tex", exp_prefix, paperwidth=100, include_all_row=True, dim_cols_listings=dim_cols)
+    templates.prepare_report(props, sects, "cdgp_expA01.tex", paperwidth=100, user_declarations=user_declarations)
 
 
 
@@ -719,4 +634,4 @@ if __name__ == "__main__":
     # utils.ensure_dir("results/tables/")
     utils.ensure_dir("results/listings/errors/")
 
-    reports_expR01()
+    reports_expA01()

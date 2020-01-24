@@ -313,7 +313,7 @@ def fun_successRate(filtered):
     sr = get_successRate(filtered)
     return "{0}".format("%0.2f" % round(sr, 2))
 def fun_allPropertiesMet(filtered):
-    if len(filtered) == 0:
+    if len(filtered) == 0 or "result.best.correctVerification" not in filtered[0]:
         return "-"
     num_opt = get_num_allPropertiesMet(filtered)
     sr = float(num_opt) / float(len(filtered))
@@ -631,3 +631,12 @@ def print_solved_in_time(props, upper_time):
             solvedRuns += 1
     print("\nRuns which ended under {0} s:  {1} / {2}  ({3} %)".format(upper_time / 1000.0, solvedRuns, len(props), solvedRuns / len(props)))
     print("Optimal solutions found under {0} s:  {1} / {2}  ({3} %)\n".format(upper_time / 1000.0, solved, num, solved / num))
+
+
+def print_status_matrix(props, dim_rows, dim_cols):
+    d = dim_rows * dim_cols
+    matrix = produce_status_matrix(d, props)
+    print("\n****** Status matrix:")
+    print(matrix + "\n")
+    print("Saving status matrix to file: {0}".format(STATUS_FILE_NAME))
+    utils.save_to_file(STATUS_FILE_NAME, matrix)
