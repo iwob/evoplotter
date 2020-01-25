@@ -425,7 +425,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        TableGenerator(get_rankingOfBestSolvers(dim_cols, 100), Dim(dim_cols[-1]), dim_rows,
+        TableGenerator(get_rankingOfBestSolvers(dim_cols[:-1], 100), Dim(dim_cols[-1]), dim_rows,
                        headerRowNames=headerRowNames,
                        title="Best solvers for the given benchmark (median MSE on test set)",
                        color_scheme=reporting.color_scheme_violet,
