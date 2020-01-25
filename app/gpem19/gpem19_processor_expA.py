@@ -418,6 +418,20 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        color_value_extractor=scNotColorValueExtractor,
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
+        TableGenerator(get_averageRanks(dim_cols[:-1], dim_rows[:-1], 100), Dim(dim_cols[-1]), Dim(dim_rows[-1]),
+                       headerRowNames=headerRowNames,
+                       title="Average ranks of the solvers (median MSE on test set)",
+                       color_scheme=reporting.color_scheme_violet,
+                       default_color_thresholds=(0.0, 900.0, 1800.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(get_rankingOfBestSolvers(dim_cols, 100), Dim(dim_cols[-1]), dim_rows,
+                       headerRowNames=headerRowNames,
+                       title="Best solvers for the given benchmark (median MSE on test set)",
+                       color_scheme=reporting.color_scheme_violet,
+                       default_color_thresholds=(0.0, 900.0, 1800.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
         # TableGenerator(get_median_testMSE_noScNot, dim_rows, dim_cols, headerRowNames=headerRowNames,
         #                title="Test set: MSE  (median) (noScNot)",
         #                color_scheme=reporting.color_scheme_green,
@@ -438,12 +452,6 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        ),
         TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average runtime [s]",
-                       color_scheme=reporting.color_scheme_violet,
-                       default_color_thresholds=(0.0, 900.0, 1800.0),
-                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       ),
-        TableGenerator(get_rankingOfBestSolvers(dim_cols, 100), Dim(dim_cols[-1]), dim_rows, headerRowNames=headerRowNames,
-                       title="Best solvers for the given benchmark (median MSE on test set)",
                        color_scheme=reporting.color_scheme_violet,
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
@@ -591,29 +599,48 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
 
 
 def reports_expA01():
-    title = "Experiments for regression CDGP and  baseline regressors from Scikit. A01 - no noise."
-    desc = r""""""
+    title = "Experiments for regression CDGP and  baseline regressors from Scikit. A01 - with noise."
+    desc = r"""
+\parbox{30cm}{
+Training set: 300\\
+Validation set (GP/CDGP only): 75\\
+Test set: 125\\
 
-    folders = ["exp3", "regression_results_withNoise"]  # "regression_results_noNoise"
+Sets were shuffled randomly from the 500 cases present in each generated benchmark.
+In this experiment, A01, noise is already present in the benchmark and is generated from the normal distribution
+with mean at the original value and standard deviation at 1% of the value.
+}
+
+\begin{lstlisting}[breaklines]
+# shared_dims={'benchmark': ['benchmarks/gpem/withNoise/keijzer5_500.sl', 'benchmarks/gpem/withNoise/nguyen4_500.sl', 'benchmarks/gpem/withNoise/resistance_par2_500.sl', 'benchmarks/gpem/withNoise/pagie1_500.sl', 'benchmarks/gpem/withNoise/keijzer15_500.sl', 'benchmarks/gpem/withNoise/nguyen3_500.sl', 'benchmarks/gpem/withNoise/gravity_500.sl', 'benchmarks/gpem/withNoise/keijzer12_500.sl', 'benchmarks/gpem/withNoise/nguyen1_500.sl', 'benchmarks/gpem/withNoise/keijzer14_500.sl', 'benchmarks/gpem/withNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
+# dims_cdgp = {'method': ['CDGP'], 'testsRatio': [1.0], 'testsTypesForRatio': ['i'], 'benchmark': ['benchmarks/gpem/withNoise/keijzer5_500.sl', 'benchmarks/gpem/withNoise/nguyen4_500.sl', 'benchmarks/gpem/withNoise/resistance_par2_500.sl', 'benchmarks/gpem/withNoise/pagie1_500.sl', 'benchmarks/gpem/withNoise/keijzer15_500.sl', 'benchmarks/gpem/withNoise/nguyen3_500.sl', 'benchmarks/gpem/withNoise/gravity_500.sl', 'benchmarks/gpem/withNoise/keijzer12_500.sl', 'benchmarks/gpem/withNoise/nguyen1_500.sl', 'benchmarks/gpem/withNoise/keijzer14_500.sl', 'benchmarks/gpem/withNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
+# dims_cdgp = {'method': ['CDGPprops'], 'testsRatio': [1.0], 'testsTypesForRatio': ['i'], 'partialConstraintsWeight': [1, 5], 'benchmark': ['benchmarks/gpem/withNoise/keijzer5_500.sl', 'benchmarks/gpem/withNoise/nguyen4_500.sl', 'benchmarks/gpem/withNoise/resistance_par2_500.sl', 'benchmarks/gpem/withNoise/pagie1_500.sl', 'benchmarks/gpem/withNoise/keijzer15_500.sl', 'benchmarks/gpem/withNoise/nguyen3_500.sl', 'benchmarks/gpem/withNoise/gravity_500.sl', 'benchmarks/gpem/withNoise/keijzer12_500.sl', 'benchmarks/gpem/withNoise/nguyen1_500.sl', 'benchmarks/gpem/withNoise/keijzer14_500.sl', 'benchmarks/gpem/withNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
+# dims_gp = {'method': ['GP'], 'benchmark': ['benchmarks/gpem/withNoise/keijzer5_500.sl', 'benchmarks/gpem/withNoise/nguyen4_500.sl', 'benchmarks/gpem/withNoise/resistance_par2_500.sl', 'benchmarks/gpem/withNoise/pagie1_500.sl', 'benchmarks/gpem/withNoise/keijzer15_500.sl', 'benchmarks/gpem/withNoise/nguyen3_500.sl', 'benchmarks/gpem/withNoise/gravity_500.sl', 'benchmarks/gpem/withNoise/keijzer12_500.sl', 'benchmarks/gpem/withNoise/nguyen1_500.sl', 'benchmarks/gpem/withNoise/keijzer14_500.sl', 'benchmarks/gpem/withNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
+# 
+# opt={'seed': '$RANDOM', 'maxTime': 1800000, 'tournamentSize': 7, 'tournamentDeselectSize': 7, 'populationSize': 500, 'initMaxTreeDepth': 4, 'maxSubtreeDepth': 4, 'maxTreeDepth': 12, 'stoppingDepthRatio': 0.8, 'operatorProbs': '0.5,0.5', 'deleteOutputFile': 'true', 'parEval': 'false', 'maxNewTestsPerIter': 10, 'silent': 'true', 'solverPath': "'solver/z3'", 'solverType': 'z3', 'maxSolverRestarts': 2, 'regression': 'true', 'saveTests': 'true', 'outDir': 'phd_A01', 'solverTimeout': 3000, 'notes': "'gpem19_A01'", 'noiseDeltaX': 0.0, 'noiseDeltaY': 0.0, 'sizeValidationSet': 75, 'sizeTestSet': 125, 'notImprovedWindow': 1000, 'reportFreq': 200}
+\end{lstlisting}
+
+NOTE: for steady state, maxGenerations is multiplied by populationSize. 
+"""
+
+    # folders = ["exp3", "regression_results_withNoise"]  # "regression_results_noNoise"
+    folders = ["phd_A01", "regression_results_withNoise"]  # "regression_results_noNoise"
     props = load_correct_props(folders)
     standardize_benchmark_names(props)
     dim_rows = get_benchmarks_from_props(props)
     dim_rows += dim_rows.dim_true_within("ALL")
 
 
-    dim_cols = dim_methodScikit + (dim_methodGP + dim_methodCDGP + dim_methodCDGPprops*dim_weight) *\
-               dim_benchmarkNumTests
+    dim_cols = dim_methodScikit + dim_methodGP + dim_methodCDGP + dim_methodCDGPprops*dim_weight
     dim_cols += dim_cols.dim_true_within()
 
-    dim_cols_ea = (dim_methodGP + dim_methodCDGP + dim_methodCDGPprops * dim_weight) * \
-               dim_benchmarkNumTests
+    dim_cols_ea = dim_methodGP + dim_methodCDGP + dim_methodCDGPprops * dim_weight
     dim_cols_ea += dim_cols_ea.dim_true_within()
 
-    dim_cols_cdgp = (dim_methodCDGP + dim_methodCDGPprops*dim_weight) *\
-               dim_benchmarkNumTests
+    dim_cols_cdgp = dim_methodCDGP + dim_methodCDGPprops*dim_weight
     dim_cols_cdgp += dim_cols_cdgp.dim_true_within()
 
-    headerRowNames = ["method", "weight", "tests"]
+    headerRowNames = ["method", "weight"]
     subs = [
         (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
         (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
@@ -625,11 +652,91 @@ def reports_expA01():
 
 
     save_listings(props, dim_rows, dim_cols)
-    user_declarations = """\definecolor{darkred}{rgb}{0.56, 0.05, 0.0}
+    user_declarations = r"""\definecolor{darkred}{rgb}{0.56, 0.05, 0.0}
 \definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0}
 \definecolor{darkblue}{rgb}{0.0, 0.0, 0.55}
-\definecolor{darkorange}{rgb}{0.93, 0.53, 0.18}"""
-    templates.prepare_report(props, sects, "cdgp_expA01.tex", paperwidth=100, user_declarations=user_declarations)
+\definecolor{darkorange}{rgb}{0.93, 0.53, 0.18}
+
+\usepackage{listings}
+\lstset{
+basicstyle=\small\ttfamily,
+columns=flexible,
+breaklines=true
+}
+"""
+    templates.prepare_report(props, sects, "cdgp_expA01_withNoise.tex", paperwidth=100, user_declarations=user_declarations)
+
+
+
+
+
+
+def reports_expA02():
+    title = "Experiments for regression CDGP and  baseline regressors from Scikit. A02 - no noise."
+    desc = r"""
+\parbox{30cm}{
+Training set: 300\\
+Validation set (GP/CDGP only): 75\\
+Test set: 125\\
+
+Sets were shuffled randomly from the 500 cases present in each generated benchmark.
+In this experiment, A02, there is no noise.
+}
+
+\begin{lstlisting}[breaklines]
+# shared_dims={'benchmark': ['benchmarks/gpem/withNoise/keijzer5_500.sl', 'benchmarks/gpem/withNoise/nguyen4_500.sl', 'benchmarks/gpem/withNoise/resistance_par2_500.sl', 'benchmarks/gpem/withNoise/pagie1_500.sl', 'benchmarks/gpem/withNoise/keijzer15_500.sl', 'benchmarks/gpem/withNoise/nguyen3_500.sl', 'benchmarks/gpem/withNoise/gravity_500.sl', 'benchmarks/gpem/withNoise/keijzer12_500.sl', 'benchmarks/gpem/withNoise/nguyen1_500.sl', 'benchmarks/gpem/withNoise/keijzer14_500.sl', 'benchmarks/gpem/withNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
+# dims_cdgp = {'method': ['CDGP'], 'testsRatio': [1.0], 'testsTypesForRatio': ['i'], 'benchmark': ['benchmarks/gpem/withNoise/keijzer5_500.sl', 'benchmarks/gpem/withNoise/nguyen4_500.sl', 'benchmarks/gpem/withNoise/resistance_par2_500.sl', 'benchmarks/gpem/withNoise/pagie1_500.sl', 'benchmarks/gpem/withNoise/keijzer15_500.sl', 'benchmarks/gpem/withNoise/nguyen3_500.sl', 'benchmarks/gpem/withNoise/gravity_500.sl', 'benchmarks/gpem/withNoise/keijzer12_500.sl', 'benchmarks/gpem/withNoise/nguyen1_500.sl', 'benchmarks/gpem/withNoise/keijzer14_500.sl', 'benchmarks/gpem/withNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
+# dims_cdgp = {'method': ['CDGPprops'], 'testsRatio': [1.0], 'testsTypesForRatio': ['i'], 'partialConstraintsWeight': [1, 5], 'benchmark': ['benchmarks/gpem/withNoise/keijzer5_500.sl', 'benchmarks/gpem/withNoise/nguyen4_500.sl', 'benchmarks/gpem/withNoise/resistance_par2_500.sl', 'benchmarks/gpem/withNoise/pagie1_500.sl', 'benchmarks/gpem/withNoise/keijzer15_500.sl', 'benchmarks/gpem/withNoise/nguyen3_500.sl', 'benchmarks/gpem/withNoise/gravity_500.sl', 'benchmarks/gpem/withNoise/keijzer12_500.sl', 'benchmarks/gpem/withNoise/nguyen1_500.sl', 'benchmarks/gpem/withNoise/keijzer14_500.sl', 'benchmarks/gpem/withNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
+# dims_gp = {'method': ['GP'], 'benchmark': ['benchmarks/gpem/withNoise/keijzer5_500.sl', 'benchmarks/gpem/withNoise/nguyen4_500.sl', 'benchmarks/gpem/withNoise/resistance_par2_500.sl', 'benchmarks/gpem/withNoise/pagie1_500.sl', 'benchmarks/gpem/withNoise/keijzer15_500.sl', 'benchmarks/gpem/withNoise/nguyen3_500.sl', 'benchmarks/gpem/withNoise/gravity_500.sl', 'benchmarks/gpem/withNoise/keijzer12_500.sl', 'benchmarks/gpem/withNoise/nguyen1_500.sl', 'benchmarks/gpem/withNoise/keijzer14_500.sl', 'benchmarks/gpem/withNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
+# 
+# opt={'seed': '$RANDOM', 'maxTime': 1800000, 'tournamentSize': 7, 'tournamentDeselectSize': 7, 'populationSize': 500, 'initMaxTreeDepth': 4, 'maxSubtreeDepth': 4, 'maxTreeDepth': 12, 'stoppingDepthRatio': 0.8, 'operatorProbs': '0.5,0.5', 'deleteOutputFile': 'true', 'parEval': 'false', 'maxNewTestsPerIter': 10, 'silent': 'true', 'solverPath': "'solver/z3'", 'solverType': 'z3', 'maxSolverRestarts': 2, 'regression': 'true', 'saveTests': 'true', 'outDir': 'phd_A02', 'solverTimeout': 3000, 'notes': "'gpem19_A01'", 'noiseDeltaX': 0.0, 'noiseDeltaY': 0.0, 'sizeValidationSet': 75, 'sizeTestSet': 125, 'notImprovedWindow': 1000, 'reportFreq': 200}
+\end{lstlisting}
+
+NOTE: for steady state, maxGenerations is multiplied by populationSize. 
+"""
+
+    folders = ["phd_A02", "regression_results_noNoise"]
+    props = load_correct_props(folders)
+    standardize_benchmark_names(props)
+    dim_rows = get_benchmarks_from_props(props)
+    dim_rows += dim_rows.dim_true_within("ALL")
+
+
+    dim_cols = dim_methodScikit + dim_methodGP + dim_methodCDGP + dim_methodCDGPprops*dim_weight
+    dim_cols += dim_cols.dim_true_within()
+
+    dim_cols_ea = dim_methodGP + dim_methodCDGP + dim_methodCDGPprops * dim_weight
+    dim_cols_ea += dim_cols_ea.dim_true_within()
+
+    dim_cols_cdgp = dim_methodCDGP + dim_methodCDGPprops*dim_weight
+    dim_cols_cdgp += dim_cols_cdgp.dim_true_within()
+
+    headerRowNames = ["method", "weight"]
+    subs = [
+        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
+        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
+        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
+        # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
+        # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
+    ]
+    sects = [(title, desc, subs, [])]
+
+
+    save_listings(props, dim_rows, dim_cols)
+    user_declarations = r"""\definecolor{darkred}{rgb}{0.56, 0.05, 0.0}
+\definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0}
+\definecolor{darkblue}{rgb}{0.0, 0.0, 0.55}
+\definecolor{darkorange}{rgb}{0.93, 0.53, 0.18}
+
+\usepackage{listings}
+\lstset{
+basicstyle=\small\ttfamily,
+columns=flexible,
+breaklines=true
+}
+"""
+    templates.prepare_report(props, sects, "cdgp_expA02_noNoise.tex", paperwidth=100, user_declarations=user_declarations)
+
 
 
 
@@ -641,3 +748,4 @@ if __name__ == "__main__":
     utils.ensure_dir("results/listings/errors/")
 
     reports_expA01()
+    reports_expA02()

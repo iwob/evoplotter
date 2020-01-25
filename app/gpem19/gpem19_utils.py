@@ -633,10 +633,68 @@ def get_rankingOfBestSolvers(dim_ranking, NUM_SHOWN=5):
                 res += "\\\\"
             value = float(valuesList[i][1])
             valueSc = scientificNotationLatex(value)
-            nameFormatter = lambda x: r"\textcolor{darkblue}{" + str(x) + "}"  if "CDGP" in str(x) else x
+            def nameFormatter(x):
+                if "CDGP" in str(x):
+                    return r"\textcolor{darkblue}{" + str(x) + "}"
+                elif x == "ALL":
+                    return r"\underline{ALL}"
+                else:
+                    return x
             color = printer.getLatexColorCode(value, [valuesList[0][1], (valuesList[-1][1]+valuesList[0][1])/2.0, valuesList[-1][1]],
                                               ["darkgreen", "orange", "darkred!50!white"])
             res += "{0}  ({1})".format(nameFormatter(valuesList[i][0]), r"\textbf{\textcolor{" + color + "}{" + str(valueSc) + "}}")  # percentage of runs
+        res += "}"
+        return res
+    return lambda_to_return
+
+def get_averageRanks(dim_ranking, dim_ranks_trials, NUM_SHOWN=5):
+    """Returns a listing of average ranks.
+
+    :param dim_ranking: (Dim) a dimension specifying what kind of things are compared to each other (e.g. algorithms).
+    :param dim_ranks_trials: (Dim) a dimension specifying over what kind of things ranks will be collected (e.g. benchmarks).
+    :param NUM_SHOWN: (int) number of best elements to show.
+    :return: (str) listing.
+    """
+    def lambda_to_return(props):
+        if len(props) == 0:
+            return "-"
+
+        allRanks = {}  # for each config name contains a list of its ranks
+        for config_trial in dim_ranks_trials:
+            props_trial = config_trial.filter_props(props)
+
+            valuesList = []
+            for config in dim_ranking:
+                name = config.get_caption()
+                if name not in allRanks:
+                    allRanks[name] = []
+                props2 = config.filter_props(props_trial)
+                if len(props2) > 0:
+                    v = np.median([float(p["result.best.testMSE"]) for p in props2])
+                    valuesList.append((name, float(v)))
+
+            valuesList.sort(key=lambda x: (x[1], x[0]), reverse=False)
+            for i, (name, value) in enumerate(valuesList):
+                allRanks[name].append(i + 1)  # 'i' is incremented so that the first element has rank 1
+
+        # Here we should have a dictionary containing lists of ranks
+        valuesList = [(name, np.mean(ranks)) for (name, ranks) in allRanks.items()]
+        valuesList.sort(key=lambda x: (x[1], x[0]), reverse=False)
+
+        # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
+        # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
+        #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
+        res = "\\pbox[l][" + str(17 * min(NUM_SHOWN, len(valuesList))) + "pt][c]{15cm}{"
+        for i in range(NUM_SHOWN):
+            if i >= len(valuesList):
+                break
+            if i > 0:
+                res += "\\\\"
+            value = round(float(valuesList[i][1]), 2)
+            nameFormatter = lambda x: r"\textcolor{darkblue}{" + str(x) + "}"  if "CDGP" in str(x) else x
+            color = printer.getLatexColorCode(value, [valuesList[0][1], (valuesList[-1][1]+valuesList[0][1])/2.0, valuesList[-1][1]],
+                                              ["darkgreen", "orange", "darkred!50!white"])
+            res += "{0}  ({1})".format(nameFormatter(valuesList[i][0]), r"\textbf{\textcolor{" + color + "}{" + str(value) + "}}")  # percentage of runs
         res += "}"
         return res
     return lambda_to_return
