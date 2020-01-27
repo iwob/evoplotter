@@ -641,7 +641,7 @@ def getLatexColorCode(val, colorNumbers, colorNames):
     assert len(colorNumbers) == len(colorNames) == 3, "Lists should have eactly three elements."
     MinNumber, MidNumber, MaxNumber = colorNumbers[0], colorNumbers[1], colorNumbers[2]
     MinColor, MidColor, MaxColor = colorNames[0], colorNames[1], colorNames[2]
-    if val > MidNumber:
+    if val >= MidNumber:
         if MaxNumber == MidNumber:
             PercentColor = 0.0
         else:
