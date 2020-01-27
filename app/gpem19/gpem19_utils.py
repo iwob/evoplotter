@@ -11,7 +11,7 @@ OPT_SOLUTIONS_FILE_NAME = "opt_solutions.txt"
 
 
 class TableGenerator:
-    """Generates table from data."""
+    """Generates table from data. kwargs will be propagated to the table printing."""
     def __init__(self, f_cell, dim_rows, dim_cols, headerRowNames, title="", color_scheme=None,
                  table_postprocessor=None, vertical_border=1, table_variants=None,
                  default_color_thresholds=None, layered_headline=True, color_value_extractor=None,
@@ -573,7 +573,7 @@ def get_freqCounterexamples(props):
         s = p["tests.collected"]
         cxs = re.findall("\(Map\((?:[^,]+ -> [^,]+(?:, )?)+\),None\)", s)  # ^ makes to match all charecters other than ','
         # cxs = <class 'list'>: ['(Map(m1 -> 0.0, m2 -> 0.0, r -> 0.0),None)', '(Map(m1 -> 1.0, m2 -> 2.0, r -> 1.0),None)']
-        for cx in cxs:\
+        for cx in cxs:
             # e.g. cx = (Map(m1 -> 0.0, m2 -> 0.0, r -> 0.0),None)
             if "None" in cx: # we are interested only in the noncomplete tests
                 cx = cx[len("(Map("):-len("),None)")]
@@ -601,7 +601,7 @@ def get_freqCounterexamples(props):
             if i >= len(counterex_items):
                 break
             if i > 0:
-                res += "\\\\"
+                res += "\\\\ "
             # res += "{0}  ({1})".format(counterex_items[i][0], counterex_items[i][1])  # absolute value
             percent = round(100.0*float(counterex_items[i][1]) / len(props), 1)
             color = printer.getLatexColorCode(percent, [0., 50., 100.], ["darkred!50!white", "orange", "darkgreen"])
@@ -625,12 +625,12 @@ def get_rankingOfBestSolvers(dim_ranking, NUM_SHOWN=5):
         # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
         # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
         #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
-        res = "\\pbox[l][" + str(17 * min(NUM_SHOWN, len(valuesList))) + "pt][c]{15cm}{"
+        res = r"\pbox[l][" + str(17 * min(NUM_SHOWN, len(valuesList))) + "pt][c]{15cm}{"
         for i in range(NUM_SHOWN):
             if i >= len(valuesList):
                 break
             if i > 0:
-                res += "\\\\"
+                res += "\\\\ "
             value = float(valuesList[i][1])
             valueSc = scientificNotationLatex(value)
             def nameFormatter(x):
@@ -646,6 +646,7 @@ def get_rankingOfBestSolvers(dim_ranking, NUM_SHOWN=5):
         res += "}"
         return res
     return lambda_to_return
+
 
 def get_averageRanks(dim_ranking, dim_ranks_trials, NUM_SHOWN=5):
     """Returns a listing of average ranks.
@@ -684,12 +685,12 @@ def get_averageRanks(dim_ranking, dim_ranks_trials, NUM_SHOWN=5):
         # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
         # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
         #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
-        res = "\\pbox[l][" + str(17 * min(NUM_SHOWN, len(valuesList))) + "pt][c]{15cm}{"
+        res = r"\pbox[l][" + str(17 * min(NUM_SHOWN, len(valuesList))) + "pt][c]{15cm}{"
         for i in range(NUM_SHOWN):
             if i >= len(valuesList):
                 break
             if i > 0:
-                res += "\\\\"
+                res += "\\\\ "
             value = round(float(valuesList[i][1]), 2)
             nameFormatter = lambda x: r"\textcolor{darkblue}{" + str(x) + "}"  if "CDGP" in str(x) else x
             color = printer.getLatexColorCode(value, [valuesList[0][1], (valuesList[-1][1]+valuesList[0][1])/2.0, valuesList[-1][1]],
@@ -698,6 +699,58 @@ def get_averageRanks(dim_ranking, dim_ranks_trials, NUM_SHOWN=5):
         res += "}"
         return res
     return lambda_to_return
+
+
+def get_rankingOfShortestSolutions(props):
+    """Returns a ranking of shortest solutions (both their size and error are printed)."""
+    if len(props) == 0:
+        return "-"
+    import re
+    solutions = [(p["result.best"], int(p["result.best.size"]), float(p["result.best.testMSE"])) for p in props]
+    solutions.sort(key=lambda x: (x[2], x[1]), reverse=False)
+    NUM_SHOWN = 100
+    STR_LEN_LIMIT = 70
+    # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
+    # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
+    #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
+    res = r"\pbox[l][" + str(15 * min(NUM_SHOWN, len(solutions))) + r"pt][c]{15cm}{\footnotesize "  #scriptsize, footnotesize
+    def latexTextColor(color, x):
+        return r"\textbf{\textcolor{" + str(color) + "}{" + str(x) + "}}"
+    def shortenLongConstants(s):
+        # cxs = re.findall("\(Map\((?:[^,]+ -> [^,]+(?:, )?)+\),None\)", s)
+        cxs = re.findall("[0-9]+[.][0-9][0-9][0-9]+", s)
+        for cx in cxs:
+            x = float(cx)
+            s = s.replace(cx, str(round(x, 2)) + "..")
+        return s
+
+
+    solutions = solutions[:min(NUM_SHOWN, len(solutions))]
+    # solutionsSortSize = solutions[:]
+    # solutionsSortSize.sort(key=lambda x: x[1], reverse=False)
+    # sizeColorScale = [solutionsSortSize[0][1], (solutionsSortSize[-1][1] + solutionsSortSize[0][1]) / 2.0, solutionsSortSize[-1][1]]
+    for i in range(NUM_SHOWN):
+        if i >= len(solutions):
+            break
+        if i > 0:
+            res += "\\\\ \\ "
+
+        value = float(solutions[i][2])
+        valueSc = scientificNotationLatex(value)
+        colorValue = printer.getLatexColorCode(value, [solutions[0][2], (solutions[-1][2] + solutions[0][2]) / 2.0, solutions[-1][2]],
+                                               ["darkgreen", "orange", "darkred!50!white"])
+        size = int(solutions[i][1])
+        sizeStr = r"\textcolor{darkblue}{\textbf{" + str(size) + r"}}"
+        # colorSize = printer.getLatexColorCode(value, sizeColorScale, ["darkred!50!white", "orange", "darkgreen"])
+
+        sol = solutions[i][0]
+        sol = shortenLongConstants(sol)
+        sol = sol[0:STR_LEN_LIMIT] + " [..]" if len(sol) > STR_LEN_LIMIT else sol
+        res += r"{0}  ({1}) ({2})".format(sol, latexTextColor(colorValue, valueSc), sizeStr)
+    res += "}"
+    return res
+
+
 
 
 def print_solved_in_time(props, upper_time):

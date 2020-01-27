@@ -480,6 +480,13 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames)
     # dim_rows_v2 += dim_true  # TODO: within dict
 
     tables = [
+        TableGenerator(get_rankingOfShortestSolutions, Dim(dim_cols.configs[:-1]), Dim(dim_rows.configs[:-1]),
+                       headerRowNames=headerRowNames,
+                       title="The best solutions found for each benchmark and their sizes. Format: solution (MSE on test set) (size)",
+                       color_scheme=reporting.color_scheme_violet, middle_col_align="l",
+                       default_color_thresholds=(0.0, 900.0, 1800.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
         TableGenerator(get_stats_size, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average sizes of best of runs (number of nodes)",
                        color_scheme=reporting.color_scheme_yellow,
@@ -664,7 +671,7 @@ columns=flexible,
 breaklines=true
 }
 """
-    templates.prepare_report(props, sects, "cdgp_expA01_withNoise.tex", paperwidth=100, user_declarations=user_declarations)
+    templates.prepare_report(props, sects, "cdgp_expA01_withNoise.tex", paperwidth=190, user_declarations=user_declarations)
 
 
 
@@ -735,7 +742,7 @@ columns=flexible,
 breaklines=true
 }
 """
-    templates.prepare_report(props, sects, "cdgp_expA02_noNoise.tex", paperwidth=100, user_declarations=user_declarations)
+    templates.prepare_report(props, sects, "cdgp_expA02_noNoise.tex", paperwidth=190, user_declarations=user_declarations)
 
 
 
