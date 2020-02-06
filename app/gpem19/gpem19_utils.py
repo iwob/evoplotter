@@ -580,7 +580,6 @@ def get_freqCounterexamples(props):
                 # cx = 'm1 -> 0.0, m2 -> 0.0, r -> 0.0'
                 fargs = re.findall("[^,]+ -> [^,]+(?:, )?", cx)  # findall returns non-overlapping matches in string
                 fargs = [a.replace(", ", "") for a in fargs]
-                arg_names = [a.split(" -> ")[0]  for a in fargs]
                 fargs.sort(key=lambda a: a.split(" -> ")[0])
                 sargs = ",".join(fargs).replace(" -> ", "=")
                 if sargs in counterex:
@@ -601,7 +600,7 @@ def get_freqCounterexamples(props):
             if i >= len(counterex_items):
                 break
             if i > 0:
-                res += "\\\\ "
+                res += "\\\\ \\ "
             # res += "{0}  ({1})".format(counterex_items[i][0], counterex_items[i][1])  # absolute value
             percent = round(100.0*float(counterex_items[i][1]) / len(props), 1)
             color = printer.getLatexColorCode(percent, [0., 50., 100.], ["darkred!50!white", "orange", "darkgreen"])
@@ -630,7 +629,7 @@ def get_rankingOfBestSolvers(dim_ranking, NUM_SHOWN=5):
             if i >= len(valuesList):
                 break
             if i > 0:
-                res += "\\\\ "
+                res += "\\\\ \\ "
             value = float(valuesList[i][1])
             valueSc = scientificNotationLatex(value)
             def nameFormatter(x):
@@ -690,7 +689,7 @@ def get_averageRanks(dim_ranking, dim_ranks_trials, NUM_SHOWN=5):
             if i >= len(valuesList):
                 break
             if i > 0:
-                res += "\\\\ "
+                res += "\\\\ \\ "
             value = round(float(valuesList[i][1]), 2)
             nameFormatter = lambda x: r"\textcolor{darkblue}{" + str(x) + "}"  if "CDGP" in str(x) else x
             color = printer.getLatexColorCode(value, [valuesList[0][1], (valuesList[-1][1]+valuesList[0][1])/2.0, valuesList[-1][1]],
