@@ -705,9 +705,10 @@ def get_rankingOfShortestSolutions(props):
     if len(props) == 0:
         return "-"
     import re
-    solutions = [(p["result.best"], int(p["result.best.size"]), float(p["result.best.testMSE"])) for p in props]
+    # best.size
+    solutions = [(p["result.bestOrig"], int(p["result.bestOrig.size"]), float(p["result.best.testMSE"])) for p in props]
     solutions.sort(key=lambda x: (x[2], x[1]), reverse=False)
-    NUM_SHOWN = 100
+    NUM_SHOWN = 15
     STR_LEN_LIMIT = 70
     # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
     # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
@@ -744,7 +745,8 @@ def get_rankingOfShortestSolutions(props):
 
         sol = solutions[i][0]
         sol = shortenLongConstants(sol)
-        sol = sol[0:STR_LEN_LIMIT] + " [..]" if len(sol) > STR_LEN_LIMIT else sol
+        sol = sol[:STR_LEN_LIMIT] + " [..]" if len(sol) > STR_LEN_LIMIT else sol
+        # sol = r"\texttt{" + sol + "}"
         res += r"{0}  ({1}) ({2})".format(sol, latexTextColor(colorValue, valueSc), sizeStr)
     res += "}"
     return res
