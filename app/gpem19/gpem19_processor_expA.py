@@ -6,6 +6,7 @@ from src import printer
 from src import templates
 from src import reporting
 from src.dims import *
+from src.templates import *
 
 
 
