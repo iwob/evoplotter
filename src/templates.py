@@ -102,3 +102,39 @@ class TableGenerator:
             text += r"\noindent"
             text += txt
         return text
+
+
+
+def rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15):
+    """Returns a function for producing a ranking of data produced from props and sorted on some property.
+
+    :param sorted_list_lambda: a function which takes as arguments: props. It returns a sorted list of elements, usually tuples.
+    :param entry_formatter_lambda: a function which takes as arguments: allSolutions, entryIndex. allSolutions is a list
+     returned by sorted_list_lambda. entryIndex is the index of the currently processed element in allSolutions. entry_formatter_lambda
+     should return a ready string to be placed on a given line in the ranking.
+    """
+    def fun(props):
+        """Returns a ranking of shortest solutions (both their size and error are printed)."""
+        if len(props) == 0:
+            return "-"
+
+        solutions = sorted_list_lambda(props)
+
+        if ONLY_VISIBLE_SOLS:
+            # drop solutions which won't be shown so that color scale is adjusted to what is visible
+            solutions = solutions[:min(NUM_SHOWN, len(solutions))]
+
+
+        # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
+        # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
+        #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
+        res = r"\pbox[l][" + str(15 * min(NUM_SHOWN, len(solutions))) + r"pt][c]{15cm}{\footnotesize "  #scriptsize, footnotesize
+        for i in range(NUM_SHOWN):
+            if i >= len(solutions):
+                break
+            if i > 0:
+                res += "\\\\ \\ "
+            res += entry_formatter_lambda(solutions, i)
+        res += "}"
+        return res
+    return fun
