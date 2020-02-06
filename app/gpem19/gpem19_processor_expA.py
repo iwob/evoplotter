@@ -419,7 +419,8 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        color_value_extractor=scNotColorValueExtractor,
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        TableGenerator(get_averageRanks(dim_cols[:-1], dim_rows[:-1], 100), Dim(dim_cols[-1]), Dim(dim_rows[-1]),
+        TableGenerator(get_averageAlgorithmRanksCDSR(dim_cols[:-1], dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
+                       Dim(dim_cols[-1]), Dim(dim_rows[-1]),
                        headerRowNames=headerRowNames,
                        title="Average ranks of the solvers (median MSE on test set)",
                        color_scheme=reporting.color_scheme_violet,
@@ -481,7 +482,8 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames)
     # dim_rows_v2 += dim_true  # TODO: within dict
 
     tables = [
-        TableGenerator(get_rankingOfShortestSolutions, Dim(dim_cols.configs[:-1]), Dim(dim_rows.configs[:-1]),
+        TableGenerator(get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15),
+                       Dim(dim_cols.configs[:-1]), Dim(dim_rows.configs[:-1]),
                        headerRowNames=headerRowNames,
                        title="The best solutions found for each benchmark and their sizes. Format: solution (MSE on test set) (size)",
                        color_scheme=reporting.color_scheme_violet, middle_col_align="l",

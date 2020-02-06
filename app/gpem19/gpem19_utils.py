@@ -599,18 +599,10 @@ def get_rankingOfBestSolvers(dim_ranking, NUM_SHOWN=5):
     return lambda_to_return
 
 
-def get_averageRanks(dim_ranking, dim_ranks_trials, NUM_SHOWN=5):
-    """Returns a listing of average ranks.
 
-    :param dim_ranking: (Dim) a dimension specifying what kind of things are compared to each other (e.g. algorithms).
-    :param dim_ranks_trials: (Dim) a dimension specifying over what kind of things ranks will be collected (e.g. benchmarks).
-    :param NUM_SHOWN: (int) number of best elements to show.
-    :return: (str) listing.
-    """
-    def lambda_to_return(props):
-        if len(props) == 0:
-            return "-"
 
+def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=70):
+    def sorted_list_lambda(props):
         allRanks = {}  # for each config name contains a list of its ranks
         for config_trial in dim_ranks_trials:
             props_trial = config_trial.filter_props(props)
@@ -632,42 +624,27 @@ def get_averageRanks(dim_ranking, dim_ranks_trials, NUM_SHOWN=5):
         # Here we should have a dictionary containing lists of ranks
         valuesList = [(name, np.mean(ranks)) for (name, ranks) in allRanks.items()]
         valuesList.sort(key=lambda x: (x[1], x[0]), reverse=False)
+        return valuesList
 
-        # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
-        # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
-        #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
-        res = r"\pbox[l][" + str(17 * min(NUM_SHOWN, len(valuesList))) + "pt][c]{15cm}{"
-        for i in range(NUM_SHOWN):
-            if i >= len(valuesList):
-                break
-            if i > 0:
-                res += "\\\\ \\ "
-            value = round(float(valuesList[i][1]), 2)
-            nameFormatter = lambda x: r"\textcolor{darkblue}{" + str(x) + "}"  if "CDGP" in str(x) else x
-            color = printer.getLatexColorCode(value, [valuesList[0][1], (valuesList[-1][1]+valuesList[0][1])/2.0, valuesList[-1][1]],
-                                              ["darkgreen", "orange", "darkred!50!white"])
-            res += "{0}  ({1})".format(nameFormatter(valuesList[i][0]), r"\textbf{\textcolor{" + color + "}{" + str(value) + "}}")  # percentage of runs
-        res += "}"
-        return res
-    return lambda_to_return
+    def entry_formatter_lambda(allSolutions, entryIndex, STR_LEN_LIMIT=70):
+        entry = allSolutions[entryIndex]
+        value = round(float(entry[1]), 2)
+        nameFormatter = lambda x: r"\textcolor{darkblue}{" + str(x) + "}" if "CDGP" in str(x) else x
+        color = printer.getLatexColorCode(value, [allSolutions[0][1], (allSolutions[-1][1] + allSolutions[0][1]) / 2.0,
+                                                  allSolutions[-1][1]],
+                                          ["darkgreen", "orange", "darkred!50!white"])
+        return "{0}  ({1})".format(nameFormatter(entry[0]),
+                                   r"\textbf{\textcolor{" + color + "}{" + str(value) + "}}")  # percentage of runs
+
+    return rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VISIBLE_SOLS=ONLY_VISIBLE_SOLS,
+                                    NUM_SHOWN=NUM_SHOWN, STR_LEN_LIMIT=STR_LEN_LIMIT)
 
 
-def get_rankingOfShortestSolutions(props):
-    """Returns a ranking of shortest solutions (both their size and error are printed)."""
-    if len(props) == 0:
-        return "-"
+
+
+def get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=70):
     import re
-    # best.size
-    solutions = [(p["result.bestOrig"], int(p["result.bestOrig.size"]), float(p["result.best.testMSE"])) for p in props]
-    solutions.sort(key=lambda x: (x[2], x[1]), reverse=False)
-    NUM_SHOWN = 15
-    STR_LEN_LIMIT = 70
-    # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
-    # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
-    #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
-    res = r"\pbox[l][" + str(15 * min(NUM_SHOWN, len(solutions))) + r"pt][c]{15cm}{\footnotesize "  #scriptsize, footnotesize
-    def latexTextColor(color, x):
-        return r"\textbf{\textcolor{" + str(color) + "}{" + str(x) + "}}"
+
     def shortenLongConstants(s):
         # cxs = re.findall("\(Map\((?:[^,]+ -> [^,]+(?:, )?)+\),None\)", s)
         cxs = re.findall("[0-9]+[.][0-9][0-9][0-9]+", s)
@@ -676,33 +653,63 @@ def get_rankingOfShortestSolutions(props):
             s = s.replace(cx, str(round(x, 2)) + "..")
         return s
 
+    def sorted_list_lambda(props):
+        solutions = [(p["result.bestOrig"], int(p["result.bestOrig.size"]), float(p["result.best.testMSE"])) for p in props]
+        solutions.sort(key=lambda x: (x[2], x[1]), reverse=False)
+        return solutions
 
-    solutions = solutions[:min(NUM_SHOWN, len(solutions))]
-    # solutionsSortSize = solutions[:]
-    # solutionsSortSize.sort(key=lambda x: x[1], reverse=False)
-    # sizeColorScale = [solutionsSortSize[0][1], (solutionsSortSize[-1][1] + solutionsSortSize[0][1]) / 2.0, solutionsSortSize[-1][1]]
-    for i in range(NUM_SHOWN):
-        if i >= len(solutions):
-            break
-        if i > 0:
-            res += "\\\\ \\ "
+    def entry_formatter_lambda(allSolutions, entryIndex, STR_LEN_LIMIT=70):
+        # solution = (bestOrig, bestOrig.size, testMSE)
+        solution = allSolutions[entryIndex]
+        def latexTextColor(color, x):
+            return r"\textbf{\textcolor{" + str(color) + "}{" + str(x) + "}}"
 
-        value = float(solutions[i][2])
+        value = float(solution[2])
         valueSc = scientificNotationLatex(value)
-        colorValue = printer.getLatexColorCode(value, [solutions[0][2], (solutions[-1][2] + solutions[0][2]) / 2.0, solutions[-1][2]],
+        colorValue = printer.getLatexColorCode(value, [allSolutions[0][2], (allSolutions[-1][2] + allSolutions[0][2]) / 2.0, allSolutions[-1][2]],
                                                ["darkgreen", "orange", "darkred!50!white"])
-        size = int(solutions[i][1])
+        size = int(solution[1])
         sizeStr = r"\textcolor{darkblue}{\textbf{" + str(size) + r"}}"
         # colorSize = printer.getLatexColorCode(value, sizeColorScale, ["darkred!50!white", "orange", "darkgreen"])
 
-        sol = solutions[i][0]
+        sol = solution[0]
         sol = shortenLongConstants(sol)
         sol = sol[:STR_LEN_LIMIT] + " [..]" if len(sol) > STR_LEN_LIMIT else sol
         # sol = r"\texttt{" + sol + "}"
-        res += r"{0}  ({1}) ({2})".format(sol, latexTextColor(colorValue, valueSc), sizeStr)
-    res += "}"
-    return res
+        return r"{0}  ({1}) ({2})".format(sol, latexTextColor(colorValue, valueSc), sizeStr)
 
+    return rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VISIBLE_SOLS=ONLY_VISIBLE_SOLS,
+                                    NUM_SHOWN=NUM_SHOWN, STR_LEN_LIMIT=STR_LEN_LIMIT)
+
+
+
+
+def rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=70):
+    def fun(props):
+        """Returns a ranking of shortest solutions (both their size and error are printed)."""
+        if len(props) == 0:
+            return "-"
+
+        solutions = sorted_list_lambda(props)
+
+        if ONLY_VISIBLE_SOLS:
+            # drop solutions which won't be shown so that color scale is adjusted to what is visible
+            solutions = solutions[:min(NUM_SHOWN, len(solutions))]
+
+
+        # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
+        # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
+        #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
+        res = r"\pbox[l][" + str(15 * min(NUM_SHOWN, len(solutions))) + r"pt][c]{15cm}{\footnotesize "  #scriptsize, footnotesize
+        for i in range(NUM_SHOWN):
+            if i >= len(solutions):
+                break
+            if i > 0:
+                res += "\\\\ \\ "
+            res += entry_formatter_lambda(solutions, i, STR_LEN_LIMIT=STR_LEN_LIMIT)
+        res += "}"
+        return res
+    return fun
 
 
 
