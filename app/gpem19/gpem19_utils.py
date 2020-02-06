@@ -1,5 +1,6 @@
 from src import utils
 from src.dims import *
+from src.templates import *
 from src import printer
 import numpy as np
 
@@ -560,10 +561,11 @@ def get_freqCounterexamples(props):
         res += "}"
         return res
 
-def get_rankingOfBestSolvers(dim_ranking, NUM_SHOWN=5):
-    def lambda_to_return(props):
-        if len(props) == 0:
-            return "-"
+
+
+
+def get_rankingOfBestSolversCDSR(dim_ranking, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=5):
+    def sorted_list_lambda(props):
         valuesList = []
         for config in dim_ranking:
             name = config.get_caption()
@@ -573,35 +575,34 @@ def get_rankingOfBestSolvers(dim_ranking, NUM_SHOWN=5):
                 valuesList.append((name, float(v)))
 
         valuesList.sort(key=lambda x: (x[1], x[0]), reverse=False)
-        # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
-        # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
-        #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
-        res = r"\pbox[l][" + str(17 * min(NUM_SHOWN, len(valuesList))) + "pt][c]{15cm}{"
-        for i in range(NUM_SHOWN):
-            if i >= len(valuesList):
-                break
-            if i > 0:
-                res += "\\\\ \\ "
-            value = float(valuesList[i][1])
-            valueSc = scientificNotationLatex(value)
-            def nameFormatter(x):
-                if "CDGP" in str(x):
-                    return r"\textcolor{darkblue}{" + str(x) + "}"
-                elif x == "ALL":
-                    return r"\underline{ALL}"
-                else:
-                    return x
-            color = printer.getLatexColorCode(value, [valuesList[0][1], (valuesList[-1][1]+valuesList[0][1])/2.0, valuesList[-1][1]],
-                                              ["darkgreen", "orange", "darkred!50!white"])
-            res += "{0}  ({1})".format(nameFormatter(valuesList[i][0]), r"\textbf{\textcolor{" + color + "}{" + str(valueSc) + "}}")  # percentage of runs
-        res += "}"
-        return res
-    return lambda_to_return
+        return valuesList
+
+    def entry_formatter_lambda(allSolutions, entryIndex):
+        # entry = (name, best.testMSE)
+        entry = allSolutions[entryIndex]
+        value = float(entry[1])
+        valueSc = scientificNotationLatex(value)
+
+        def nameFormatter(x):
+            if "CDGP" in str(x):
+                return r"\textcolor{darkblue}{" + str(x) + "}"
+            elif x == "ALL":
+                return r"\underline{ALL}"
+            else:
+                return x
+
+        color = printer.getLatexColorCode(value, [allSolutions[0][1], (allSolutions[-1][1] + allSolutions[0][1]) / 2.0,
+                                                  allSolutions[-1][1]],
+                                          ["darkgreen", "orange", "darkred!50!white"])
+        return "{0}  ({1})".format(nameFormatter(entry[0]),
+                                   r"\textbf{\textcolor{" + color + "}{" + str(valueSc) + "}}")  # percentage of runs
+
+    return rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VISIBLE_SOLS=ONLY_VISIBLE_SOLS,
+                                    NUM_SHOWN=NUM_SHOWN)
 
 
 
-
-def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=70):
+def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15):
     def sorted_list_lambda(props):
         allRanks = {}  # for each config name contains a list of its ranks
         for config_trial in dim_ranks_trials:
@@ -626,7 +627,7 @@ def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SO
         valuesList.sort(key=lambda x: (x[1], x[0]), reverse=False)
         return valuesList
 
-    def entry_formatter_lambda(allSolutions, entryIndex, STR_LEN_LIMIT=70):
+    def entry_formatter_lambda(allSolutions, entryIndex):
         entry = allSolutions[entryIndex]
         value = round(float(entry[1]), 2)
         nameFormatter = lambda x: r"\textcolor{darkblue}{" + str(x) + "}" if "CDGP" in str(x) else x
@@ -637,7 +638,7 @@ def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SO
                                    r"\textbf{\textcolor{" + color + "}{" + str(value) + "}}")  # percentage of runs
 
     return rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VISIBLE_SOLS=ONLY_VISIBLE_SOLS,
-                                    NUM_SHOWN=NUM_SHOWN, STR_LEN_LIMIT=STR_LEN_LIMIT)
+                                    NUM_SHOWN=NUM_SHOWN)
 
 
 
@@ -658,7 +659,7 @@ def get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN
         solutions.sort(key=lambda x: (x[2], x[1]), reverse=False)
         return solutions
 
-    def entry_formatter_lambda(allSolutions, entryIndex, STR_LEN_LIMIT=70):
+    def entry_formatter_lambda(allSolutions, entryIndex):
         # solution = (bestOrig, bestOrig.size, testMSE)
         solution = allSolutions[entryIndex]
         def latexTextColor(color, x):
@@ -679,37 +680,8 @@ def get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN
         return r"{0}  ({1}) ({2})".format(sol, latexTextColor(colorValue, valueSc), sizeStr)
 
     return rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VISIBLE_SOLS=ONLY_VISIBLE_SOLS,
-                                    NUM_SHOWN=NUM_SHOWN, STR_LEN_LIMIT=STR_LEN_LIMIT)
+                                    NUM_SHOWN=NUM_SHOWN)
 
-
-
-
-def rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=70):
-    def fun(props):
-        """Returns a ranking of shortest solutions (both their size and error are printed)."""
-        if len(props) == 0:
-            return "-"
-
-        solutions = sorted_list_lambda(props)
-
-        if ONLY_VISIBLE_SOLS:
-            # drop solutions which won't be shown so that color scale is adjusted to what is visible
-            solutions = solutions[:min(NUM_SHOWN, len(solutions))]
-
-
-        # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
-        # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
-        #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
-        res = r"\pbox[l][" + str(15 * min(NUM_SHOWN, len(solutions))) + r"pt][c]{15cm}{\footnotesize "  #scriptsize, footnotesize
-        for i in range(NUM_SHOWN):
-            if i >= len(solutions):
-                break
-            if i > 0:
-                res += "\\\\ \\ "
-            res += entry_formatter_lambda(solutions, i, STR_LEN_LIMIT=STR_LEN_LIMIT)
-        res += "}"
-        return res
-    return fun
 
 
 
