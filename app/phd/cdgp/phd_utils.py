@@ -11,6 +11,7 @@ STATUS_FILE_NAME = "results/status.txt"
 
 
 
+
 def print_props_filenames(props):
     for p in props:
         if "evoplotter.file" in p:
@@ -21,9 +22,9 @@ def print_props_filenames(props):
             print("'thisFileName' not specified! Printing content instead: " + str(p))
 
 
-def create_errors_listing(error_props, filename):
-    f = open("results/listings/{0}".format(filename), "w")
-    print("Creating log of errors ({0})...".format(filename))
+def create_errors_listing(error_props, file_path):
+    f = open(file_path, "w")
+    print("Creating log of errors ({0})...".format(file_path))
     for i, p in enumerate(error_props):
         if i > 0:
             f.write("\n" + ("-" * 50) + "\n")
@@ -33,11 +34,11 @@ def create_errors_listing(error_props, filename):
     f.close()
 
 
-def create_errors_solver_listing(error_props, filename, pred=None):
+def create_errors_solver_listing(error_props, file_path, pred=None):
     if pred is None:
         pred = lambda x: True
-    f = open("results/listings/{0}".format(filename), "w")
-    print("Creating log of errors ({0})...".format(filename))
+    f = open(file_path, "w")
+    print("Creating log of errors ({0})...".format(file_path))
     for i, p in enumerate(error_props):
         if not pred(p):  # ignore properties with certain features, e.g., types of errors
             continue
@@ -51,7 +52,7 @@ def create_errors_solver_listing(error_props, filename, pred=None):
             f.write(content)
     f.close()
 
-def load_correct_props(folders, exts=None):
+def load_correct_props(folders, results_dir,  exts=None):
     # if exts is None:
     #     exts = [".cdgp"]
     props_cdgpError = utils.load_properties_dirs(folders, exts=[".cdgp.error"], add_file_path=True)
@@ -84,19 +85,19 @@ def load_correct_props(folders, exts=None):
     # delete_logs(props_cdgpError, fun, simulate=True)
 
 
-    create_errors_solver_listing(props_cdgpError, "errors_solver.txt")
+    create_errors_solver_listing(props_cdgpError, "{0}/listings/errors_solver.txt".format(results_dir))
     # Terminating program due to time limit may trigger solver manager in CDGP, which shows as solver error.
     # This type of error can be recognized by the "No line found" message, so we create here a file without those false positives.
     def predSolverIssue(p):
         return "terminatingException" not in p or \
                ("No line found" not in p["terminatingException"] and "model is not available" not in p["terminatingException"])
-    create_errors_solver_listing(props_cdgpError, "errors_solver_issues.txt", predSolverIssue)
+    create_errors_solver_listing(props_cdgpError, "{0}/listings/errors_solver_issues.txt".format(results_dir), predSolverIssue)
 
 
     # Printing names of files which finished with error status or are incomplete.
     if CHECK_CORRECTNESS_OF_FILES:
         props_errors = [p for p in props0 if not is_correct(p)]
-        create_errors_listing(props_errors, "errors_run.txt")
+        create_errors_listing(props_errors, "{0}/listings/errors_run.txt".format(results_dir))
         if len(props_errors) > 0:
             print("Files with error status:")
             print_props_filenames(props_errors)
@@ -123,18 +124,20 @@ def produce_status_matrix(dim, props):
 
 
 
-def save_listings(props, dim_rows, dim_cols):
+def save_listings(props, dim_rows, dim_cols, results_dir="results"):
     """Saves listings of various useful info to separate text files."""
     assert isinstance(dim_rows, Dim)
     assert isinstance(dim_cols, Dim)
-    utils.ensure_dir("results/listings/errors/")
+    results_dir = results_dir[:-1] if results_dir[-1] == "/" else results_dir
+    listings_dir = "{0}/listings".format(results_dir)
+    utils.ensure_dir("{0}/errors/".format(listings_dir))
 
     # Saving optimal verified solutions
     for dr in dim_rows:
         bench = dr.get_caption()
         bench = bench[:bench.rfind(".")] if "." in bench else bench
-        f = open("results/listings/verified_{0}.txt".format(bench), "w")
-        f_errors = open("results/listings/errors/verified_{0}.txt".format(bench), "w")
+        f = open("{0}/verified_{1}.txt".format(listings_dir, bench), "w")
+        f_errors = open("{0}/errors/verified_{1}.txt".format(listings_dir, bench), "w")
 
         props_bench = dr.filter_props(props)
         for dc in dim_cols:
@@ -166,17 +169,14 @@ def normalized_total_time(p, max_time=3600000):
     return max_time if v > max_time else v
 
 def isOptimalVerification(p):
-    if "result.best.correctVerification" not in p:
-        return False
-    else:
-        return p["result.best.correctVerification"] == "true"
-def isOptimalTests(p):
-    # p["result.best.correctTests"] == "true" is computed wrongly for CDGPprops
-    value = float(p["result.best.trainMSE"])
-    return value < float(p["cdgp.optThresholdMSE"])
+    return p["result.best.isOptimal"] == "true"  # for CDGP optimality is stored in that field
+# def isOptimalTests(p):
+#     # p["result.best.correctTests"] == "true" is computed wrongly for CDGPprops
+#     value = float(p["result.best.trainMSE"])
+#     return value < float(p["cdgp.optThresholdMSE"])
 def is_optimal_solution(p):
     if p["method"] in {"CDGP", "CDGPprops", "GP"}:
-        return isOptimalVerification(p) and isOptimalTests(p)
+        return isOptimalVerification(p)  # and isOptimalTests(p)
     else:
         return False
 
@@ -556,15 +556,14 @@ def get_freqCounterexamples(props):
 
 
 
-def get_rankingOfBestSolversCDSR(dim_ranking, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=5):
+def get_rankingOfBestSolversCDGP(dim_ranking, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=5):
     def sorted_list_lambda(props):
         valuesList = []
         for config in dim_ranking:
             name = config.get_caption()
             props2 = config.filter_props(props)
             if len(props2) > 0:
-                v = np.median([float(p["result.best.testMSE"]) for p in props2])
-                valuesList.append((name, float(v)))
+                valuesList.append((name, get_successRate(props2)))
 
         valuesList.sort(key=lambda x: (x[1], x[0]), reverse=False)
         return valuesList
@@ -572,8 +571,7 @@ def get_rankingOfBestSolversCDSR(dim_ranking, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=
     def entry_formatter_lambda(allSolutions, entryIndex):
         # entry = (name, best.testMSE)
         entry = allSolutions[entryIndex]
-        value = float(entry[1])
-        valueSc = scientificNotationLatex(value)
+        value = round(float(entry[1]), 2)
 
         def nameFormatter(x):
             if "CDGP" in str(x):
@@ -587,14 +585,14 @@ def get_rankingOfBestSolversCDSR(dim_ranking, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=
                                                   allSolutions[-1][1]],
                                           ["darkgreen", "orange", "darkred!50!white"])
         return "{0}  ({1})".format(nameFormatter(entry[0]),
-                                   r"\textbf{\textcolor{" + color + "}{" + str(valueSc) + "}}")  # percentage of runs
+                                   r"\textbf{\textcolor{" + color + "}{" + str(value) + "}}")
 
     return rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VISIBLE_SOLS=ONLY_VISIBLE_SOLS,
                                     NUM_SHOWN=NUM_SHOWN)
 
 
 
-def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15):
+def get_averageAlgorithmRanksCDGP(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15):
     def sorted_list_lambda(props):
         allRanks = {}  # for each config name contains a list of its ranks
         for config_trial in dim_ranks_trials:
@@ -607,15 +605,14 @@ def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SO
                     allRanks[name] = []
                 props2 = config.filter_props(props_trial)
                 if len(props2) > 0:
-                    v = np.median([float(p["result.best.testMSE"]) for p in props2])
-                    valuesList.append((name, float(v)))
+                    valuesList.append((name, get_successRate(props2)))
 
-            valuesList.sort(key=lambda x: (x[1], x[0]), reverse=False)
+            valuesList.sort(key=lambda x: (x[1], x[0]), reverse=True)
             for i, (name, value) in enumerate(valuesList):
                 allRanks[name].append(i + 1)  # 'i' is incremented so that the first element has rank 1
 
         # Remove from allRanks all algorithms with empty list of ranks
-        allRanks = {k: allRanks[k] for k in allRanks if len(allRanks[k]) > 0}
+        allRanks = {k:allRanks[k] for k in allRanks if len(allRanks[k]) > 0}
 
         # Here we should have a dictionary containing lists of ranks
         valuesList = [(name, np.mean(ranks)) for (name, ranks) in allRanks.items()]
@@ -638,7 +635,7 @@ def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SO
 
 
 
-def get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=70):
+def get_rankingOfBestSolutionsCDGP(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=70):
 
     def shortenLongConstants(s):
         # cxs = re.findall("\(Map\((?:[^,]+ -> [^,]+(?:, )?)+\),None\)", s)
@@ -649,8 +646,10 @@ def get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN
         return s
 
     def sorted_list_lambda(props):
-        solutions = [(p["result.bestOrig"], int(p["result.bestOrig.size"]), float(p["result.best.testMSE"])) for p in props]
-        solutions.sort(key=lambda x: (x[2], x[1]), reverse=False)
+        def str2bool(s):
+            return True if s == "true" else False
+        solutions = [(p["result.bestOrig"], int(p["result.bestOrig.size"]), str2bool(p["result.best.isOptimal"])) for p in props]
+        solutions.sort(key=lambda x: (x[2], x[1]), reverse=True)
         return solutions
 
     def entry_formatter_lambda(allSolutions, entryIndex):
@@ -659,8 +658,7 @@ def get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN
         def latexTextColor(color, x):
             return r"\textbf{\textcolor{" + str(color) + "}{" + str(x) + "}}"
 
-        value = float(solution[2])
-        valueSc = scientificNotationLatex(value)
+        value = round(float(solution[2]), 2)
         colorValue = printer.getLatexColorCode(value, [allSolutions[0][2], (allSolutions[-1][2] + allSolutions[0][2]) / 2.0, allSolutions[-1][2]],
                                                ["darkgreen", "orange", "darkred!50!white"])
         size = int(solution[1])
@@ -671,11 +669,10 @@ def get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN
         sol = shortenLongConstants(sol)
         sol = sol[:STR_LEN_LIMIT] + " [..]" if len(sol) > STR_LEN_LIMIT else sol
         # sol = r"\texttt{" + sol + "}"
-        return r"{0}  ({1}) ({2})".format(sol, latexTextColor(colorValue, valueSc), sizeStr)
+        return r"{0}  ({1}) ({2})".format(sol, latexTextColor(colorValue, value), sizeStr)
 
     return rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VISIBLE_SOLS=ONLY_VISIBLE_SOLS,
                                     NUM_SHOWN=NUM_SHOWN)
-
 
 
 
@@ -707,3 +704,12 @@ def print_status_matrix(props, dim_rows, dim_cols):
     print(matrix + "\n")
     print("Saving status matrix to file: {0}".format(STATUS_FILE_NAME))
     utils.save_to_file(STATUS_FILE_NAME, matrix)
+
+
+def ensure_result_dir(path):
+    path = path if path[-1] == "/" else path + "/"
+    utils.ensure_clear_dir(path)
+    utils.ensure_dir("{0}/figures/".format(path))
+    utils.ensure_dir("{0}/listings/".format(path))
+    # utils.ensure_dir("{0}/tables/".format(path))
+    utils.ensure_dir("{0}/listings/errors/".format(path))
