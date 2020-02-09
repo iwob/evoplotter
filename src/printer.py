@@ -516,6 +516,8 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
     if headerRowNames is None:
         headerRowNames = [""] * num_layers
     assert isinstance(headerRowNames, list)
+    if len(headerRowNames) < num_layers:
+        headerRowNames.extend([""] * (num_layers - len(headerRowNames)))
     assert len(headerRowNames) >= num_layers, "headerRowNames has {0} entries, but it should have as many entries as layers to be created ({1})".format(len(headerRowNames), num_layers)
 
     def getConfigsTails(dimens):
