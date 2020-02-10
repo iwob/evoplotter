@@ -92,10 +92,10 @@ dim_methodGPR = Dim([
     Config("$GPR$", p_dict_matcher({"method": "GPR"}), method="GPR"),
 ])
 dim_operatorProbs = Dim([
-    Config("m=0.25, c=0.75$", p_dict_matcher({"operatorProbs": "0.25,0.75"}), method="0.25,0.75"),
-    Config("m=0.5, c=0.5$", p_dict_matcher({"operatorProbs": "0.5,0.5"}), method="0.5,0.5"),
-    Config("m=0.75, c=0.25$", p_dict_matcher({"operatorProbs": "0.75,0.25"}), method="0.75,0.25"),
-    Config("m=1.0, c=0.0$", p_dict_matcher({"operatorProbs": "1.0,0.0"}), method="1.0,0.0"),
+    Config("$m=0.25, c=0.75$", p_dict_matcher({"operatorProbs": "0.25,0.75"}), method="0.25,0.75"),
+    Config("$m=0.5, c=0.5$", p_dict_matcher({"operatorProbs": "0.5,0.5"}), method="0.5,0.5"),
+    Config("$m=0.75, c=0.25$", p_dict_matcher({"operatorProbs": "0.75,0.25"}), method="0.75,0.25"),
+    Config("$m=1.0, c=0.0$", p_dict_matcher({"operatorProbs": "1.0,0.0"}), method="1.0,0.0"),
 ])
 baseline_algs = ["CVC4", "EUSolver"]
 dim_methodBaseline = Dim([Config(a, p_dict_matcher({"method": a}), method=a) for a in baseline_algs])
@@ -203,7 +203,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(fun_successRate, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Success rates (properties met + mse below thresh)",
+                       title="Success rates (properties met)",
                        color_scheme=reporting.color_scheme_darkgreen,
                        default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
@@ -211,7 +211,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         TableGenerator(get_averageAlgorithmRanksCDGP(dim_cols[:-1], dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
                        Dim(dim_cols[-1]), Dim(dim_rows[-1]),
                        headerRowNames=headerRowNames,
-                       title="Average ranks of the solvers (median MSE on test set)",
+                       title="Average ranks of the solvers (success rate)",
                        color_scheme=reporting.color_scheme_violet,
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
@@ -219,15 +219,9 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         TableGenerator(get_rankingOfBestSolversCDGP(dim_cols[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
                        Dim(dim_cols[-1]), dim_rows,
                        headerRowNames=headerRowNames,
-                       title="Best solvers for the given benchmark (median MSE on test set)",
+                       title="Best solvers for the given benchmark (success rate)",
                        color_scheme=reporting.color_scheme_violet,
                        default_color_thresholds=(0.0, 900.0, 1800.0),
-                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       ),
-        TableGenerator(fun_allPropertiesMet, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Success rates (properties met)",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=headerRowNames,
@@ -421,15 +415,15 @@ Rerun of the CDGP experiments series for my PhD thesis.
 NOTE: for steady state, maxGenerations is multiplied by populationSize. 
 """
 
-    folders = ["phd_cdgp_e0_paramTests"]
+    folders = ["phd_cdgp_e0_paramTests_01"]
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders, results_dir)
     standardize_benchmark_names(props)
-    dim_rows = get_benchmarks_from_props(props, simplify_name_lambda=simplify_benchmark_name)
+    dim_rows = get_benchmarks_from_props(props)  #, simplify_name_lambda=simplify_benchmark_name)
     dim_rows += dim_rows.dim_true_within("ALL")
 
     dim_cols_cdgp = (dim_methodCDGP + dim_methodCDGPprops * dim_weight) * dim_testsRatio
-    dim_cols_ea = dim_methodGPR + dim_cols_cdgp
+    dim_cols_ea = (dim_methodGPR + dim_cols_cdgp) * dim_operatorProbs
     dim_cols = dim_methodBaseline + dim_cols_ea
 
 

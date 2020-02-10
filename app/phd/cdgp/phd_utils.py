@@ -63,7 +63,7 @@ def load_correct_props(folders, results_dir,  exts=None):
     # utils.deleteFilesByPredicate(props_cdgpError, lambda p: len(p["maxGenerations"]) > 7, simulate=False)
 
     def is_correct(p):
-        return p["method"] not in {"CDGP", "CDGPprops", "GP"} or "result.best.verificationDecision" in p
+        return p["method"] not in {"CDGP", "CDGPprops", "GP"} or "result.best.isOptimal" in p
 
     # Filtering props so only correct ones are left
     props = [p for p in props0 if is_correct(p)]
@@ -146,12 +146,9 @@ def save_listings(props, dim_rows, dim_cols, results_dir="results"):
             props_final = [p for p in dc.filter_props(props_bench) if is_optimal_solution(p)]
 
             for p in props_final:
-                fname = p["thisFileName"].replace("/home/ibladek/workspace/GECCO19/gecco19/", "")
+                fname = p["thisFileName"].replace("/home/ibladek/workspace/GPEM19", "")
                 best = p["result.best"]
-                fit = float(p["result.best.trainMSE"])
-                if fit >= 1e-15:
-                    f.write("{0}\t\t\t(FILE: {1}) (MSE: {2})\n".format(best, fname, fit))
-                else:
+                if p["result.best.isOptimal"] == "true":
                     f.write("{0}\t\t\t(FILE: {1})\n".format(best, fname))
 
             f.write("\n\n")
@@ -565,7 +562,7 @@ def get_rankingOfBestSolversCDGP(dim_ranking, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=
             if len(props2) > 0:
                 valuesList.append((name, get_successRate(props2)))
 
-        valuesList.sort(key=lambda x: (x[1], x[0]), reverse=False)
+        valuesList.sort(key=lambda x: (x[1], x[0]), reverse=True)
         return valuesList
 
     def entry_formatter_lambda(allSolutions, entryIndex):
@@ -581,9 +578,9 @@ def get_rankingOfBestSolversCDGP(dim_ranking, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=
             else:
                 return x
 
-        color = printer.getLatexColorCode(value, [allSolutions[0][1], (allSolutions[-1][1] + allSolutions[0][1]) / 2.0,
-                                                  allSolutions[-1][1]],
-                                          ["darkgreen", "orange", "darkred!50!white"])
+        color = printer.getLatexColorCode(value, [allSolutions[-1][1], (allSolutions[-1][1] + allSolutions[0][1]) / 2.0,
+                                                  allSolutions[0][1]],
+                                          list(reversed(["darkgreen", "orange", "darkred!50!white"])))
         return "{0}  ({1})".format(nameFormatter(entry[0]),
                                    r"\textbf{\textcolor{" + color + "}{" + str(value) + "}}")
 
@@ -608,8 +605,22 @@ def get_averageAlgorithmRanksCDGP(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SO
                     valuesList.append((name, get_successRate(props2)))
 
             valuesList.sort(key=lambda x: (x[1], x[0]), reverse=True)
-            for i, (name, value) in enumerate(valuesList):
-                allRanks[name].append(i + 1)  # 'i' is incremented so that the first element has rank 1
+
+            # "If there are tied values, assign to each tied value the average of
+            #  the ranks that would have been assigned without ties."
+            import scipy.stats as ss
+            # In[19]: ss.rankdata([3, 1, 4, 15, 92])
+            # Out[19]: array([2., 1., 3., 4., 5.])
+            #
+            # In[20]: ss.rankdata([1, 2, 3, 3, 3, 4, 5])
+            # Out[20]: array([1., 2., 4., 4., 4., 6., 7.])
+            ranks = ss.rankdata([-x[1] for x in valuesList])
+            for (r, (name, value)) in zip(ranks, valuesList):
+                allRanks[name].append(r)
+
+            # The code below incorrectly handles ties
+            # for i, (name, value) in enumerate(valuesList):
+            #     allRanks[name].append(i + 1)  # 'i' is incremented so that the first element has rank 1
 
         # Remove from allRanks all algorithms with empty list of ranks
         allRanks = {k:allRanks[k] for k in allRanks if len(allRanks[k]) > 0}

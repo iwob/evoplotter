@@ -611,8 +611,22 @@ def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SO
                     valuesList.append((name, float(v)))
 
             valuesList.sort(key=lambda x: (x[1], x[0]), reverse=False)
-            for i, (name, value) in enumerate(valuesList):
-                allRanks[name].append(i + 1)  # 'i' is incremented so that the first element has rank 1
+
+            # "If there are tied values, assign to each tied value the average of
+            #  the ranks that would have been assigned without ties."
+            import scipy.stats as ss
+            # In[19]: ss.rankdata([3, 1, 4, 15, 92])
+            # Out[19]: array([2., 1., 3., 4., 5.])
+            #
+            # In[20]: ss.rankdata([1, 2, 3, 3, 3, 4, 5])
+            # Out[20]: array([1., 2., 4., 4., 4., 6., 7.])
+            ranks = ss.rankdata([x[1] for x in valuesList])
+            for (r, (name, value)) in zip(ranks, valuesList):
+                allRanks[name].append(r)
+
+            # The code below incorrectly handles ties
+            # for i, (name, value) in enumerate(valuesList):
+            #     allRanks[name].append(i + 1)  # 'i' is incremented so that the first element has rank 1
 
         # Remove from allRanks all algorithms with empty list of ranks
         allRanks = {k: allRanks[k] for k in allRanks if len(allRanks[k]) > 0}
