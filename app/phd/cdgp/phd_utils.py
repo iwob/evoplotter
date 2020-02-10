@@ -172,7 +172,7 @@ def isOptimalVerification(p):
 #     value = float(p["result.best.trainMSE"])
 #     return value < float(p["cdgp.optThresholdMSE"])
 def is_optimal_solution(p):
-    if p["method"] in {"CDGP", "CDGPprops", "GP"}:
+    if p["method"] in {"CDGP", "CDGPprops", "GP", "GPR"}:
         return isOptimalVerification(p)  # and isOptimalTests(p)
     else:
         return False
