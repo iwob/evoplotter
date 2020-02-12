@@ -92,10 +92,10 @@ dim_methodGPR = Dim([
     Config("$GPR$", p_dict_matcher({"method": "GPR"}), method="GPR"),
 ])
 dim_operatorProbs = Dim([
-    Config("$m=0.25, c=0.75$", p_dict_matcher({"operatorProbs": "0.25,0.75"}), method="0.25,0.75"),
-    Config("$m=0.5, c=0.5$", p_dict_matcher({"operatorProbs": "0.5,0.5"}), method="0.5,0.5"),
-    Config("$m=0.75, c=0.25$", p_dict_matcher({"operatorProbs": "0.75,0.25"}), method="0.75,0.25"),
-    Config("$m=1.0, c=0.0$", p_dict_matcher({"operatorProbs": "1.0,0.0"}), method="1.0,0.0"),
+    Config("$m0.25, c0.75$", p_dict_matcher({"operatorProbs": "0.25,0.75"}), method="0.25,0.75"),
+    Config("$m0.5, c0.5$", p_dict_matcher({"operatorProbs": "0.5,0.5"}), method="0.5,0.5"),
+    Config("$m0.75, c0.25$", p_dict_matcher({"operatorProbs": "0.75,0.25"}), method="0.75,0.25"),
+    Config("$m1.0, c0.0$", p_dict_matcher({"operatorProbs": "1.0,0.0"}), method="1.0,0.0"),
 ])
 baseline_algs = ["CVC4", "EUSolver"]
 dim_methodBaseline = Dim([Config(a, p_dict_matcher({"method": a}), method=a) for a in baseline_algs])
@@ -241,6 +241,12 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        ),
         TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average runtime (only successful) [s]",
+                       color_scheme=reporting.color_scheme_violet,
+                       default_color_thresholds=(0.0, 900.0, 1800.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(get_avg_runtimeOnlyUnsuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Average runtime (only unsuccessful) [s]",
                        color_scheme=reporting.color_scheme_violet,
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
@@ -424,7 +430,7 @@ Rerun of the CDGP experiments series for my PhD thesis.
 NOTE: for steady state, maxGenerations is multiplied by populationSize. 
 """
 
-    folders = ["phd_cdgp_e0_paramTests_01"]
+    folders = ["phd_cdgp_e0_paramTests_01", "phd_cdgp_e0_paramTests_02"]
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders, results_dir)
     standardize_benchmark_names(props)

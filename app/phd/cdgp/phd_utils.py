@@ -430,6 +430,12 @@ def get_avg_runtimeOnlySuccessful(props):
     else:
         vals = [float(normalized_total_time(p, max_time=1800000)) / 1000.0 for p in props if is_optimal_solution(p)]
         return get_avg_runtime_helper(vals)
+def get_avg_runtimeOnlyUnsuccessful(props):
+    if len(props) == 0:
+        return "-"
+    else:
+        vals = [float(normalized_total_time(p, max_time=1800000)) / 1000.0 for p in props if not is_optimal_solution(p)]
+        return get_avg_runtime_helper(vals)
 def get_avg_runtime(props):
     if len(props) == 0:
         return "-"
@@ -514,17 +520,20 @@ def get_freqCounterexamples(props):
     for p in props:
         # e.g. "ArrayBuffer((Map(m1 -> 0.0, m2 -> 0.0, r -> 0.0),None), (Map(m1 -> 1.0, m2 -> 2.0, r -> 1.0),None)
         s = p["tests.collected"]
-        cxs = re.findall("\(Map\((?:[^,]+ -> [^,]+(?:, )?)+\),None\)", s)  # ^ makes to match all charecters other than ','
+        # ?: - switches off the capturing effect
+        cxs = re.findall("\(Map\((?:[^,]+ -> [^,]+(?:, )?)+\),(?:Some\([^)]+\)+|None)\)", s)  # ^ makes to match all charecters other than ','
         # cxs = <class 'list'>: ['(Map(m1 -> 0.0, m2 -> 0.0, r -> 0.0),None)', '(Map(m1 -> 1.0, m2 -> 2.0, r -> 1.0),None)']
         for cx in cxs:
             # e.g. cx = (Map(m1 -> 0.0, m2 -> 0.0, r -> 0.0),None)
-            if "None" in cx: # we are interested only in the noncomplete tests
-                cx = cx[len("(Map("):-len("),None)")]
+            # if "None" in cx: # we are interested only in the noncomplete tests
+            if True:
+                cx = cx[len("(Map("):-len(")")]
                 # cx = 'm1 -> 0.0, m2 -> 0.0, r -> 0.0'
-                fargs = re.findall("[^,]+ -> [^,]+(?:, )?", cx)  # findall returns non-overlapping matches in string
+                fargs = re.findall("[^,]+ -> [^,)]+(?:, )?", cx)  # findall returns non-overlapping matches in string
                 fargs = [a.replace(", ", "") for a in fargs]
                 fargs.sort(key=lambda a: a.split(" -> ")[0])
-                sargs = ",".join(fargs).replace(" -> ", "=")
+                output = re.findall("(Some\([^)]+\)+|None)", cx)[0]
+                sargs = ",".join(fargs).replace(" -> ", "=") + ";" + output
                 if sargs in counterex:
                     counterex[sargs] += 1
                 else:
@@ -534,7 +543,7 @@ def get_freqCounterexamples(props):
         return "n/a"
     else:
         counterex_items.sort(key=lambda x: (x[1], x[0]), reverse=True)
-        NUM_SHOWN = 5
+        NUM_SHOWN = 7
         # For some strange reason makecell doesn't work, even when it is a suggested answer (https://tex.stackexchange.com/questions/2441/how-to-add-a-forced-line-break-inside-a-table-cell)
         # return "\\makecell{" + "{0}  ({1})\\\\{2}  ({3})".format(counterex_items[0][0], counterex_items[0][1],
         #                                        counterex_items[1][0], counterex_items[1][1]) + "}"
