@@ -149,5 +149,5 @@ class TestsPrinter(unittest.TestCase):
         MidColor = "yellow"
         MaxColor = "red"
         text = printer.table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor, MidColor, MaxColor)
-        self.assertEqual("\cellcolor{green!100.0!yellow}0 & \cellcolor{green!0.0!yellow}5 & \cellcolor{red!100.0!yellow}10\\\\\n"+
+        self.assertEqual("\cellcolor{green!100.0!yellow}0 & \cellcolor{red!0.0!yellow}5 & \cellcolor{red!100.0!yellow}10\\\\\n"+
                          "\cellcolor{red!100.0!yellow}20 & \cellcolor{green!100.0!yellow}-5 & \cellcolor{green!100.0!yellow}0\\\\\n", text)
