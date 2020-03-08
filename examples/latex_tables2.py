@@ -49,12 +49,13 @@ def processTableNewInterface_SvsSI(tableBody, title):
     print(title)
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
     rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-    table = printer.Table(tableBody, cellRenderers=[rBold, rShading])
-    table.leaveColumns([0, 5, 6, 7, 8, 13, 14, 15, 16]) # comparing only IS with S
+    table = printer.Table(printer.latexToArray(tableBody), cellRenderers=[rBold, rShading])
+    table.leaveColumns([0, 5, 6, 7, 8, 13, 14, 15, 16]) # comparing only SI with S
 
     colored = printer.table_color_map(str(table), 0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
     #print(reporting.color_scheme_green)
     print(colored)
+    print(table.renderCsv())
 
 
 def processTableNewInterface_withoutSC(tableBody, title):
@@ -67,9 +68,10 @@ def processTableNewInterface_withoutSC(tableBody, title):
     print("asd: "+title)
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
     rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-    table = printer.Table(tableBody, dimCols=dimCols, cellRenderers=[rBold, rShading])
+    table = printer.Table(printer.latexToArray(tableBody), dimCols=dimCols, cellRenderers=[rBold, rShading])
     table.leaveColumns([0, 1, 3, 7, 9, 11, 15]) # leaving out S and C
     print(table.render())
+    print(table.renderCsv())
 
 
 def computeAvg(table):
@@ -83,8 +85,8 @@ def computeAvg(table):
 
 def printTablesAverages(tableBodySmall, tableBodyLarge, title=""):
     print(title)
-    tableSmall = printer.Table(tableBodySmall)
-    tableLarge = printer.Table(tableBodyLarge)
+    tableSmall = printer.Table(printer.latexToArray(tableBodySmall))
+    tableLarge = printer.Table(printer.latexToArray(tableBodyLarge))
 
     tableSmall.rows = tableSmall.rows[:-2]
     tableLarge.rows = tableLarge.rows[:-2]
@@ -98,8 +100,8 @@ def printTablesAverages(tableBodySmall, tableBodyLarge, title=""):
 
 def printTablesAveragesCvsN(tableBody, title="", doPrint=True):
     print(title)
-    tableC = printer.Table(tableBody)
-    tableN = printer.Table(tableBody)
+    tableC = printer.Table(printer.latexToArray(tableBody))
+    tableN = printer.Table(printer.latexToArray(tableBody))
 
     tableC.rows = tableC.rows[:-2]
     tableN.rows = tableN.rows[:-2]
@@ -117,8 +119,8 @@ def printTablesAveragesCvsN(tableBody, title="", doPrint=True):
 
 def printTablesAveragesSvsIS(tableBody, title="", doPrint=True):
     print(title)
-    tableS = printer.Table(tableBody)
-    tableIS = printer.Table(tableBody)
+    tableS = printer.Table(printer.latexToArray(tableBody))
+    tableIS = printer.Table(printer.latexToArray(tableBody))
 
     tableS.rows = tableS.rows[:-2]
     tableIS.rows = tableIS.rows[:-2]

@@ -30,7 +30,7 @@ def generateTable(verticalBorder, horizontalBorder, useBooktabs):
 
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
     rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-    table = printer.Table(tableBody, dimCols=dimCols, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
+    table = printer.Table(printer.latexToArray(tableBody), dimCols=dimCols, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
                           horizontalBorder=horizontalBorder, useBooktabs=useBooktabs)
     return table
 
@@ -46,7 +46,7 @@ def generateTableRemovedCols(verticalBorder, horizontalBorder, useBooktabs):
 
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
     rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-    table = printer.Table(tableBody, dimCols=dimCols, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
+    table = printer.Table(printer.latexToArray(tableBody), dimCols=dimCols, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
                           horizontalBorder=horizontalBorder, useBooktabs=useBooktabs)
 
     table.leaveColumns([0, 1, 3, 7, 9, 11, 15])  # leaving out S and C

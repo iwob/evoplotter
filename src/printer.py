@@ -87,7 +87,7 @@ class TableHeader(TableHeaderInterface):
         # Cells of header are associated with the respective columns of the table.
         # Removing a column means that its header cell also will be removed.
         # Adding a column means adding its header cell.
-        self.cells = dimCols.get_captions_list()
+        self.cells = self.dimCols.get_captions_list()
 
         self.layeredHeadline = layeredHeadline
         self.verticalBorder = verticalBorder
@@ -126,44 +126,88 @@ class EmptyTableHeader(TableHeaderInterface):
 
 
 
+class TableContent(object):
+    def __init__(self, array, dimCols=None):
+        assert isinstance(array, list)
+        self.rows = array
+        self.dimCols = dimCols
+
+
+
+
+def latexToArray(text):
+    """Converts the inside of the LaTeX tabular environment into a 2D array represented as nested lists."""
+    rows = []
+    for line in text.strip().split("\n"):
+        cols = [c.strip() for c in line.split("&")]
+        if cols[-1].endswith(r"\\"):
+            cols[-1] = cols[-1][:-2]
+        elif cols[-1].endswith(r"\\\hline"):
+            cols[-1] = cols[-1][:-8]
+        rows.append(cols)
+    return rows
+
+
+def latexToTableContent(text, dimCols=None):
+    """Converts the inside of the LaTeX tabular environment into a TableContent instance, which can be used
+    to further process the table."""
+    return TableContent(latexToArray(text), dimCols)
+
+
+
 class Table(object):
     """
     Rule: in hierarchical header, cells with the same caption on the same level are merged.
     """
-    def __init__(self, tableBody, dimCols=None, cellRenderers=None, layeredHeadline=True, verticalBorder=0,
+    def __init__(self, rows, dimCols=None, renderHeader=None, cellRenderers=None, layeredHeadline=True, verticalBorder=0,
                  horizontalBorder=1, useBooktabs=False):
         if cellRenderers is None:
             cellRenderers = []
-        assert isinstance(tableBody, str)
+        assert isinstance(rows, list)
         assert isinstance(cellRenderers, list)
-        tableBody = tableBody.strip() # Remove leading and trailing whitespaces
-        self.rows = []
-        # self.dimCols = dimCols
-        self.dimCols = dims.Dim(dimCols.configs[:])  # copy of the original dimCols
+
+        self.renderHeader = renderHeader
+
+        # Extracting rows
+        self.rows = rows
+
         if dimCols is None:
-            self.header = EmptyTableHeader()
+            # Create a dummy dimCols for the header
+            self.dimCols = dims.Dim([("", None)] * len(self.rows[0]))
+            if renderHeader is None:
+                self.renderHeader = False
         else:
-            self.header = TableHeader(dimCols, layeredHeadline=layeredHeadline, verticalBorder=verticalBorder,
-                                      horizontal_border=horizontalBorder, useBooktabs=useBooktabs)
+            self.dimCols = dimCols.copy()
+            # pad dimCols so that the first column has some generic caption if it was not present
+            if len(dimCols.configs) == len(self.rows[0]) - 1:
+                self.dimCols = dims.Dim([("", None)]) + self.dimCols
+            if renderHeader is None:
+                self.renderHeader = True
+
+        self.numCols = len(self.dimCols)
+        self.numRows = len(self.rows)
+
         self.cellRenderers = cellRenderers
         self.layeredHeadline = layeredHeadline
         self.verticalBorder = verticalBorder
         self.horizontalBorder = horizontalBorder
         self.useBooktabs = useBooktabs
-        # Extracting rows
-        for line in tableBody.split("\n"):
-            cols = [c.strip() for c in line.split("&")]
-            if cols[-1].endswith(r"\\"):
-                cols[-1] = cols[-1][:-2]
-            elif cols[-1].endswith(r"\\\hline"):
-                cols[-1] = cols[-1][:-8]
-            self.rows.append(cols)
+
+
+    def getHeader(self):
+        """Return a Header data structure which allows for logical processing of header cells."""
+        if self.renderHeader is None:
+            return EmptyTableHeader()
+        else:
+            return TableHeader(self.dimCols, layeredHeadline=self.layeredHeadline,
+                               verticalBorder=self.verticalBorder, horizontal_border=self.horizontalBorder,
+                               useBooktabs=self.useBooktabs)
 
     def removeColumn(self, index):
         assert isinstance(index, int)
-        self.header.removeCell(index)
         for row in self.rows:
             del row[index]
+        self.numCols -= 1
         # Removing corresponding column dimension
         del self.dimCols[index]
 
@@ -182,11 +226,13 @@ class Table(object):
     def removeRow(self, index):
         assert isinstance(index, int)
         del self.rows[index]
+        self.numRows -= 1
 
     def addRow(self, row):
         assert isinstance(row, list)
-        assert len(row) == len(self.header.cells), "Number of columns in the row does not match the table header!"
+        assert len(row) == self.numCols, "Number of columns in the row does not match the table header!"
         self.rows.append(row)
+        self.numRows += 1
 
     def getText(self, opts=None):
         """Part of the interface of reporting module."""
@@ -198,11 +244,8 @@ class Table(object):
             text = rend(value, text)
         return text
 
-    def getHeaderCells(self):
-        return self.header.cells
-
     def renderTableHeader(self):
-        return self.header.render()
+        return self.getHeader().render()
 
     def renderTableBody(self):
         text = ""
@@ -218,16 +261,36 @@ class Table(object):
         return text
 
     def render(self, latexizeUnderscores=True, firstColAlign="l", middle_col_align="c"):
-        text  = self.renderTableHeader()
+        text = ""
+        if self.renderHeader:
+            text += self.renderTableHeader()
         text += self.renderTableBody()
-        dimCols = self.dimCols if self.dimCols is not None else dims.Dim.generic_labels(len(self.rows[0]))
-        return latex_table_wrapper(text, dimCols, latexize_underscores=latexizeUnderscores, vertical_border=self.verticalBorder,
+        return latex_table_wrapper(text, self.dimCols, latexize_underscores=latexizeUnderscores, vertical_border=self.verticalBorder,
                                    horizontal_border=self.horizontalBorder, first_col_align=firstColAlign,
                                    middle_col_align=middle_col_align, tabFirstCol=False, useBooktabs=self.useBooktabs)
 
     def __str__(self):
         return self.render()
 
+    def renderLatex(self, latexizeUnderscores=True, firstColAlign="l", middle_col_align="c"):
+        return self.render(latexizeUnderscores, firstColAlign, middle_col_align)
+
+    def renderCsv(self, delim=";"):
+        # Header
+        text = ""
+        if self.renderHeader:
+            text += delim.join(["_".join(c) for c in self.getHeader().cells]) + "\n"
+        # Data
+        for r in self.rows:
+            text += delim.join(r) + "\n"
+        return text
+
+
+
+# def latexToHeader(text, headerLayers):
+#
+#
+# def tabularToTable(text, headerLayers=1):
 
 
 
