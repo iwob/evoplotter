@@ -99,7 +99,7 @@ dim_operatorProbs = Dim([
 ])
 baseline_algs = ["CVC4", "EUSolver"]
 dim_methodBaseline = Dim([Config(a, p_dict_matcher({"method": a}), method=a) for a in baseline_algs])
-dim_method = dim_methodBaseline + dim_methodCDGP + dim_methodCDGPprops + dim_methodGPR
+dim_method = dim_methodBaseline + dim_methodGPR + dim_methodCDGP + dim_methodCDGPprops
 dim_sel = Dim([
     #Config("$Tour$", p_sel_tourn, selection="tournament"),
     Config("$Lex$", p_sel_lexicase, selection="lexicase"),
@@ -218,13 +218,22 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        ),
         TableGenerator(
             get_averageAlgorithmRanksCDGP(dim_operatorProbs, dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
+            Dim(dim_cols[-1]), dim_methodGPR + dim_methodCDGP + dim_methodCDGPprops,
+            headerRowNames=headerRowNames,
+            title="Average ranks of the solvers (success rate)",
+            color_scheme=reporting.color_scheme_violet,
+            default_color_thresholds=(0.0, 900.0, 1800.0),
+            vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        ),
+        TableGenerator(
+            get_averageAlgorithmRanksCDGP(dim_operatorProbs, dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
             Dim(dim_cols[-1]), Dim(dim_rows[-1]),
             headerRowNames=headerRowNames,
             title="Average ranks of the solvers (success rate)",
             color_scheme=reporting.color_scheme_violet,
             default_color_thresholds=(0.0, 900.0, 1800.0),
             vertical_border=vb, table_postprocessor=post, table_variants=variants,
-            ),
+        ),
         TableGenerator(get_rankingOfBestSolversCDGP(dim_cols[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
                        Dim(dim_cols[-1]), dim_rows,
                        headerRowNames=headerRowNames,
@@ -430,7 +439,8 @@ Rerun of the CDGP experiments series for my PhD thesis.
 NOTE: for steady state, maxGenerations is multiplied by populationSize. 
 """
 
-    folders = ["phd_cdgp_e0_paramTests_01", "phd_cdgp_e0_paramTests_02"]
+    # folders = ["phd_cdgp_e0_paramTests_01", "phd_cdgp_e0_paramTests_02"]
+    folders = ["phd_cdgp_e0_paramTests", "phd_cdgp_e0_paramTests_fix1"]
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders, results_dir)
     standardize_benchmark_names(props)
