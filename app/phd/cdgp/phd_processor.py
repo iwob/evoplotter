@@ -216,7 +216,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        FriedmannTestKK(dim_rows[:-1], dim_cols[:-1], fun_successRate,
+        FriedmannTestKK(Dim(dim_rows[:-1]), Dim(dim_cols[:-1]), fun_successRate,
                         title="Friedman test for success rates (KK)",
                         color_scheme=""),
         TableGenerator(
