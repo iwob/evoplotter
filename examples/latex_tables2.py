@@ -88,8 +88,8 @@ def printTablesAverages(tableBodySmall, tableBodyLarge, title=""):
     tableSmall = printer.Table(printer.latexToArray(tableBodySmall))
     tableLarge = printer.Table(printer.latexToArray(tableBodyLarge))
 
-    tableSmall.rows = tableSmall.rows[:-2]
-    tableLarge.rows = tableLarge.rows[:-2]
+    tableSmall.content = tableSmall.content[:-2]
+    tableLarge.content = tableLarge.content[:-2]
 
     tableSmall.removeColumns([0, 17])
     tableLarge.removeColumns([0, 17])
@@ -103,8 +103,8 @@ def printTablesAveragesCvsN(tableBody, title="", doPrint=True):
     tableC = printer.Table(printer.latexToArray(tableBody))
     tableN = printer.Table(printer.latexToArray(tableBody))
 
-    tableC.rows = tableC.rows[:-2]
-    tableN.rows = tableN.rows[:-2]
+    tableC.content = tableC.content[:-2]
+    tableN.content = tableN.content[:-2]
 
     tableC.removeColumns([0, 2, 4, 6, 8, 10, 12, 14, 16, 17])
     tableN.removeColumns([0, 1, 3, 5, 7, 9, 11, 13, 15, 17])
@@ -122,8 +122,8 @@ def printTablesAveragesSvsIS(tableBody, title="", doPrint=True):
     tableS = printer.Table(printer.latexToArray(tableBody))
     tableIS = printer.Table(printer.latexToArray(tableBody))
 
-    tableS.rows = tableS.rows[:-2]
-    tableIS.rows = tableIS.rows[:-2]
+    tableS.content = tableS.content[:-2]
+    tableIS.content = tableIS.content[:-2]
 
     tableS.leaveColumns([5, 6, 13, 14])
     tableIS.leaveColumns([7, 8, 15, 16])

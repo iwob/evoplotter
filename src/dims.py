@@ -43,6 +43,10 @@ class Dim(object):
                     self.configs.append(c)
                 elif isinstance(c, tuple):
                     self.configs.append(Config(c[0], c[1]))
+                elif isinstance(c, str):  # creating only labels
+                    self.configs.append(Config(c, None))
+                else:
+                    raise Exception("Incorrect arguments passed to Dimension: {0}".format(c))
         elif isinstance(configs, ConfigList):
             self.configs = [configs]
         else:
@@ -83,6 +87,12 @@ class Dim(object):
 
     def __str__(self):
         return str([c.get_caption() for c in self.configs])
+
+    def insert(self, index, config):
+        """Inserts config at the particular position on the list of dimension's configs."""
+        if isinstance(config, Dim):
+            config = config[0]
+        self.configs.insert(index, config)
 
     def get_captions_list(self):
         """Returns a list of captions of all configs in this dimension."""

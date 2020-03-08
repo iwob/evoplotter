@@ -359,7 +359,7 @@ def print_optimals(props):
         return "Found optimal:\t" + optFilled + "\n"
     text = printer.text_listing(props, dim, print_optimal)
     print(text)
-    printer.save_to_file(text, "figures/optimals.txt")
+    utils.save_to_file("figures/optimals.txt", text)
 
 
 def print_optimals_per_benchmark(props):
@@ -371,7 +371,7 @@ def print_optimals_per_benchmark(props):
         return optFilled + "\n"
     text = printer.text_listing(props, dim, print_optimal, is_fun_single_prop=True)
     print(text)
-    printer.save_to_file(text, "figures/optimals.txt")
+    utils.save_to_file("figures/optimals.txt", text)
 
 
 def draw_boxplots(props):

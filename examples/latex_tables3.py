@@ -13,9 +13,15 @@ P3 & 0.9 & 0.0 & 0.2 & 0.3 \\
 """
 
 table = printer.Table(printer.latexToArray(tableRaw))
+table.removeColumn(1)
 print(table.renderLatex())
 print(table.renderCsv())
 
 table = printer.Table(printer.latexToArray(tableRaw), Dim([("A", None), ("B", None)]) * Dim([("c", None), ("d", None)]))
+table.removeColumn(1)
+print(table.renderLatex())
+print(table.renderCsv())
+
+table.insertColumn(1, ["0.0", "0.0", "0.0", "0.0"])
 print(table.renderLatex())
 print(table.renderCsv())
