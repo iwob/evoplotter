@@ -128,7 +128,11 @@ def get_content_of_subsections(subsects):
     for title, table, cs in subsects:
         if isinstance(cs, reporting.ColorScheme3):
             cs = cs.toBlockLatex()
-        sub = reporting.SectionRelative(title, contents=[cs, reporting.BlockLatex(table + "\n"), vspace])
+        if not isinstance(table, reporting.BlockLatex) and not isinstance(table, reporting.BlockEnvironment):
+            data = reporting.BlockLatex(table + "\n")
+        else:
+            data = table
+        sub = reporting.SectionRelative(title, contents=[cs, data, vspace])
         content.append(sub)
     return content
 
@@ -216,7 +220,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        FriedmannTestKK(Dim(dim_rows[:-1]), Dim(dim_cols[:-1]), fun_successRate,
+        FriedmannTestKK(Dim(dim_rows[:-1]), Dim(dim_cols[2:-1]), fun_successRate,
                         title="Friedman test for success rates (KK)",
                         color_scheme=""),
         TableGenerator(
@@ -228,6 +232,9 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
             default_color_thresholds=(0.0, 900.0, 1800.0),
             vertical_border=vb, table_postprocessor=post, table_variants=variants,
         ),
+        FriedmannTestKK(Dim(dim_rows[:-1]), dim_operatorProbs, fun_successRate,
+                        title="Friedman test for success rates (KK)",
+                        color_scheme=""),
         TableGenerator(
             get_averageAlgorithmRanksCDGP(dim_operatorProbs, dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
             Dim(dim_cols[-1]), Dim(dim_rows[-1]),
