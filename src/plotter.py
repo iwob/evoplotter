@@ -7,9 +7,6 @@ from . import dims
 from . import utils
 
 
-OUTPUT_FOLDER = 'figures'
-
-
 
 # Point markers in matplotlib:
 # "." 	point
@@ -216,7 +213,7 @@ def plot_value_progression_grid_simple(props, dim_rows, dim_cols, key_values, le
             axes[i, j].margins(0.01)  # Pad margins so that markers don't get clipped by the axes
             axes[i, j].spines['top'].set_visible(False)
             axes[i, j].spines['right'].set_visible(False)
-            axes[i, j].set_axis_bgcolor('white')
+            # axes[i, j].set_axis_bgcolor('white')  # commented out due to error: "AttributeError: 'AxesSubplot' object has no attribute 'set_axis_bgcolor'"
             if plot_grid:
                 axes[i, j].grid("on")
             else:

@@ -42,7 +42,7 @@ class Dim(object):
                 if isinstance(c, ConfigList):
                     self.configs.append(c)
                 elif isinstance(c, tuple):
-                    self.configs.append(Config((c[0], c[1])))
+                    self.configs.append(Config(c[0], c[1]))
         elif isinstance(configs, ConfigList):
             self.configs = [configs]
         else:
@@ -104,6 +104,10 @@ class Dim(object):
         """Sorts this dimension alphabetically on the names of Configs within it."""
         self.configs.sort()
         return self
+
+    def copy(self):
+        """Creates a copy of this dimension."""
+        return Dim(self.configs[:])
 
     def dim_true_within(self, name="ALL"):
         """Returns a new dimension accepting any configuration accepted by this 'parent' dimension."""
