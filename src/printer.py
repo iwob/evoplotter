@@ -221,12 +221,20 @@ class Table(object):
     """
     Rule: in hierarchical header, cells with the same caption on the same level are merged.
     """
-    def __init__(self, array, dimCols=None, dimRows=None, renderHeader=None, cellRenderers=None, layeredHeadline=True, verticalBorder=0,
-                 horizontalBorder=1, useBooktabs=False):
+    def __init__(self, array, dimCols=None, dimRows=None, renderHeader=None, cellRenderers=None, layeredHeadline=True,
+                 verticalBorder=0, horizontalBorder=1, useBooktabs=False):
         if cellRenderers is None:
             cellRenderers = []
         assert isinstance(array, list) or isinstance(array, TableContent)
         assert isinstance(cellRenderers, list)
+
+        if isinstance(array, TableContent):
+            self.content = array
+            if dimCols is None:
+                dimCols = self.content.dimCols
+                dimRows = self.content.dimRows
+        else:
+            self.content = TableContent(array, dimCols)
 
         self.renderHeader = renderHeader
 
@@ -243,10 +251,7 @@ class Table(object):
             if renderHeader is None:
                 self.renderHeader = True
 
-        if isinstance(array, TableContent):
-            self.content = array
-        else:
-            self.content = TableContent(array, dimCols)
+
 
         self.cellRenderers = cellRenderers
         self.layeredHeadline = layeredHeadline
