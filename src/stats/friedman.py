@@ -31,7 +31,8 @@ def runFriedmanKK_csv(text):
         output = output[output.rfind("$p.value"):]
         print(output)
     except subprocess.CalledProcessError as exc:
-        print("Status: FAIL, return code: {0}, msg: {1}".format(exc.returncode, exc.output.replace("\\n", "\n")))
+        output = exc.output.replace("\\n", "\n")
+        print("Status: FAIL, return code: {0}, msg: {1}".format(exc.returncode, output))
 
     # call(["rm", "-f", csvFile])
     os.chdir(cwd)
