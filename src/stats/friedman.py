@@ -21,7 +21,7 @@ def runFriedmanKK_csv(text):
     print("thisScriptPath.parent", thisScriptPath.parent)
 
     cwd = os.getcwd()
-    os.chdir(thisScriptPath.parent)
+    os.chdir(str(thisScriptPath.parent))
     utils.save_to_file(csvFile, text)
 
     # Running command

@@ -87,7 +87,10 @@ class BlockBundle(object):
         text = ""
         d = opts
         for b in self.contents:
-            text += b.getText(opts=d)
+            if isinstance(b, str):
+                text += b
+            else:
+                text += b.getText(opts=d)
         return text
     def add(self, b):
         self.contents.append(b)
@@ -112,7 +115,10 @@ class BlockEnvironment(object):
     def getText(self, opts):
         text = r"\begin{" + self.name + "}\n\n"
         for b in self.contents:
-            text += b.getText(opts=opts)
+            if isinstance(b, str):
+                text += b
+            else:
+                text += b.getText(opts=opts)
         text += r"\end{" + self.name + "}\n"
         return text
 
