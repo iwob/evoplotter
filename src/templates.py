@@ -105,6 +105,22 @@ class TableGenerator:
         return text
 
 
+class FriedmannTestKK:
+    def __init__(self, dimRows, dimCols, fun, title="", color_scheme=""):
+        self.dimRows = dimRows
+        self.dimCols = dimCols
+        self.fun = fun
+        self.title = title
+        self.color_scheme = color_scheme
+
+    def apply(self, props, **kwargs):
+        tableContent = printer.generateTableContent(props, dimRows=self.dimRows, dimCols=self.dimCols, fun=self.fun)
+        table = printer.Table(tableContent)
+        from src.stats import friedman
+        output = friedman.runFriedmanKK(table)
+        return output
+
+
 
 def rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15):
     """Returns a function for producing a ranking of data produced from props and sorted on some property.

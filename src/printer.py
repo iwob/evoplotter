@@ -221,11 +221,11 @@ class Table(object):
     """
     Rule: in hierarchical header, cells with the same caption on the same level are merged.
     """
-    def __init__(self, array, dimCols=None, renderHeader=None, cellRenderers=None, layeredHeadline=True, verticalBorder=0,
+    def __init__(self, array, dimCols=None, dimRows=None, renderHeader=None, cellRenderers=None, layeredHeadline=True, verticalBorder=0,
                  horizontalBorder=1, useBooktabs=False):
         if cellRenderers is None:
             cellRenderers = []
-        assert isinstance(array, list)
+        assert isinstance(array, list) or isinstance(array, TableContent)
         assert isinstance(cellRenderers, list)
 
         self.renderHeader = renderHeader
@@ -243,7 +243,10 @@ class Table(object):
             if renderHeader is None:
                 self.renderHeader = True
 
-        self.content = TableContent(array, dimCols)
+        if isinstance(array, TableContent):
+            self.content = array
+        else:
+            self.content = TableContent(array, dimCols)
 
         self.cellRenderers = cellRenderers
         self.layeredHeadline = layeredHeadline
@@ -332,6 +335,18 @@ class Table(object):
         return text
 
 
+
+def generateTableContent(props, dimRows, dimCols, fun):
+    """Populates a TableContent by creating a grid with values computed by fun
+     on intersections between dimensions."""
+    array = []
+    for i, dr in enumerate(dimRows):
+        filtered_r = dr.filter_props(props)
+        array.append([])
+        for dc in dimCols:
+            filtered_c = dr.filter_props(filtered_r)
+            array[i].append(fun(filtered_c))
+    return TableContent(array, dimCols=dimCols.copy(), dimRows=dimRows.copy())
 
 
 
