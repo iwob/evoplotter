@@ -123,6 +123,19 @@ class EmptyTableHeader(TableHeaderInterface):
 
 
 
+def latexToArray(text):
+    """Converts the inside of the LaTeX tabular environment into a 2D array represented as nested lists."""
+    rows = []
+    for line in text.strip().split("\n"):
+        cols = [c.strip() for c in line.split("&")]
+        if cols[-1].endswith(r"\\"):
+            cols[-1] = cols[-1][:-2]
+        elif cols[-1].endswith(r"\\\hline"):
+            cols[-1] = cols[-1][:-8]
+        rows.append(cols)
+    return rows
+
+
 
 class TableContent(object):
     """Stores an array representing a table together with dimensions for columns and rows."""
@@ -199,21 +212,6 @@ class TableContent(object):
         self.rows.append(row)
         if self.dimRows is not None:
             self.dimRows += dimRow
-
-
-
-
-def latexToArray(text):
-    """Converts the inside of the LaTeX tabular environment into a 2D array represented as nested lists."""
-    rows = []
-    for line in text.strip().split("\n"):
-        cols = [c.strip() for c in line.split("&")]
-        if cols[-1].endswith(r"\\"):
-            cols[-1] = cols[-1][:-2]
-        elif cols[-1].endswith(r"\\\hline"):
-            cols[-1] = cols[-1][:-8]
-        rows.append(cols)
-    return rows
 
 
 
@@ -333,10 +331,18 @@ class Table(object):
         # Header
         text = ""
         if self.renderHeader:
+            if self.content.dimRows is not None:
+                text += delim
             text += delim.join(["_".join(c) for c in self.getHeader().cells]) + "\n"
+
         # Data
-        for r in self.content:
-            text += delim.join(r) + "\n"
+        for i, row in enumerate(self.content):
+            if self.content.dimRows is not None:
+                if self.content.dimRows[i] is None:
+                    text += delim
+                else:
+                    text += self.content.dimRows[i].get_caption() + delim
+            text += delim.join(row) + "\n"
         return text
 
 
@@ -349,7 +355,7 @@ def generateTableContent(props, dimRows, dimCols, fun):
         filtered_r = dr.filter_props(props)
         array.append([])
         for dc in dimCols:
-            filtered_c = dr.filter_props(filtered_r)
+            filtered_c = dc.filter_props(filtered_r)
             array[i].append(fun(filtered_c))
     return TableContent(array, dimCols=dimCols.copy(), dimRows=dimRows.copy())
 

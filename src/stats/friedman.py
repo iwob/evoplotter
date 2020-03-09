@@ -1,9 +1,18 @@
 import os
+import re
 import subprocess
+# import pandas as pd
 from pathlib import Path
 from subprocess import call, STDOUT
 from .. import utils
 from .. import printer
+
+
+class FriedmanResult:
+    def __init__(self, p_value, ranks):
+        assert isinstance(p_value, float)
+        assert isinstance(p_value, printer.TableContent)
+        self.p_value = p_value
 
 
 def runFriedmanKK(table):
@@ -30,6 +39,19 @@ def runFriedmanKK_csv(text):
                                 universal_newlines=True)
         output = output[output.rfind("$p.value"):]
         print(output)
+
+        print('\n\n')
+
+        i = output.rfind("$p.value")
+        p_value = float((output[i + len("$p.value") + 1:].split("\n")[0]).split(" ")[1].strip())
+        print("p_value: '{0}'".format(p_value))
+
+        # i = output.rfind("$ranks")
+        # print(re.split('\d+', s_nums))
+
+        # pd.read("whitespace.csv", header=None, delimiter=r"\s+")
+
+
     except subprocess.CalledProcessError as exc:
         output = exc.output.replace("\\n", "\n")
         print("Status: FAIL, return code: {0}, msg: {1}".format(exc.returncode, output))
