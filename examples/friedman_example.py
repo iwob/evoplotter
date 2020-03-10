@@ -26,5 +26,14 @@ SortedAscending5;0.71;0.76;0.78;0.65
 fg_max4;0.99;0.99;0.98;0.84
 """
 
+# sample3 is the same as sample2, but prepared so that p-value is significant
+sample3 = """;$m0.25, c0.75$;$m0.5, c0.5$;$m0.75, c0.25$;$m1.0, c0.0$
+CountPositive2;0.00;0.95;0.94;0.94
+CountPositive3;0.00;0.68;0.48;0.34
+Median3;0.00;0.96;0.95;0.81
+SortedAscending4;0.00;0.84;0.84;0.84
+SortedAscending5;0.00;0.76;0.78;0.65
+fg_max4;0.00;0.99;0.98;0.84
+"""
 
-friedman.runFriedmanKK_csv(sample2)
+friedman.runFriedmanKK_csv(sample3)

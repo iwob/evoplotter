@@ -117,8 +117,8 @@ class FriedmannTestKK:
         tableContent = printer.generateTableContent(props, dimRows=self.dimRows, dimCols=self.dimCols, fun=self.fun)
         table = printer.Table(tableContent)
         from src.stats import friedman
-        output = friedman.runFriedmanKK(table)
-        return reporting.BlockEnvironment("verbatim", [output])
+        friedmanData = friedman.runFriedmanKK(table)
+        return reporting.BlockEnvironment("verbatim", [friedmanData.output])
 
 
 
