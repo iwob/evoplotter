@@ -46,4 +46,8 @@ SortedAscending5;0.00;0.05;0.04;0.00;0.88;0.98;1.00;1.00;0.62;0.67;0.72;0.62;0.9
 fg_max4;0.96;0.96;0.84;0.74;1.00;1.00;1.00;1.00;1.00;1.00;1.00;0.92;1.00;1.00;1.00;0.93;1.00;1.00;1.00;0.33
 """
 
-friedman.runFriedmanKK_csv(sample4)
+fRes = friedman.runFriedmanKK_csv(sample4)
+
+print("\nRESULT:")
+# print("\n".join([str(x) for x in fRes.getSignificantPairs()]))
+print(fRes.getSignificantPairsText())

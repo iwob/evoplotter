@@ -28,12 +28,40 @@ def pandasTableFromROutput(output, key, numLines, tmpCsv="tmp.csv"):
 class FriedmanResult:
     """Stores results of the Friedman test."""
     def __init__(self, output, p_value, ranks, cmp_matrix=None, cmp_method=""):
+        """
+        :param output: raw output as returned by the R script.
+        :param p_value: p value returned by R script.
+        :param ranks: pandas DataFrame containing ranks for particular approaches.
+        :param cmp_matrix: pandas DataFrame approaches x approaches, where 1 means that approach is significantly
+         better, and -1 that it is significantly worse.
+        :param cmp_method: method of the post-hoc test.
+        """
         assert isinstance(p_value, float)
         self.output = output
         self.p_value = p_value
         self.ranks = ranks
         self.cmp_matrix = cmp_matrix
         self.cmp_method = cmp_method
+
+    def getSignificantPairs(self):
+        """Returns a list of tuples, where the first element is significantly better than the second."""
+        if self.cmp_matrix is None:
+            return []
+        else:
+            res = []
+            for i in range(self.cmp_matrix.shape[0]):
+                for j in range(self.cmp_matrix.shape[1]):
+                    if self.cmp_matrix.iat[i,j] == 1:
+                        L = self.cmp_matrix.index.values[i]
+                        R = self.cmp_matrix.columns.values[j]
+                        res.append((L, R))
+            res.sort(key=lambda t: t[0])
+            return res
+
+    def getSignificantPairsText(self):
+        """Returns a formatted text for significant pairs."""
+        return "\n".join(["{0}\t>\t{1}".format(L, R) for L, R in self.getSignificantPairs()])
+
 
     def __str__(self):
         return self.output
