@@ -92,10 +92,10 @@ dim_methodGPR = Dim([
     Config("$GPR$", p_dict_matcher({"method": "GPR"}), method="GPR"),
 ])
 dim_operatorProbs = Dim([
-    Config("$m0.25, c0.75$", p_dict_matcher({"operatorProbs": "0.25,0.75"}), method="0.25,0.75"),
-    Config("$m0.5, c0.5$", p_dict_matcher({"operatorProbs": "0.5,0.5"}), method="0.5,0.5"),
-    Config("$m0.75, c0.25$", p_dict_matcher({"operatorProbs": "0.75,0.25"}), method="0.75,0.25"),
-    Config("$m1.0, c0.0$", p_dict_matcher({"operatorProbs": "1.0,0.0"}), method="1.0,0.0"),
+    Config("$m0.25,c0.75$", p_dict_matcher({"operatorProbs": "0.25,0.75"}), method="0.25,0.75"),
+    Config("$m0.5,c0.5$", p_dict_matcher({"operatorProbs": "0.5,0.5"}), method="0.5,0.5"),
+    Config("$m0.75,c0.25$", p_dict_matcher({"operatorProbs": "0.75,0.25"}), method="0.75,0.25"),
+    Config("$m1.0,c0.0$", p_dict_matcher({"operatorProbs": "1.0,0.0"}), method="1.0,0.0"),
 ])
 baseline_algs = ["CVC4", "EUSolver"]
 dim_methodBaseline = Dim([Config(a, p_dict_matcher({"method": a}), method=a) for a in baseline_algs])

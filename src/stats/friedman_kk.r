@@ -20,22 +20,23 @@
 
 
 
+
 friedman.post.hoc.meth.bench <- function(fname, minFlag=TRUE)
 {
 # KK
 # reads a csv file of the form: methods x benchmarks
 # transforms a table into format expected by friedman.post and calls friedman.post
 # set minFlag to true if the variable is minimized, otherwise to false
-    #getOption("width") <- 200
-    #width <- 200
-    options(width=300)
+
+    options(width=10000) # prevent the wrapping of output
+    #options(width=300)
+
     options(digits=2)
-	  b <- read.csv(file=fname, header=TRUE, sep=";", row.names=1)
+	  b <- read.csv(file=fname, header=TRUE, sep=";", row.names=1, check.names=FALSE)
     b <- b[rownames(b) != "All", ]
     b <- t(b)
 	print(summary(b))
 	r <- friedman.post.hoc.simple(b,minFlag)
-	print("asdasd")
     print(sort(r$ranks))
     r #sort(r.ranks)
 }
@@ -43,7 +44,7 @@ friedman.post.hoc.meth.bench <- function(fname, minFlag=TRUE)
 ## Does Friedman from dataframe
 friedman.post.hoc.simple <- function(df, minFlag=T,...)  {
 	res <- data.frame(var=rep(NA, 0), alg=rep("", 0),  
-		block=rep("", 0), stringsAsFactors=FALSE)  
+		block=rep("", 0), stringsAsFactors=FALSE, check.names=FALSE)
     i = 1
    print(df)
 	for(r in 1:nrow(df))
