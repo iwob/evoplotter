@@ -83,6 +83,7 @@ class TableGenerator:
         return self.apply(props, new_color_thresholds)
 
     def apply(self, props, new_color_thresholds=None):
+        """Returns a content of the subsection as a LaTeX formatted string."""
         text = ""
         for variant in self.table_variants:  # each variant is some predicate on data
             props_variant = [p for p in props if variant(p)]
@@ -105,20 +106,60 @@ class TableGenerator:
         return text
 
 
+
 class FriedmannTestKK:
-    def __init__(self, dimRows, dimCols, fun, title="", color_scheme=""):
+    def __init__(self, dimRows, dimCols, fun, title="", color_scheme="", showRanks=True, showRawOutput=False):
         self.dimRows = dimRows
         self.dimCols = dimCols
         self.fun = fun
         self.title = title
         self.color_scheme = color_scheme
+        self.showRanks = showRanks
+        self.showRawOutput = showRawOutput
 
-    def apply(self, props, **kwargs):
+    def getFriedmanData(self, props):
+        """Runs R script to obtain FriedmanData."""
         tableContent = printer.generateTableContent(props, dimRows=self.dimRows, dimCols=self.dimCols, fun=self.fun)
         table = printer.Table(tableContent)
         from src.stats import friedman
-        friedmanData = friedman.runFriedmanKK(table)
-        return reporting.BlockEnvironment("verbatim", [friedmanData.output])
+        return friedman.runFriedmanKK(table)
+
+    def getSignificantPairsTable(self, friedmanData):
+        text = r"\begin{tabular}{lcl}" + "\n"
+        pairs = friedmanData.getSignificantPairs()
+        for L, R in pairs:
+            text += "{0} & $>$ & {1} \\\\\n".format(L, R)
+        text += r"\end{tabular}" + "\n"
+        return text
+
+    def apply(self, props, **kwargs):
+        """Returns a content of the subsection as a LaTeX formatted string."""
+        friedmanData = self.getFriedmanData(props)
+
+        text = r"\textbf{p-value:} " + str(friedmanData.p_value) + "\n\n"
+
+        text += r"\noindent \textbf{Significant pairs:} "
+        if friedmanData.cmp_matrix is not None:
+            text += r"\\" + "\n"
+            text += self.getSignificantPairsTable(friedmanData) + r"\\\\"
+            # text += r"\vspace{0.5cm}" + "\n"
+            if friedmanData.cmp_method is not None:
+                text += r"\noindent \textbf{Post-hoc method:} " + str(friedmanData.cmp_method) + "\n\n"
+            else:
+                text += r"\noindent \textbf{Post-hoc method:} " + "not specified" + "\n\n"
+        else:
+            text += "None"  + "\n\n"
+
+        if self.showRanks and friedmanData.ranks is not None:
+            text += r"\vspace{0.5cm}" + "\n"
+            text += r"\noindent \textbf{Ranks:}" + "\n\n" + r"\medskip" + "\n"
+            text += friedmanData.ranks.to_latex(index=False, escape=False) + r"\\\\"
+
+        if self.showRawOutput:
+            text += r"\vspace{0.5cm}" + "\n"
+            text += r"\noindent \textbf{Raw output from R script:}\\" + "\n"
+            text += reporting.BlockEnvironment("verbatim", [friedmanData.output]).getText({}) + r"\\\\"
+        return text
 
 
 

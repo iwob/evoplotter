@@ -96,7 +96,7 @@ def runFriedmanKK_csv(text):
         print('\n\n')
 
         p_value = float(extractLineFromROutput(output, "$p.value"))
-        cmp_method = extractLineFromROutput(output, "$cmp.method")
+        cmp_method = extractLineFromROutput(output, "$cmp.method").replace("\"", "")
         print("p_value: '{0}'".format(p_value))
         print("cmp_method: '{0}'".format(cmp_method))
 

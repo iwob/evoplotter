@@ -327,13 +327,13 @@ class Table(object):
     def renderLatex(self, latexizeUnderscores=True, firstColAlign="l", middle_col_align="c"):
         return self.render(latexizeUnderscores, firstColAlign, middle_col_align)
 
-    def renderCsv(self, delim=";"):
+    def renderCsv(self, delim=";", dimSep="/"):
         # Header
         text = ""
         if self.renderHeader:
             if self.content.dimRows is not None:
                 text += delim
-            text += delim.join(["_".join(c) for c in self.getHeader().cells]) + "\n"
+            text += delim.join([dimSep.join(c) for c in self.getHeader().cells]) + "\n"
 
         # Data
         for i, row in enumerate(self.content):
