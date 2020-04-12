@@ -10,6 +10,8 @@ friedman.test.with.post.hoc <- function(formu, data, to.print.friedman = T, to.p
   # formu is a formula of the shape: 	Y ~ X | block
   # data is a long data.frame with three columns:    [[ Y (numeric), X (factor), block (factor) ]]
   
+  #ib: https://rcompanion.org/handbook/F_10.html  - this function expects this strange format as presented on that website, but with some columns switched.
+  
   # Note: This function doesn't handle NA's! In case of NA in Y in one of the blocks, then that entire block should be removed.
   
   
