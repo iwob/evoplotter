@@ -36,7 +36,7 @@ class FriedmanResult:
          better, and -1 that it is significantly worse.
         :param cmp_method: method of the post-hoc test.
         """
-        assert isinstance(p_value, float)
+        assert p_value is None or isinstance(p_value, float)
         self.output = output
         self.p_value = p_value
         self.ranks = ranks
@@ -61,7 +61,6 @@ class FriedmanResult:
     def getSignificantPairsText(self):
         """Returns a formatted text for significant pairs."""
         return "\n".join(["{0}\t>\t{1}".format(L, R) for L, R in self.getSignificantPairs()])
-
 
     def __str__(self):
         return self.output
@@ -115,7 +114,7 @@ def runFriedmanKK_csv(text):
     except subprocess.CalledProcessError as exc:
         output = exc.output.replace("\\n", "\n")
         print("Status: FAIL, return code: {0}, msg: {1}".format(exc.returncode, output))
-        friedmanResult = None
+        friedmanResult = FriedmanResult(output, None, None, None)
 
     # call(["rm", "-f", csvFile])
     os.chdir(cwd)

@@ -101,13 +101,13 @@ baseline_algs = ["CVC4", "EUSolver"]
 dim_methodBaseline = Dim([Config(a, p_dict_matcher({"method": a}), method=a) for a in baseline_algs])
 dim_method = dim_methodBaseline + dim_methodGPR + dim_methodCDGP + dim_methodCDGPprops
 dim_sel = Dim([
-    #Config("$Tour$", p_sel_tourn, selection="tournament"),
+    Config("$Tour$", p_sel_tourn, selection="tournament"),
     Config("$Lex$", p_sel_lexicase, selection="lexicase"),
 ])
 # dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
 #                    Config("$generational$", p_generational, evolutionMode="generational")])
 dim_evoMode = Dim([
-    # Config("$steadyState$", p_dict_matcher({"evolutionMode": "steadyState"}), evolutionMode="steadyState"),
+    Config("$steadyState$", p_dict_matcher({"evolutionMode": "steadyState"}), evolutionMode="steadyState"),
     Config("$generational$", p_dict_matcher({"evolutionMode": "generational"}), evolutionMode="generational"),
 ])
 dim_testsRatio = Dim([
@@ -478,6 +478,59 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 
 
+def reports_e0_lia():
+
+    name = "e0_lia_only_ci"
+    results_dir = "results_{0}".format(name)
+    ensure_result_dir(results_dir)
+    title = "Final CDGP experiment for the LIA logic."
+    desc = r"""
+\parbox{30cm}{
+Rerun of the CDGP experiments series for my PhD thesis.
+}
+
+\begin{lstlisting}[breaklines]
+
+\end{lstlisting}
+
+NOTE: for steady state, maxGenerations is multiplied by populationSize. 
+"""
+
+    # folders = ["phd_cdgp_e0_paramTests_01", "phd_cdgp_e0_paramTests_02"]
+    folders = ["phd_cdgp_e0_lia_only_ci"]
+    desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
+    props = load_correct_props(folders, results_dir)
+    standardize_benchmark_names(props)
+    dim_rows = get_benchmarks_from_props(props)  #, simplify_name_lambda=simplify_benchmark_name)
+    dim_rows += dim_rows.dim_true_within("ALL")
+
+    dim_cols_cdgp = dim_methodCDGP * dim_evoMode * dim_sel * dim_testsRatio
+    dim_cols_ea = dim_cols_cdgp + dim_methodGPR * dim_evoMode * dim_sel * dim_testsRatio
+    dim_cols = dim_methodBaseline + dim_cols_ea
+
+
+    dim_cols += dim_cols.dim_true_within()
+    dim_cols_ea += dim_cols_ea.dim_true_within()
+    dim_cols_cdgp += dim_cols_cdgp.dim_true_within()
+
+    headerRowNames = ["method"]
+    subs = [
+        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
+        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
+        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
+        # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
+        # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
+    ]
+    sects = [(title, desc, subs, [])]
+
+
+    save_listings(props, dim_rows, dim_cols, results_dir=results_dir)
+    templates.prepare_report(props, sects, "cdgp_{0}.tex".format(name), dir_path=results_dir, paperwidth=190, user_declarations=user_declarations)
+
+
+
+
 
 if __name__ == "__main__":
-    reports_e0_paramTests()
+    # reports_e0_paramTests()
+    reports_e0_lia()
