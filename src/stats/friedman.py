@@ -86,8 +86,10 @@ def runFriedmanKK_csv(text):
     utils.save_to_file(csvFile, text)
 
     # Running command
+    # pathFriedmanScript = "friedman_kk.r"
+    pathFriedmanScript = "friedman_penn.r"
     try:
-        output = subprocess.check_output(["Rscript", "friedman_kk.r", csvFile, "FALSE"], stderr=STDOUT,
+        output = subprocess.check_output(["Rscript", pathFriedmanScript, csvFile, "FALSE"], stderr=STDOUT,
                                 universal_newlines=True)
         output = output[output.rfind("$p.value"):]
         print(output)
@@ -112,7 +114,8 @@ def runFriedmanKK_csv(text):
         friedmanResult = FriedmanResult(output, p_value, ranks, cmp_matrix, cmp_method=cmp_method)
 
     except subprocess.CalledProcessError as exc:
-        output = exc.output.replace("\\n", "\n")
+        output = exc.output.decode("utf-8")
+        output = output.replace("\\n", "\n")
         print("Status: FAIL, return code: {0}, msg: {1}".format(exc.returncode, output))
         friedmanResult = FriedmanResult(output, None, None, None)
 
