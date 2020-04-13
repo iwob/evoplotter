@@ -111,6 +111,9 @@ dim_evoMode = Dim([
     Config("$generational$", p_dict_matcher({"evolutionMode": "generational"}), evolutionMode="generational"),
 ])
 dim_testsRatio = Dim([
+    Config("$0.0$", p_testsRatio_equalTo("0.0"), testsRatio="0.0"),
+    Config("$0.25$", p_testsRatio_equalTo("0.25"), testsRatio="0.25"),
+    Config("$0.5$", p_testsRatio_equalTo("0.5"), testsRatio="0.5"),
     Config("$0.75$", p_testsRatio_equalTo("0.75"), testsRatio="0.75"),
     Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0"),
 ])
@@ -480,7 +483,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 def reports_e0_lia():
 
-    name = "e0_lia_only_ci"
+    name = "e0_lia_443"
     results_dir = "results_{0}".format(name)
     ensure_result_dir(results_dir)
     title = "Final CDGP experiment for the LIA logic."
@@ -497,7 +500,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 """
 
     # folders = ["phd_cdgp_e0_paramTests_01", "phd_cdgp_e0_paramTests_02"]
-    folders = ["phd_cdgp_e0_lia_only_ci"]
+    folders = ["phd_cdgp_e0_lia_443"]
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders, results_dir)
     standardize_benchmark_names(props)
