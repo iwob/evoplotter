@@ -556,7 +556,9 @@ def get_freqCounterexamples(props):
             # res += "{0}  ({1})".format(counterex_items[i][0], counterex_items[i][1])  # absolute value
             percent = round(100.0*float(counterex_items[i][1]) / len(props), 1)
             color = printer.getLatexColorCode(percent, [0., 50., 100.], ["darkred!50!white", "orange", "darkgreen"])
-            res += "{0}  ({1})".format(counterex_items[i][0], r"\textbf{\textcolor{" + color + "}{" + str(percent) + "\%}}")  # percentage of runs
+            test = counterex_items[i][0]
+            # res += "{0}  ({1})".format(counterex_items[i][0], r"\textbf{\textcolor{" + color + "}{" + str(percent) + "\%}}")  # percentage of runs
+            res += r"\lstinline{{{0}}}  ({1})".format(test, r"\textbf{\textcolor{" + color + "}{" + str(percent) + "\%}}")  # percentage of runs
         res += "}"
         return res
 
