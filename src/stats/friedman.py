@@ -114,7 +114,7 @@ def runFriedmanKK_csv(text):
         friedmanResult = FriedmanResult(output, p_value, ranks, cmp_matrix, cmp_method=cmp_method)
 
     except subprocess.CalledProcessError as exc:
-        output = exc.output.decode("utf-8")
+        output = exc.output #.decode("utf-8")
         output = output.replace("\\n", "\n")
         print("Status: FAIL, return code: {0}, msg: {1}".format(exc.returncode, output))
         friedmanResult = FriedmanResult(output, None, None, None)

@@ -9,7 +9,11 @@ CHECK_CORRECTNESS_OF_FILES = 1
 STATUS_FILE_NAME = "results/status.txt"
 
 
-
+def sanitizeLatex(s):
+    d = {"\\": "\\textbackslash ", "$": "\\$", "&": "\\&", "%": "\\%"}
+    for k, v in d.items():
+        s = s.replace(k, v)
+    return s
 
 
 def print_props_filenames(props):
@@ -523,17 +527,27 @@ def get_freqCounterexamples(props):
         # ?: - switches off the capturing effect
         cxs = re.findall("\(Map\((?:[^,]+ -> [^,]+(?:, )?)+\),(?:Some\([^)]+\)+|None)\)", s)  # ^ makes to match all charecters other than ','
         # cxs = <class 'list'>: ['(Map(m1 -> 0.0, m2 -> 0.0, r -> 0.0),None)', '(Map(m1 -> 1.0, m2 -> 2.0, r -> 1.0),None)']
+        used_keys = []  # safety
         for cx in cxs:
             # e.g. cx = (Map(m1 -> 0.0, m2 -> 0.0, r -> 0.0),None)
             # if "None" in cx: # we are interested only in the noncomplete tests
             if True:
                 cx = cx[len("(Map("):-len(")")]
                 # cx = 'm1 -> 0.0, m2 -> 0.0, r -> 0.0'
-                fargs = re.findall("[^,]+ -> [^,)]+(?:, )?", cx)  # findall returns non-overlapping matches in string
-                fargs = [a.replace(", ", "") for a in fargs]
+                fargs = re.findall("[^,]+ -> [^,]+(?:, |[)])", cx)  # findall returns non-overlapping matches in string
+                for i in range(len(fargs)):
+                    x = fargs[i]
+                    if x[-1] == ")":
+                        x = x[:-1]
+                    x = x.replace(", ", "")
+                    fargs[i] = x
                 fargs.sort(key=lambda a: a.split(" -> ")[0])
                 output = re.findall("(Some\([^)]+\)+|None)", cx)[0]
                 sargs = ",".join(fargs).replace(" -> ", "=") + ";" + output
+                if sargs not in used_keys:
+                    used_keys.append(sargs)
+                else:
+                    print("({0}) Warning: duplicate test case during a run!  {1}".format(p["evoplotter.file"], sargs))
                 if sargs in counterex:
                     counterex[sargs] += 1
                 else:
@@ -553,12 +567,24 @@ def get_freqCounterexamples(props):
                 break
             if i > 0:
                 res += "\\\\ \\ "
+
+            test, numRuns = counterex_items[i]
             # res += "{0}  ({1})".format(counterex_items[i][0], counterex_items[i][1])  # absolute value
-            percent = round(100.0*float(counterex_items[i][1]) / len(props), 1)
+            percent = round(100.0*float(numRuns) / len(props), 1)
             color = printer.getLatexColorCode(percent, [0., 50., 100.], ["darkred!50!white", "orange", "darkgreen"])
-            test = counterex_items[i][0]
-            # res += "{0}  ({1})".format(counterex_items[i][0], r"\textbf{\textcolor{" + color + "}{" + str(percent) + "\%}}")  # percentage of runs
-            res += r"\lstinline{{{0}}}  ({1})".format(test, r"\textbf{\textcolor{" + color + "}{" + str(percent) + "\%}}")  # percentage of runs
+
+            #\verb| |  # inline verbatim
+            # delimiters = ["|", "!", "@", "#"]
+            # delimiter = None
+            # for d in delimiters:
+            #     if d not in test:
+            #         delimiter = d
+            #         break
+
+            # lstInlinePhrase = r"\verb" + delimiter + test.replace("\\", "\\textbackslash ") + delimiter
+            txtTest = r"\texttt{" + sanitizeLatex(test) + "}"
+            txtPercent = r"\textbf{\textcolor{" + color + "}{" + str(percent) + "\%}}"
+            res += r"{0}  ({1})".format(txtTest, txtPercent)  # percentage of runs
         res += "}"
         return res
 
