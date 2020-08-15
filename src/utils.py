@@ -190,7 +190,7 @@ def deleteFilesByPredicate(props, predicate, simulate=False, verbose=True, key_f
     :param predicate: (lambda) a boolean function specifying which files are to be removed.
     :param simulate: (bool) if true, then files won't be removed from disk.
     :param verbose: (bool) if true, then names of the deleted files will be printed on screen.
-    :param key_file: (str) a key under which is stored the location of the original file of the
+    :param key_file: (str) a key under which is stored the location on disk of the original file of the
      properties dict.
     """
     assert isinstance(props, list)
