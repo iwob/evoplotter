@@ -10,7 +10,7 @@ STATUS_FILE_NAME = "results/status.txt"
 
 
 def sanitizeLatex(s):
-    d = {"\\": "\\textbackslash ", "$": "\\$", "&": "\\&", "%": "\\%"}
+    d = {"\\": "\\textbackslash ", "$": "\\$", "&": "\\&", "%": "\\%", "<": "\\textless", ">": "\\textgreater"}
     for k, v in d.items():
         s = s.replace(k, v)
     return s
@@ -56,6 +56,18 @@ def create_errors_solver_listing(error_props, file_path, pred=None):
             f.write(content)
     f.close()
 
+
+def load_correct_props_simple(folders,  exts=None):
+    def is_correct(p):
+        return p["method"] not in {"CDGP", "CDGPprops", "GP", "GPR"} or "result.best.isOptimal" in p
+
+    props0 = utils.load_properties_dirs(folders, exts=exts, ignoreExts=[".txt", ".error"], add_file_path=True)
+
+    # Filtering props so only correct ones are left
+    props = [p for p in props0 if is_correct(p)]
+    return props
+
+
 def load_correct_props(folders, results_dir,  exts=None):
     # if exts is None:
     #     exts = [".cdgp"]
@@ -67,7 +79,7 @@ def load_correct_props(folders, results_dir,  exts=None):
     # utils.deleteFilesByPredicate(props_cdgpError, lambda p: len(p["maxGenerations"]) > 7, simulate=False)
 
     def is_correct(p):
-        return p["method"] not in {"CDGP", "CDGPprops", "GP"} or "result.best.isOptimal" in p
+        return p["method"] not in {"CDGP", "CDGPprops", "GP", "GPR"} or "result.best.isOptimal" in p
 
     # Filtering props so only correct ones are left
     props = [p for p in props0 if is_correct(p)]
@@ -569,19 +581,9 @@ def get_freqCounterexamples(props):
                 res += "\\\\ \\ "
 
             test, numRuns = counterex_items[i]
-            # res += "{0}  ({1})".format(counterex_items[i][0], counterex_items[i][1])  # absolute value
             percent = round(100.0*float(numRuns) / len(props), 1)
             color = printer.getLatexColorCode(percent, [0., 50., 100.], ["darkred!50!white", "orange", "darkgreen"])
 
-            #\verb| |  # inline verbatim
-            # delimiters = ["|", "!", "@", "#"]
-            # delimiter = None
-            # for d in delimiters:
-            #     if d not in test:
-            #         delimiter = d
-            #         break
-
-            # lstInlinePhrase = r"\verb" + delimiter + test.replace("\\", "\\textbackslash ") + delimiter
             txtTest = r"\texttt{" + sanitizeLatex(test) + "}"
             txtPercent = r"\textbf{\textcolor{" + color + "}{" + str(percent) + "\%}}"
             res += r"{0}  ({1})".format(txtTest, txtPercent)  # percentage of runs
@@ -683,7 +685,7 @@ def get_averageAlgorithmRanksCDGP(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SO
 
 
 
-def get_rankingOfBestSolutionsCDGP(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=70):
+def get_rankingOfBestSolutionsCDGP(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=65):
 
     def shortenLongConstants(s):
         # cxs = re.findall("\(Map\((?:[^,]+ -> [^,]+(?:, )?)+\),None\)", s)
@@ -696,27 +698,29 @@ def get_rankingOfBestSolutionsCDGP(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN
     def sorted_list_lambda(props):
         def str2bool(s):
             return True if s == "true" else False
-        solutions = [(p["result.bestOrig"], int(p["result.bestOrig.size"]), str2bool(p["result.best.isOptimal"])) for p in props]
+        # solutions = [(p["result.bestOrig"], int(p["result.bestOrig.size"]), str2bool(p["result.best.isOptimal"])) for p in props]
+        solutions = [(p["result.best"], int(p["result.best.size"]), str2bool(p["result.best.isOptimal"])) for p in props]
         solutions.sort(key=lambda x: (x[2], x[1]), reverse=True)
         return solutions
 
     def entry_formatter_lambda(allSolutions, entryIndex):
-        # solution = (bestOrig, bestOrig.size, testMSE)
+        # solution = (bestOrig, bestOrig.size, best.isOptimal)
         solution = allSolutions[entryIndex]
         def latexTextColor(color, x):
             return r"\textbf{\textcolor{" + str(color) + "}{" + str(x) + "}}"
 
         value = round(float(solution[2]), 2)
-        colorValue = printer.getLatexColorCode(value, [allSolutions[0][2], (allSolutions[-1][2] + allSolutions[0][2]) / 2.0, allSolutions[-1][2]],
-                                               ["darkgreen", "orange", "darkred!50!white"])
+        colorValue = printer.getLatexColorCode(value, [0.0, 0.5, 1.0],
+                                               ["darkred!50!white", "orange", "darkgreen"])
         size = int(solution[1])
         sizeStr = r"\textcolor{darkblue}{\textbf{" + str(size) + r"}}"
         # colorSize = printer.getLatexColorCode(value, sizeColorScale, ["darkred!50!white", "orange", "darkgreen"])
 
         sol = solution[0]
         sol = shortenLongConstants(sol)
+        sol = sanitizeLatex(sol)
         sol = sol[:STR_LEN_LIMIT] + " [..]" if len(sol) > STR_LEN_LIMIT else sol
-        # sol = r"\texttt{" + sol + "}"
+        sol = r"\texttt{" + sol + "}"
         return r"{0}  ({1}) ({2})".format(sol, latexTextColor(colorValue, value), sizeStr)
 
     return rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VISIBLE_SOLS=ONLY_VISIBLE_SOLS,

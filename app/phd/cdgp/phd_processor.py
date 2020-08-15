@@ -198,11 +198,14 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
             r = s.split("10^{")
             return r[1][:-2]
 
+    status_color_scheme = reporting.ColorScheme3(["1.0, 1.0, 1.0", "0.65, 0.0, 0.0", "0.8, 0, 0"],
+                                                 ["white", "light red", "red"])
+
     tables = [
         TableGenerator(get_num_computed, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Status (correctly finished runs)",
-                       color_scheme=reversed(reporting.color_scheme_red),
-                       default_color_thresholds=(0.0, numRuns/2, numRuns),
+                       color_scheme=reversed(status_color_scheme),
+                       default_color_thresholds=(0.0, 0.8*numRuns, numRuns),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(fun_successRate, dim_rows, dim_cols, headerRowNames=headerRowNames,
@@ -291,7 +294,7 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames)
         TableGenerator(get_rankingOfBestSolutionsCDGP(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15),
                        Dim(dim_cols.configs[:-1]), Dim(dim_rows.configs[:-1]),
                        headerRowNames=headerRowNames,
-                       title="The best solutions found for each benchmark and their sizes. Format: solution (MSE on test set) (size)",
+                       title="The best solutions (simplified) found for each benchmark and their sizes. Format: solution (isCorrect?) (size)",
                        color_scheme=reporting.color_scheme_violet, middle_col_align="l",
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
@@ -393,9 +396,9 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
     latex_numSolverCallsOverXs = create_single_table_bundle(props, dim_rows, dim_cols, get_numSolverCallsOverXs, headerRowNames,
                                                            cv0=0, cv1=50, cv2=100, tableVariants=variants)
 
-    print("MOST FREQUENTLY FOUND COUNTEREXAMPLE")
-    latex_freqCounterexamples = create_single_table_bundle(props, dim_rows, dim_cols, get_freqCounterexamples, headerRowNames,
-                                                           cv0=0, cv1=50, cv2=100, tableVariants=variants, middle_col_align="l")
+    # print("MOST FREQUENTLY FOUND COUNTEREXAMPLE")
+    # latex_freqCounterexamples = create_single_table_bundle(props, dim_rows, dim_cols, get_freqCounterexamples, headerRowNames,
+    #                                                        cv0=0, cv1=50, cv2=100, tableVariants=variants, middle_col_align="l")
 
     subsects_cdgp = [
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
@@ -408,7 +411,7 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
         ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_brown),
         ("Avg number of solver calls (in thousands; 1=1000)", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
         ("Number of solver calls $>$ 0.5s", latex_numSolverCallsOverXs, reporting.color_scheme_blue),
-        ("The most frequently found counterexamples for each benchmark and configuration", latex_freqCounterexamples, reporting.color_scheme_violet),
+        # ("The most frequently found counterexamples for each benchmark and configuration", latex_freqCounterexamples, reporting.color_scheme_violet),
     ]
     return reporting.Subsection(title, get_content_of_subsections(subsects_cdgp))
 
@@ -484,7 +487,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 def reports_e0_lia():
 
     name = "e0_lia"
-    results_dir = "results_{0}".format(name)
+    results_dir = "results/results_{0}".format(name)
     ensure_result_dir(results_dir)
     title = "Final CDGP experiment for the LIA logic."
     desc = r"""
@@ -500,7 +503,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 """
 
     # folders = ["phd_cdgp_e0_paramTests_01", "phd_cdgp_e0_paramTests_02"]
-    folders = ["phd_cdgp_e0_lia_443", "phd_cdgp_e0_lia_2", "phd_cdgp_e0_lia"]
+    folders = ["LIA"]
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders, results_dir)
     standardize_benchmark_names(props)
@@ -518,7 +521,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
     headerRowNames = ["method"]
     subs = [
-        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
+        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 50, headerRowNames]),
         (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
         (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
@@ -536,7 +539,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 def reports_e0_slia():
 
     name = "e0_slia"
-    results_dir = "results_{0}".format(name)
+    results_dir = "results/results_{0}".format(name)
     ensure_result_dir(results_dir)
     title = "Final CDGP experiment for the SLIA logic."
     desc = r"""
@@ -552,7 +555,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 """
 
     # folders = ["phd_cdgp_e0_paramTests_01", "phd_cdgp_e0_paramTests_02"]
-    folders = ["phd_cdgp_e0_slia"]
+    folders = ["SLIA"]
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders, results_dir)
     standardize_benchmark_names(props)
@@ -570,7 +573,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
     headerRowNames = ["method"]
     subs = [
-        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
+        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 50, headerRowNames]),
         (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
         (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
