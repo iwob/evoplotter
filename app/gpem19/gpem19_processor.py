@@ -736,8 +736,8 @@ def reports_exp0():
                "exp0_weight5"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
-    dim_cols = dim_numGensBeforeRestart *\
-               (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
+    dim_cols = dim_numGensBeforeRestart * \
+               (dim_methodGP * dim_all + dim_methodCDGP * dim_all + dim_methodCDGPprops * dim_weight) * \
                dim_benchmarkNumTests # * dim_optThreshold
     headerRowNames = ["maxEvals", "method", "weight", "tolerance"]
     subs = [
@@ -764,8 +764,8 @@ def reports_exp1():
     folders = ["exp1"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
-    dim_cols = dim_numGensBeforeRestart *\
-               (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
+    dim_cols = dim_numGensBeforeRestart * \
+               (dim_methodGP * dim_all + dim_methodCDGP * dim_all + dim_methodCDGPprops * dim_weight) * \
                dim_benchmarkNumTests # * dim_optThreshold
     headerRowNames = ["maxEvals", "method", "weight", "tolerance"]
     subs = [
@@ -789,7 +789,7 @@ def reports_exp3():
     folders = ["exp3"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
-    dim_cols = (dim_methodGP*dim_empty + dim_methodCDGP*dim_empty + dim_methodCDGPprops*dim_weight) *\
+    dim_cols = (dim_methodGP * dim_all + dim_methodCDGP * dim_all + dim_methodCDGPprops * dim_weight) * \
                dim_benchmarkNumTests # * dim_optThreshold
     headerRowNames = ["maxEvals", "method", "weight", "tolerance"]
     subs = [

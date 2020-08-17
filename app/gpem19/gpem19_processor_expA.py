@@ -104,7 +104,7 @@ dim_methodGP = Dim([
     # Config("$GP_{5000}$", p_dict_matcher({"method": "GP", "populationSize": "5000"}), method="GP5000"),
 ])
 scikit_algs = ["AdaBoostRegressor", "XGBoost", "SGDRegressor", "RandomForestRegressor", "MLPRegressor",
-        "LinearSVR", "LinearRegression", "LassoLars", "KernelRidge", "GradientBoostingRegressor"]
+        "LinearSVR", "LinearRegression", "LassoLars", "KernelRidge", "GradientBoostingRegressor", "GSGP"]
 dim_methodScikit = Dim([Config(sa.replace("Regressor","").replace("Regression",""), p_dict_matcher({"method": sa}), method=sa) for sa in scikit_algs])
 dim_method = dim_methodScikit + dim_methodCDGP + dim_methodCDGPprops + dim_methodGP
 dim_sel = Dim([#Config("$Tour$", p_sel_tourn, selection="tournament"),
@@ -337,7 +337,7 @@ def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix):
     # Illustration of individual runs and their errors on training and validation sets
     savepath = "results/figures/progressionGrid.pdf"
     dim_rows = get_benchmarks_from_props(props, ignoreNumTests=True)
-    dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_empty + dim_methodCDGPprops * dim_weight) * \
+    dim_cols = (dim_methodGP * dim_all + dim_methodCDGP * dim_all + dim_methodCDGPprops * dim_weight) * \
                dim_benchmarkNumTests  # * dim_optThreshold
     plotter.plot_value_progression_grid_simple(props, dim_rows, dim_cols, ["cdgp.logTrainSet", "cdgp.logValidSet"], ["train", "valid"],
                                                plot_individual_runs=True,
@@ -707,7 +707,7 @@ In this experiment, A02, there is no noise.
 NOTE: for steady state, maxGenerations is multiplied by populationSize.
 """
 
-    folders = ["phd_A02", "phd_A02_nguyen4", "regression_results_noNoise"]
+    folders = ["phd_A02", "phd_A02_nguyen4", "regression_results_noNoise", "regression_results_gp_noNoise"]
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders)
     standardize_benchmark_names(props)

@@ -763,5 +763,5 @@ def ensure_result_dir(path):
     utils.ensure_clear_dir(path)
     utils.ensure_dir("{0}/figures/".format(path))
     utils.ensure_dir("{0}/listings/".format(path))
-    # utils.ensure_dir("{0}/tables/".format(path))
+    utils.ensure_dir("{0}/tables/".format(path))
     utils.ensure_dir("{0}/listings/errors/".format(path))

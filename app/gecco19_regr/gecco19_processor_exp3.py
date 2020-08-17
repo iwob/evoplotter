@@ -692,7 +692,7 @@ def reports_exp3():
     folders = ["exp3_final"]
     title = "Experiments for regression CDGP (stop: 0.5h)"
     desc = r""""""
-    dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_testsRatio) * dim_optThreshold
+    dim_cols = (dim_methodGP * dim_all + dim_methodCDGP * dim_testsRatio) * dim_optThreshold
     headerRowNames = ["", r"$\alpha$", "tolerance"]
     subs = [
         (create_subsection_shared_stats, [None, dim_cols, 25, headerRowNames]),

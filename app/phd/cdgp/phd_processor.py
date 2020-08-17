@@ -176,13 +176,29 @@ def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowN
     return text
 
 
+def createSubsectionWithTables(title, tables, props):
+    subsects_main = []
+    for t in tables:
+        tsv = t.apply_listed(props)
+        assert len(tsv) == len(t.table_variants), "Number of output files must be the same as the number of table variants."
+        if t.outputFiles is not None:
+            for tsv_txt, path in zip(tsv, t.outputFiles):
+                f = open(path, "w")
+                f.write(tsv_txt)
+                f.close()
+
+        table_variants_text = r"\noindent " + " ".join(tsv)
+
+        tup = (t.title, table_variants_text, t.color_scheme)
+        subsects_main.append(tup)
+
+    return reporting.Subsection(title, get_content_of_subsections(subsects_main))
 
 
-def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, headerRowNames):
+
+
+def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, headerRowNames, results_dir, variants=None):
     vb = 1  # vertical border
-    variants = None  # variants_benchmarkNumTests
-    dim_rows_v2 = get_benchmarks_from_props(props, simplify_name_lambda=simplify_benchmark_name, ignoreNumTests=True)
-    # dim_rows_v2 += dim_true  #TODO: within dict
 
     # ----------------------------------------------------
     # Cleaning experiment here, because dimension can be easily constructed.
@@ -208,11 +224,12 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        default_color_thresholds=(0.0, 0.8*numRuns, numRuns),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        TableGenerator(fun_successRate, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        TableGenerator(fun_successRate, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Success rates (properties met)",
                        color_scheme=reporting.color_scheme_darkgreen,
                        default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[results_dir + "/tables/cdgp_succRate_{0}.tex".format(utils.normalize_name(v.get_caption())) for v in variants]
                        ),
         TableGenerator(get_averageAlgorithmRanksCDGP(dim_cols[:-1], dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
                        Dim(dim_cols[-1]), Dim(dim_rows[-1]),
@@ -222,9 +239,9 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        FriedmannTestKK(Dim(dim_rows[:-1]), Dim(dim_cols[2:-1]), fun_successRate,
-                        title="Friedman test for success rates (KK)",
-                        color_scheme=""),
+        # FriedmannTestKK(Dim(dim_rows[:-1]), Dim(dim_cols[2:-1]), fun_successRate,
+        #                 title="Friedman test for success rates (KK)",
+        #                 color_scheme=""),
         TableGenerator(
             get_averageAlgorithmRanksCDGP(dim_operatorProbs, dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
             Dim(dim_cols[-1]), dim_methodGPR + dim_methodCDGP + dim_methodCDGPprops,
@@ -234,9 +251,9 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
             default_color_thresholds=(0.0, 900.0, 1800.0),
             vertical_border=vb, table_postprocessor=post, table_variants=variants,
         ),
-        FriedmannTestKK(Dim(dim_rows[:-1]), dim_operatorProbs, fun_successRate,
-                        title="Friedman test for success rates (KK)",
-                        color_scheme=""),
+        # FriedmannTestKK(Dim(dim_rows[:-1]), dim_operatorProbs, fun_successRate,
+        #                 title="Friedman test for success rates (KK)",
+        #                 color_scheme=""),
         TableGenerator(
             get_averageAlgorithmRanksCDGP(dim_operatorProbs, dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
             Dim(dim_cols[-1]), Dim(dim_rows[-1]),
@@ -259,6 +276,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        color_scheme=reporting.color_scheme_violet,
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[results_dir + "/tables/cdgp_avgRuntime_{0}.tex".format(utils.normalize_name(v.get_caption())) for v in variants]
                        ),
         TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average runtime (only successful) [s]",
@@ -274,21 +292,13 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        ),
     ]
 
-    subsects_main = []
-    for t in tables:
-        tup = (t.title, t.apply(props), t.color_scheme)
-        subsects_main.append(tup)
-
-    return reporting.Subsection(title, get_content_of_subsections(subsects_main))
+    return createSubsectionWithTables(title, tables, props)
 
 
 
 
-def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames):
+def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames, results_dir, variants=None):
     vb = 1  # vertical border
-    variants = None  # variants_benchmarkNumTests
-    dim_rows_v2 = get_benchmarks_from_props(props, simplify_name_lambda=simplify_benchmark_name, ignoreNumTests=True)
-    # dim_rows_v2 += dim_true  # TODO: within dict
 
     tables = [
         TableGenerator(get_rankingOfBestSolutionsCDGP(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15),
@@ -337,83 +347,66 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames)
         #                ),
     ]
 
-    subsects_main = []
-    for t in tables:
-        tup = (t.title, t.apply(props), t.color_scheme)
-        subsects_main.append(tup)
-
-    return reporting.Subsection(title, get_content_of_subsections(subsects_main))
+    return createSubsectionWithTables(title, tables, props)
 
 
 
-def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowNames):
+def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowNames, results_dir, variants=None):
     vb = 1  # vertical border
-    # variants = variants_benchmarkNumTests
-    variants = None
 
-    # props = [p for p in props if p["method"] in {"CDGP", "CDGPprops"}]
+    tables = [
+        TableGenerator(get_avg_totalTests,
+                       Dim(dim_rows.configs), Dim(dim_cols.configs),
+                       headerRowNames=headerRowNames,
+                       title="Average sizes of $T_C$ (total tests in run)",
+                       color_scheme=reporting.color_scheme_blue, middle_col_align="l",
+                       default_color_thresholds=(0.0, 1000.0, 2000.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[results_dir + "/tables/cdgp_Tc_{0}.tex".format(utils.normalize_name(v.get_caption())) for v in variants]
+                       ),
+        TableGenerator(get_stats_maxSolverTime,
+                       Dim(dim_rows.configs), Dim(dim_cols.configs),
+                       headerRowNames=headerRowNames,
+                       title="Max solver time per query [s]",
+                       color_scheme=reporting.color_scheme_violet, middle_col_align="l",
+                       default_color_thresholds=(0.0, 5.0, 10.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(get_stats_avgSolverTime,
+                       Dim(dim_rows.configs), Dim(dim_cols.configs),
+                       headerRowNames=headerRowNames,
+                       title="Avg solver time per query [s]",
+                       color_scheme=reporting.color_scheme_brown, middle_col_align="l",
+                       default_color_thresholds=(0.0, 5.0, 10.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(get_avgSolverTotalCalls,
+                       Dim(dim_rows.configs), Dim(dim_cols.configs),
+                       headerRowNames=headerRowNames,
+                       title="Avg number of solver calls (in thousands; 1=1000)",
+                       color_scheme=reporting.color_scheme_blue, middle_col_align="l",
+                       default_color_thresholds=(0.0, 5.0, 10.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(get_numSolverCallsOverXs,
+                       Dim(dim_rows.configs), Dim(dim_cols.configs),
+                       headerRowNames=headerRowNames,
+                       title="Number of solver calls $>$ 0.5s",
+                       color_scheme=reporting.color_scheme_blue, middle_col_align="l",
+                       default_color_thresholds=(0.0, 5.0, 10.0),
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        # TableGenerator(get_freqCounterexamples,
+        #                Dim(dim_rows.configs[:-1]), Dim(dim_cols.configs[:-1]),
+        #                headerRowNames=headerRowNames,
+        #                title="The most frequently found counterexamples for each benchmark and configuration",
+        #                color_scheme=reporting.color_scheme_blue, middle_col_align="l",
+        #                default_color_thresholds=(0.0, 5.0, 10.0),
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
+     ]
 
-    print("AVG TOTAL TESTS")
-    latex_avgTotalTests = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_totalTests, headerRowNames,
-                                                     cv0=0.0, cv1=1000.0, cv2=2000.0, tableVariants=variants)
-
-    # print("AVG RUNTIME PER PROGRAM")
-    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_runtimePerProgram, layered_headline=True,
-    #                                 vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgRuntimePerProgram = printer.table_color_map(text, 0.01, 1.0, 2.0, "colorLow", "colorMedium", "colorHigh")
-
-    # print("AVG GENERATION")
-    # latex_avgGeneration = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_generation, headerRowNames,
-    #                                                  cv0=0.0, cv1=100.0, cv2=200.0, tableVariants=variants)
-    # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, get_avg_generation, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgGeneration = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
-
-    # print("AVG EVALUATED SOLUTIONS")
-    # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluated, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgEvaluated = printer.table_color_map(text, 500.0, 25000.0, 100000.0, "colorLow", "colorMedium", "colorHigh")
-
-    # print("AVG EVALUATED SOLUTIONS (SUCCESSFUL)")
-    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluatedSuccessful, layered_headline=True,
-    #                                 vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgEvaluatedSuccessful = printer.table_color_map(text, 500.0, 25000.0, 100000.0, "colorLow", "colorMedium",
-    #                                                         "colorHigh")
-
-    print("MAX SOLVER TIME")
-    latex_maxSolverTimes = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_maxSolverTime, headerRowNames,
-                                                     cv0=0.0, cv1=5.0, cv2=10.0, tableVariants=variants)
-
-    print("AVG SOLVER TIME")
-    latex_avgSolverTimes = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_avgSolverTime, headerRowNames,
-                                                      cv0=0.0, cv1=0.015, cv2=0.03, tableVariants=variants)
-
-    print("AVG NUM SOLVER CALLS")
-    latex_avgSolverTotalCalls = create_single_table_bundle(props, dim_rows, dim_cols, get_avgSolverTotalCalls, headerRowNames,
-                                                      cv0=1e1, cv1=1e2, cv2=1e4, tableVariants=variants)
-
-    print("NUM SOLVER CALLS > 0.5s")
-    latex_numSolverCallsOverXs = create_single_table_bundle(props, dim_rows, dim_cols, get_numSolverCallsOverXs, headerRowNames,
-                                                           cv0=0, cv1=50, cv2=100, tableVariants=variants)
-
-    # print("MOST FREQUENTLY FOUND COUNTEREXAMPLE")
-    # latex_freqCounterexamples = create_single_table_bundle(props, dim_rows, dim_cols, get_freqCounterexamples, headerRowNames,
-    #                                                        cv0=0, cv1=50, cv2=100, tableVariants=variants, middle_col_align="l")
-
-    subsects_cdgp = [
-        ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
-        # ("Average generation (all)", latex_avgGeneration, reporting.color_scheme_teal),
-        #("Average generation (only successful)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
-        # ("Average evaluated solutions", latex_avgEvaluated, reporting.color_scheme_brown),
-        # ("Average evaluated solutions (only successful)", latex_avgEvaluatedSuccessful, reporting.color_scheme_teal),
-        # ("Approximate average runtime per program [s]", latex_avgRuntimePerProgram, reporting.color_scheme_brown),
-        ("Max solver time per query [s]", latex_maxSolverTimes, reporting.color_scheme_violet),
-        ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_brown),
-        ("Avg number of solver calls (in thousands; 1=1000)", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
-        ("Number of solver calls $>$ 0.5s", latex_numSolverCallsOverXs, reporting.color_scheme_blue),
-        # ("The most frequently found counterexamples for each benchmark and configuration", latex_freqCounterexamples, reporting.color_scheme_violet),
-    ]
-    return reporting.Subsection(title, get_content_of_subsections(subsects_cdgp))
+    return createSubsectionWithTables(title, tables, props)
 
 
 
@@ -470,9 +463,9 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
     headerRowNames = ["method"]
     subs = [
-        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
-        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
-        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
+        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 25, headerRowNames, results_dir]),
+        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames, results_dir]),
+        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames, results_dir]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]
@@ -510,10 +503,28 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
     dim_rows = get_benchmarks_from_props(props)  #, simplify_name_lambda=simplify_benchmark_name)
     dim_rows += dim_rows.dim_true_within("ALL")
 
-    dim_cols_cdgp = dim_methodCDGP * dim_evoMode * dim_sel * dim_testsRatio
-    dim_cols_ea = dim_cols_cdgp + dim_methodGPR * dim_evoMode * dim_sel * dim_testsRatio
-    dim_cols = dim_methodBaseline + dim_cols_ea
 
+    # ----- One big table -----
+    # dim_cols_cdgp = dim_methodCDGP * dim_evoMode * dim_sel * dim_testsRatio
+    # dim_cols_ea = dim_cols_cdgp + dim_methodGPR * dim_evoMode * dim_sel * dim_testsRatio
+    # dim_cols = dim_methodBaseline + dim_cols_ea
+    # variants = None
+    # -------------------------
+
+    # ----- Several tables -----
+    # dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio
+    # dim_cols_ea = dim_cols_cdgp + dim_methodGPR * dim_sel * dim_testsRatio
+    # dim_cols = dim_cols_ea  # dim_methodBaseline
+    # variants = dim_evoMode.configs
+    # -------------------------
+
+
+    # ----- Several tables (GPR-divided) -----
+    dim_cols_cdgp = dim_sel * dim_testsRatio
+    dim_cols_ea = dim_cols_cdgp
+    dim_cols = dim_cols_ea  # dim_methodBaseline
+    variants = (dim_evoMode * (dim_methodCDGP + dim_methodGPR)).configs
+    # -------------------------
 
     dim_cols += dim_cols.dim_true_within()
     dim_cols_ea += dim_cols_ea.dim_true_within()
@@ -521,9 +532,9 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
     headerRowNames = ["method"]
     subs = [
-        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 50, headerRowNames]),
-        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
-        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
+        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 50, headerRowNames, results_dir, variants]),
+        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames, results_dir, variants]),
+        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames, results_dir, variants]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]
@@ -562,20 +573,34 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
     dim_rows = get_benchmarks_from_props(props)  #, simplify_name_lambda=simplify_benchmark_name)
     dim_rows += dim_rows.dim_true_within("ALL")
 
-    dim_cols_cdgp = dim_methodCDGP * dim_evoMode * dim_sel * dim_testsRatio
+
+    # ----- One big table -----
+    # dim_cols_cdgp = dim_methodCDGP * dim_evoMode * dim_sel * dim_testsRatio
+    # dim_cols_ea = dim_cols_cdgp
+    # dim_cols = dim_cols_ea  #dim_methodBaseline + dim_cols_ea
+    # variants = None  # variants_benchmarkNumTests
+    # headerRowNames = ["method"]
+    # -------------------------
+
+    # ----- Several tables -----
+    dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio
     dim_cols_ea = dim_cols_cdgp
-    dim_cols = dim_methodBaseline + dim_cols_ea
+    dim_cols = dim_cols_ea  # dim_methodBaseline + dim_cols_ea
+    variants = dim_evoMode.configs
+    headerRowNames = ["", "method"]
+    # -------------------------
 
 
+    # Adding "all" dimension
     dim_cols += dim_cols.dim_true_within()
     dim_cols_ea += dim_cols_ea.dim_true_within()
     dim_cols_cdgp += dim_cols_cdgp.dim_true_within()
 
-    headerRowNames = ["method"]
+
     subs = [
-        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 50, headerRowNames]),
-        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
-        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
+        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 50, headerRowNames, results_dir, variants]),
+        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames, results_dir, variants]),
+        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames, results_dir, variants]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]

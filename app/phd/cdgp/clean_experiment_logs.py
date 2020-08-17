@@ -34,5 +34,5 @@ def cleanSLIA():
 
 
 if __name__ == "__main__":
-    # cleanLIA()
-    cleanSLIA()
+    cleanLIA()
+    # cleanSLIA()
