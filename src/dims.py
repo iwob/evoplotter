@@ -102,6 +102,14 @@ class Dim(object):
         """Returns a list of captions of all configs in this dimension."""
         return [c.get_caption() for c in self.configs]
 
+    def get_predicates(self):
+        """Returns a list of predicates of all configs in this dimension."""
+        all_lam = []
+        for c in self.configs:
+            lam = lambda p: all([f[1](p) for f in c.filters])
+            all_lam.append(lam)
+        return all_lam
+
     def filter_out_outsiders(self, props):
         """Returns properties in which contained are only elements belonging to one of
         the configs in this dimension. Note that dimension values (configs) do not have to
@@ -285,6 +293,7 @@ class Config(ConfigList):
     def __init__(self, name, filter, **kwargs):
         assert not isinstance(filter, list), "Config associates the name and a particular filter. " \
                                              "To use multiple filters, please use ConfigOr or ConfigAnd."
+        assert callable(filter), "Filter must be a callable object."
         self.name = name
         self.filter = filter
         ConfigList.__init__(self, (name, self), **kwargs)
@@ -356,4 +365,4 @@ class ConfigOr(ConfigList):
 
 
 
-dim_empty = Dim([Config("", lambda p: True)])
+dim_all = Dim([Config("", lambda p: True)])

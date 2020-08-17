@@ -25,7 +25,7 @@ def generateTable(verticalBorder, horizontalBorder, useBooktabs):
     dimSel = Dim([("T", None), ("L", None)])
     dimMethod = Dim([("U", None), ("P", None), ("S", None), ("IS", None)])
     dimSingleCol = Dim([("C", None), ("D", None)])
-    main = dimSel * dimMethod * dimCx + dimSingleCol * dim_empty * dim_empty
+    main = dimSel * dimMethod * dimCx + dimSingleCol * dim_all * dim_all
     dimCols = Dim([Config([("method", None), ("", None), ("cx", None)])]) + main + Dim([("mean", None)])
 
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")

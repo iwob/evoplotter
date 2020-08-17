@@ -141,6 +141,13 @@ def save_to_file(file_path, content):
     file.close()
 
 
+def normalize_name(name):
+    pairs = {"$":"", "/":"", "\\":"", " ":"", "\t":"", "}":"", "{":""}
+    for k, v in pairs.items():
+        name = name.replace(k, pairs[k])
+    return name
+
+
 def reorganizeExperimentFiles(props, dim, target_dir, maxRuns, key_file="evoplotter.file"):
     """Takes a list of dictionaries storing experiment's results and the dimension, and creates
      a new folder with experiments where results are stored hierarchically as defined by
@@ -159,12 +166,6 @@ def reorganizeExperimentFiles(props, dim, target_dir, maxRuns, key_file="evoplot
     assert isinstance(dim, dims.Dim)
     assert target_dir[-1] == "/", "directory path must end with '/'"
     ensure_clear_dir(target_dir)
-
-    def normalize_name(name):
-        pairs = {"$":"", "/":"", "\\":"", " ":"", "\t":"", "}":"", "{":""}
-        for k, v in pairs.items():
-            name = name.replace(k, pairs[k])
-        return name
 
     for config in dim.configs:
         accum_path = target_dir

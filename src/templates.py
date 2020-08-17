@@ -62,7 +62,8 @@ class TableGenerator:
     def __init__(self, f_cell, dim_rows, dim_cols, headerRowNames, title="", color_scheme=None,
                  table_postprocessor=None, vertical_border=1, table_variants=None,
                  default_color_thresholds=None, layered_headline=True, color_value_extractor=None,
-                 only_nonempty_rows=True, **kwargs):
+                 only_nonempty_rows=True, outputFiles=None, **kwargs):
+        assert outputFiles is None or isinstance(outputFiles, list), "outputFiles must be either None, or a list of configs"
         self.f_cell = f_cell
         self.dim_rows = dim_rows
         self.dim_cols = dim_cols
@@ -72,11 +73,12 @@ class TableGenerator:
         self.vertical_border = vertical_border
         self.headerRowNames = headerRowNames
         # create a table for each variant and put them next to each other
-        self.table_variants = table_variants if table_variants is not None else [lambda p: True]
+        self.table_variants = table_variants
         self.default_color_thresholds = default_color_thresholds
         self.layered_headline = layered_headline
         self.color_value_extractor = color_value_extractor
         self.only_nonempty_rows = only_nonempty_rows
+        self.outputFiles = outputFiles
         self.init_kwargs = kwargs.copy()
 
     def __call__(self, props, new_color_thresholds=None):
@@ -84,15 +86,31 @@ class TableGenerator:
 
     def apply(self, props, new_color_thresholds=None):
         """Returns a content of the subsection as a LaTeX formatted string."""
+        tables = self.apply_listed(props, new_color_thresholds)
         text = ""
-        for variant in self.table_variants:  # each variant is some predicate on data
+        for t in tables:
+            text += r"\noindent"
+            text += t
+        return text
+
+
+    def apply_listed(self, props, new_color_thresholds=None):
+        """The same as apply, but returned is a list of tables."""
+        tables = []
+        variants_to_be_used = self.table_variants if self.table_variants is not None else [lambda p: True]
+        for variant in variants_to_be_used:  # each variant is some predicate on data
+            if isinstance(variant, ConfigList):
+                dim_cols_to_be_used = Dim([(variant.get_caption(), lambda p: True)]) * self.dim_cols
+            else:
+                dim_cols_to_be_used = self.dim_cols
+
             props_variant = [p for p in props if variant(p)]
             if self.only_nonempty_rows:
                 dim_rows_variant = Dim([c for c in self.dim_rows.configs if len(c.filter_props(props_variant)) > 0])
             else:
                 dim_rows_variant = self.dim_rows
 
-            txt = printer.latex_table(props_variant, dim_rows_variant, self.dim_cols, self.f_cell,
+            txt = printer.latex_table(props_variant, dim_rows_variant, dim_cols_to_be_used, self.f_cell,
                                       layered_headline=self.layered_headline, vertical_border=self.vertical_border,
                                       headerRowNames=self.headerRowNames, **self.init_kwargs)
             txt = self.table_postprocessor(txt)
@@ -100,10 +118,9 @@ class TableGenerator:
             if self.color_scheme is not None and ct is not None:
                 cv0, cv1, cv2 = ct
                 txt = printer.table_color_map(txt, cv0, cv1, cv2, "colorLow", "colorMedium", "colorHigh", funValueExtractor=self.color_value_extractor)
+            tables.append(txt)
+        return tables
 
-            text += r"\noindent"
-            text += txt
-        return text
 
 
 
