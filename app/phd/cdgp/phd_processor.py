@@ -12,9 +12,22 @@ def simplify_benchmark_name(name):
     """Shortens or modifies the path of the benchmark in order to make the table more readable."""
     i = name.rfind("/")
     name = name if i == -1 else name[i + 1:]
-    name = name.replace("resistance_par", "res")
+    name = name.replace("ArithmeticSeries3", "IsSeries3")\
+               .replace("ArithmeticSeries4", "IsSeries4")\
+               .replace("CountPositive2", "CountPos2")\
+               .replace("CountPositive3", "CountPos3")\
+               .replace("CountPositive4", "CountPos4")\
+               .replace("SortedAscending4", "IsSorted4")\
+               .replace("SortedAscending5", "IsSorted5")\
+               .replace("fg_array_search_2", "Search2")\
+               .replace("fg_array_search_3", "Search3")\
+               .replace("fg_array_search_4", "Search4")\
+               .replace("fg_array_sum_2_15", "Sum2")\
+               .replace("fg_array_sum_3_15", "Sum3")\
+               .replace("fg_array_sum_4_15", "Sum4")\
+               .replace("fg_max4", "Max4")\
+               .replace("name-combine", "combine")
     name = name[:name.rfind(".")]  # cut off '.sl'
-    # name = name[:name.rfind("_")]  # cut off number of tests
     return name
 
 
@@ -141,8 +154,6 @@ def post(s):
          .replace(r"\_{lex}", "_{lex}").replace(r"\_{", "_{").replace("resistance_par", "res")\
          .replace("gravity", "gr")
     return s
-
-
 
 
 
@@ -616,5 +627,5 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 if __name__ == "__main__":
     # reports_e0_paramTests()
-    reports_e0_lia()
-    # reports_e0_slia()
+    # reports_e0_lia()
+    reports_e0_slia()
