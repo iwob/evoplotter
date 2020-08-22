@@ -1,7 +1,7 @@
 import os
-import re
 import subprocess
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from subprocess import call, STDOUT
 from .. import utils
@@ -67,6 +67,24 @@ class FriedmanResult:
 
 
 
+
+def runFriedmanPython(table):
+    """Runs a Friedman statistical test with Nemenyi posthoc test using python implementation in scikit_posthocs package."""
+    assert isinstance(table, printer.Table)
+    data = np.array(table.content.rows)
+    return runFriedmanPython_array(data)
+
+
+def runFriedmanPython_array(data):
+    import scipy.stats as ss
+    import scikit_posthocs as sp
+    p_statistic, p_value = ss.friedmanchisquare(*data.T)
+    # https://scikit-posthocs.readthedocs.io/en/latest/generated/scikit_posthocs.posthoc_nemenyi_friedman/#id2
+    # P. Nemenyi (1963) Distribution-free Multiple Comparisons. Ph.D. thesis, Princeton University.
+    pc = sp.posthoc_nemenyi_friedman(data)
+    return FriedmanResult("", p_value, None, cmp_matrix=pc, cmp_method="nemenyi")
+
+
 def runFriedmanKK(table):
     """Runs a Friedman statistical test using a mysterious script provided to me by KK.
      Input is a Table."""
@@ -86,8 +104,8 @@ def runFriedmanKK_csv(text):
     utils.save_to_file(csvFile, text)
 
     # Running command
-    # pathFriedmanScript = "friedman_kk.r"
-    pathFriedmanScript = "friedman_penn.r"
+    pathFriedmanScript = "friedman_kk.r"
+    # pathFriedmanScript = "friedman_penn.r"
     try:
         output = subprocess.check_output(["Rscript", pathFriedmanScript, csvFile, "FALSE"], stderr=STDOUT,
                                 universal_newlines=True)
@@ -98,18 +116,18 @@ def runFriedmanKK_csv(text):
 
         p_value = float(extractLineFromROutput(output, "$p.value"))
         cmp_method = extractLineFromROutput(output, "$cmp.method").replace("\"", "")
-        print("p_value: '{0}'".format(p_value))
-        print("cmp_method: '{0}'".format(cmp_method))
+        # print("p_value: '{0}'".format(p_value))
+        # print("cmp_method: '{0}'".format(cmp_method))
 
         ranks = pandasTableFromROutput(output, "$ranks", numLines=2, tmpCsv="tmpRanks.csv")
-        print("ranks:", ranks)
+        # print("ranks:", ranks)
 
         i = output.rfind("$cmp.matrix")
         if i == -1:
             cmp_matrix = None
         else:
             cmp_matrix = pandasTableFromROutput(output, "$cmp.matrix", numLines=ranks.shape[1]+1, tmpCsv="tmpCmpMatrix.csv")
-            print("cmp_matrix:", cmp_matrix)
+            # print("cmp_matrix:", cmp_matrix)
 
         friedmanResult = FriedmanResult(output, p_value, ranks, cmp_matrix, cmp_method=cmp_method)
 
