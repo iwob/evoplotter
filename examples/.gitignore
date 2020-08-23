@@ -1,5 +1,3 @@
-table_variants.tex
-table_variants.pdf
-table_variants_removedCols.tex
-table_variants_removedCols.pdf
+table_variants*.tex
+table_variants*.pdf
 progression_grid_*.pdf

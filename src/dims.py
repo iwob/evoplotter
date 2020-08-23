@@ -293,7 +293,7 @@ class Config(ConfigList):
     def __init__(self, name, filter, **kwargs):
         assert not isinstance(filter, list), "Config associates the name and a particular filter. " \
                                              "To use multiple filters, please use ConfigOr or ConfigAnd."
-        assert callable(filter), "Filter must be a callable object."
+        assert filter is None or callable(filter), "Filter must be a callable object or None."
         self.name = name
         self.filter = filter
         ConfigList.__init__(self, (name, self), **kwargs)

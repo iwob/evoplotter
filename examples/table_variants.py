@@ -26,7 +26,7 @@ def generateTable(verticalBorder, horizontalBorder, useBooktabs):
     dimMethod = Dim([("U", None), ("P", None), ("S", None), ("IS", None)])
     dimSingleCol = Dim([("C", None), ("D", None)])
     main = dimSel * dimMethod * dimCx + dimSingleCol * dim_all * dim_all
-    dimCols = Dim([Config([("method", None), ("", None), ("cx", None)])]) + main + Dim([("mean", None)])
+    dimCols = Dim([ConfigList([("method", None), ("", None), ("cx", None)])]) + main + Dim([("mean", None)])
 
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
     rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
@@ -42,12 +42,31 @@ def generateTableRemovedCols(verticalBorder, horizontalBorder, useBooktabs):
     dimMethod = Dim([("U", None), ("P", None), ("S", None), ("IS", None)])
     dimSingleCol = Dim([("C", None), ("D", None)])
     main = dimSel * dimMethod * dimCx + dimSingleCol
-    dimCols = Dim([Config([("method", None), ("", None), ("cx", None)])]) + main + Dim([("mean", None)])
+    dimCols = Dim([ConfigList([("method", None), ("", None), ("cx", None)])]) + main + Dim([("mean", None)])
 
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
     rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
     table = printer.Table(printer.latexToArray(tableBody), dimCols=dimCols, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
                           horizontalBorder=horizontalBorder, useBooktabs=useBooktabs)
+
+    table.leaveColumns([0, 1, 3, 7, 9, 11, 15])  # leaving out S and C
+    return table
+
+
+def generateTableRemovedColsNoRowColNames(verticalBorder, horizontalBorder, useBooktabs):
+    print("Generating a table for table_variants_removedCols_NoRowColNames.tex ..")
+    dimCx = Dim([("0.0", None), ("0.5", None)])
+    dimSel = Dim([("T", None), ("L", None)])
+    dimMethod = Dim([("U", None), ("P", None), ("S", None), ("IS", None)])
+    dimSingleCol = Dim([("C", None), ("D", None)])
+    main = dimSel * dimMethod * dimCx + dimSingleCol
+    dimCols = main + Dim([("mean", None)])
+
+    rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
+    rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
+    cells, dimRows, _ = printer.latexToArrayDims(tableBody, createDimRows=True)
+    table = printer.Table(cells, dimCols=dimCols, dimRows=dimRows, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
+                          horizontalBorder=horizontalBorder, useBooktabs=useBooktabs, showColumnNames=False, showRowNames=False)
 
     table.leaveColumns([0, 1, 3, 7, 9, 11, 15])  # leaving out S and C
     return table
@@ -83,3 +102,6 @@ report.save_and_compile("table_variants.tex")
 
 report = generateReport(generateTableRemovedCols)
 report.save_and_compile("table_variants_removedCols.tex")
+
+report = generateReport(generateTableRemovedColsNoRowColNames)
+report.save_and_compile("table_variants_removedCols_NoRowColNames.tex")

@@ -3,6 +3,10 @@ from . import utils
 
 
 class CellRenderer(object):
+    """Cell renderer applies a function ("editor") to table's cells if a condition is met.
+    Both editor and condition are functions on two elements: *value* originally stored in the
+    table, and *body* being the current formatting of that value, after, e.g., successful
+    applications of other cell renderers."""
     def __init__(self, condition, editor):
         self.condition = condition
         self.editor = editor
@@ -78,7 +82,8 @@ class TableHeaderInterface(object):
 
 
 class TableHeader(TableHeaderInterface):
-    def __init__(self, dimCols, layeredHeadline=True, verticalBorder=0, horizontal_border=1, useBooktabs=False):
+    def __init__(self, dimCols, layeredHeadline=True, verticalBorder=0, horizontal_border=1, useBooktabs=False,
+                 headerRowNames=None, tabFirstCol=False):
         TableHeaderInterface.__init__(self)
         assert isinstance(dimCols, dims.Dim)
         self.dimCols = dims.Dim(dimCols.configs[:]) # copy of the original dimCols
@@ -91,6 +96,8 @@ class TableHeader(TableHeaderInterface):
         self.verticalBorder = verticalBorder
         self.horizontal_border = horizontal_border
         self.useBooktabs = useBooktabs
+        self.headerRowNames = headerRowNames
+        self.tabFirstCol = tabFirstCol
 
     def removeCell(self, index):
         assert isinstance(index, int)
@@ -104,7 +111,8 @@ class TableHeader(TableHeaderInterface):
 
     def render(self):
         return latex_table_header(self.dimCols, layered_headline=self.layeredHeadline, vertical_border=self.verticalBorder,
-                                  horizontal_border=self.horizontal_border, tabFirstCol=False, useBooktabs=self.useBooktabs)
+                                  horizontal_border=self.horizontal_border, tabFirstCol=self.tabFirstCol, useBooktabs=self.useBooktabs,
+                                  headerRowNames=self.headerRowNames)
 
 
 
@@ -123,41 +131,30 @@ class EmptyTableHeader(TableHeaderInterface):
 
 
 
-def latexToArray(text):
-    """Converts the inside of the LaTeX tabular environment into a 2D array represented as nested lists."""
-    rows = []
-    for line in text.strip().split("\n"):
-        cols = [c.strip() for c in line.split("&")]
-        if cols[-1].endswith(r"\\"):
-            cols[-1] = cols[-1][:-2]
-        elif cols[-1].endswith(r"\\\hline"):
-            cols[-1] = cols[-1][:-8]
-        rows.append(cols)
-    return rows
-
-
 
 class TableContent(object):
-    """Stores an array representing a table together with dimensions for columns and rows."""
-    def __init__(self, array, dimCols=None, dimRows=None):
-        assert isinstance(array, list)
-        self.rows = array
+    """Stores an array representing an already generated table together with
+     dimensions for columns and rows."""
+    def __init__(self, cells, dimCols=None, dimRows=None):
+        assert isinstance(cells, list)
+        assert dimCols is None or all([len(c) == len(dimCols) for c in cells]), "Each column of cells array should have an associated dimension"
+        self.cells = cells
         self.dimCols = dimCols
         self.dimRows = dimRows
 
     def __len__(self):
-        return len(self.rows)
+        return len(self.cells)
 
     def __iter__(self):
-        for r in self.rows:
+        for r in self.cells:
             yield r
 
     def __getitem__(self, item):
-        return self.rows[item]
+        return self.cells[item]
 
     def removeColumn(self, index):
         assert isinstance(index, int)
-        for row in self.rows:
+        for row in self.cells:
             del row[index]
         # Removing corresponding column dimension
         if self.dimCols is not None:
@@ -171,15 +168,15 @@ class TableContent(object):
     def leaveColumns(self, indexes):
         """Removes all the columns but those indicated by indexes."""
         assert isinstance(indexes, list)
-        for i in range(len(self.rows[0])-1, -1, -1):
+        for i in range(len(self.cells[0]) - 1, -1, -1):
             if i not in indexes:
                 self.removeColumn(i)
 
     def insertColumn(self, index, column, dimCol=None):
         assert isinstance(index, int)
         assert isinstance(column, list)
-        assert len(self.rows) == len(column)
-        for row, value in zip(self.rows, column):
+        assert len(self.cells) == len(column)
+        for row, value in zip(self.cells, column):
             row.insert(index, value)
         # Removing corresponding column dimension
         if self.dimCols is not None:
@@ -189,7 +186,7 @@ class TableContent(object):
 
     def removeRow(self, index):
         assert isinstance(index, int)
-        del self.rows[index]
+        del self.cells[index]
         # Removing corresponding row dimension
         if self.dimRows is not None:
             del self.dimRows[index]
@@ -202,14 +199,14 @@ class TableContent(object):
     def leaveRows(self, indexes):
         """Removes all the columns but those indicated by indexes."""
         assert isinstance(indexes, list)
-        for i in range(len(self.rows)-1, -1, -1):
+        for i in range(len(self.cells) - 1, -1, -1):
             if i not in indexes:
                 self.removeRow(i)
 
     def addRow(self, row, dimRow=None):
         assert isinstance(row, list)
         assert len(row) == len(self.dimCols), "Number of elements in the row does not match the number of dimensions for columns!"
-        self.rows.append(row)
+        self.cells.append(row)
         if self.dimRows is not None:
             self.dimRows += dimRow
 
@@ -219,53 +216,37 @@ class Table(object):
     """
     Rule: in hierarchical header, cells with the same caption on the same level are merged.
     """
-    def __init__(self, array, dimCols=None, dimRows=None, renderHeader=None, cellRenderers=None, layeredHeadline=True,
-                 verticalBorder=0, horizontalBorder=1, useBooktabs=False):
+    def __init__(self, cells, dimCols=None, dimRows=None, cellRenderers=None, layeredHeadline=True,
+                 verticalBorder=0, horizontalBorder=1, useBooktabs=False, headerRowNames=None,
+                 showColumnNames=True, showRowNames=True):
         if cellRenderers is None:
             cellRenderers = []
-        assert isinstance(array, list) or isinstance(array, TableContent)
+        assert isinstance(cells, list) or isinstance(cells, TableContent)
         assert isinstance(cellRenderers, list)
 
-        if isinstance(array, TableContent):
-            self.content = array
-            if dimCols is None:
-                dimCols = self.content.dimCols
-                dimRows = self.content.dimRows
-        else:
-            self.content = TableContent(array, dimCols)
+        self.content = TableContent(cells, dimCols=dimCols, dimRows=dimRows) if isinstance(cells, list) else cells
 
-        self.renderHeader = renderHeader
-
-        if dimCols is None:
-            # Create a dummy dimCols for the header
-            dimCols = dims.Dim([("", None)] * len(array[0]))
-            if renderHeader is None:
-                self.renderHeader = False
-        else:
-            dimCols = dimCols.copy()
-            # pad dimCols so that the first column has some generic caption if it was not present
-            if len(dimCols.configs) == len(array[0]) - 1:
-                dimCols = dims.Dim([("", None)]) + dimCols
-            if renderHeader is None:
-                self.renderHeader = True
-
-
+        # if dimCols is None:
+        #     # Create a dummy dimCols for the header
+        #     dimCols = dims.Dim([("", None)] * len(cells[0]))
+        #     if renderHeader is None:
+        #         self.renderHeader = False
+        # else:
+        #     dimCols = dimCols.copy()
+        #     # pad dimCols so that the first column has some generic caption if it was not present
+        #     if len(dimCols.configs) == len(cells[0]) - 1:
+        #         dimCols = dims.Dim([("", None)]) + dimCols
+        #     if renderHeader is None:
+        #         self.renderHeader = True
 
         self.cellRenderers = cellRenderers
         self.layeredHeadline = layeredHeadline
         self.verticalBorder = verticalBorder
         self.horizontalBorder = horizontalBorder
         self.useBooktabs = useBooktabs
-
-
-    def getHeader(self):
-        """Returns a Header data structure which allows for logical processing of header cells."""
-        if self.renderHeader is None:
-            return EmptyTableHeader()
-        else:
-            return TableHeader(self.content.dimCols, layeredHeadline=self.layeredHeadline,
-                               verticalBorder=self.verticalBorder, horizontal_border=self.horizontalBorder,
-                               useBooktabs=self.useBooktabs)
+        self.headerRowNames = headerRowNames
+        self.showColumnNames = showColumnNames
+        self.showRowNames = showRowNames  # results in an additional column being added at the beginning of the table with dim_rows names
 
     def removeColumn(self, index):
         self.content.removeColumn(index)
@@ -286,6 +267,22 @@ class Table(object):
     def addRow(self, row, dimRow=None):
         self.content.addRow(row, dimRow)
 
+    def __canShowColumnNames(self):
+        return self.showColumnNames and self.content.dimCols is not None
+
+    def __canShowRowNames(self):
+        return self.showRowNames and self.content.dimRows is not None
+
+    def getHeader(self):
+        """Returns a Header data structure which allows for logical processing of header cells."""
+        if not self.__canShowColumnNames():
+            return EmptyTableHeader()
+        else:
+            headerRowNames = [] if not self.__canShowRowNames() else self.headerRowNames
+            return TableHeader(self.content.dimCols, layeredHeadline=self.layeredHeadline,
+                               verticalBorder=self.verticalBorder, horizontal_border=self.horizontalBorder,
+                               useBooktabs=self.useBooktabs, headerRowNames=headerRowNames, tabFirstCol=self.__canShowRowNames())
+
     def getText(self, opts=None):
         """Part of the interface of reporting module."""
         return self.render()
@@ -302,6 +299,9 @@ class Table(object):
     def renderTableBody(self):
         text = ""
         for i, row in enumerate(self.content):
+            if self.__canShowRowNames():
+                text += self.content.dimRows[i].get_caption() + " & "
+
             rowRendered = [self.applyRenderers(cell) for cell in row]
             text += " & ".join(rowRendered) + r"\\"
             if self.horizontalBorder >= 2 and i < len(self.content) - 1:
@@ -314,12 +314,16 @@ class Table(object):
 
     def render(self, latexizeUnderscores=True, firstColAlign="l", middle_col_align="c"):
         text = ""
-        if self.renderHeader:
+        if self.__canShowColumnNames():
             text += self.renderTableHeader()
         text += self.renderTableBody()
-        return latex_table_wrapper(text, self.content.dimCols, latexize_underscores=latexizeUnderscores, vertical_border=self.verticalBorder,
+        if self.__canShowRowNames():
+            numCols = len(self.content.dimCols) + 1
+        else:
+            numCols = len(self.content.dimCols)
+        return latex_table_wrapper(text, numColumns=numCols, latexize_underscores=latexizeUnderscores, vertical_border=self.verticalBorder,
                                    horizontal_border=self.horizontalBorder, first_col_align=firstColAlign,
-                                   middle_col_align=middle_col_align, tabFirstCol=False, useBooktabs=self.useBooktabs)
+                                   middle_col_align=middle_col_align, useBooktabs=self.useBooktabs)
 
     def __str__(self):
         return self.render()
@@ -330,14 +334,14 @@ class Table(object):
     def renderCsv(self, delim=";", dimSep="/"):
         # Header
         text = ""
-        if self.renderHeader:
-            if self.content.dimRows is not None:
+        if self.__canShowColumnNames():
+            if self.__canShowRowNames():
                 text += delim
             text += delim.join([dimSep.join(c) for c in self.getHeader().cells]) + "\n"
 
         # Data
         for i, row in enumerate(self.content):
-            if self.content.dimRows is not None:
+            if self.__canShowRowNames():
                 if self.content.dimRows[i] is None:
                     text += delim
                 else:
@@ -347,18 +351,57 @@ class Table(object):
 
 
 
+
+def latexToArray(text):
+    """Converts the inside of the LaTeX tabular environment into a 2D array represented as nested lists."""
+    rows = []
+    for line in text.strip().split("\n"):
+        cols = [c.strip() for c in line.split("&")]
+        if cols[-1].endswith(r"\\"):
+            cols[-1] = cols[-1][:-2]
+        elif cols[-1].endswith(r"\\\hline"):
+            cols[-1] = cols[-1][:-8]
+        rows.append(cols)
+    return rows
+
+
+def latexToArrayDims(text, createDimRows=True):
+    """Converts the inside of the LaTeX tabular environment into a 2D array represented as nested lists, and
+    additionally creates dummy dimensions with appropriate labels. dim_cols is currently unhandled."""
+    rows = []
+    dim_rows = dims.Dim([]) if createDimRows else None
+    for line in text.strip().split("\n"):
+        cols = [c.strip() for c in line.split("&")]
+        if cols[-1].endswith(r"\\"):
+            cols[-1] = cols[-1][:-2]
+        elif cols[-1].endswith(r"\\\hline"):
+            cols[-1] = cols[-1][:-8]
+        if createDimRows:
+            dim_rows += dims.Config(cols[0], None)
+            rows.append(cols[1:])
+        else:
+            rows.append(cols)
+    return rows, dim_rows, None
+
+
 def generateTableContent(props, dimRows, dimCols, fun):
     """Populates a TableContent by creating a grid with values computed by fun
      on intersections between dimensions."""
-    array = []
+    cells = generateTableCells(props, dimRows, dimCols, fun)
+    return TableContent(cells, dimCols=dimCols.copy(), dimRows=dimRows.copy())
+
+
+def generateTableCells(props, dimRows, dimCols, fun):
+    """Populates a TableContent by creating a grid with values computed by fun
+     on intersections between dimensions."""
+    cells = []
     for i, dr in enumerate(dimRows):
         filtered_r = dr.filter_props(props)
-        array.append([])
+        cells.append([])
         for dc in dimCols:
             filtered_c = dc.filter_props(filtered_r)
-            array[i].append(fun(filtered_c))
-    return TableContent(array, dimCols=dimCols.copy(), dimRows=dimRows.copy())
-
+            cells[i].append(fun(filtered_c))
+    return cells
 
 
 
@@ -478,22 +521,18 @@ def text_table(props, dim_rows, dim_cols, fun, title=None, d_cols="\t", d_rows="
     return text
 
 
-def latex_table_wrapper(tableBody, dim_cols, latexize_underscores=True, vertical_border=1, horizontal_border=1,
-                        first_col_align="l", middle_col_align="c", tabFirstCol=True, useBooktabs=False):
-    r"""Responsible for invoking and closing \tabular environment."""
+def latex_table_wrapper(tableBody, numColumns, latexize_underscores=True, vertical_border=1, horizontal_border=1,
+                        first_col_align="l", middle_col_align="c", useBooktabs=False):
+    r"""Responsible for opening and closing \tabular environment."""
     assert isinstance(tableBody, str)
-    assert isinstance(dim_cols, dims.Dim)
-    # Tabular prefix
-    if tabFirstCol: # TODO: remove tabFirstCol option entirely
-        numCols = len(dim_cols.configs) + 1
-    else:
-        numCols = len(dim_cols.configs)
+    assert isinstance(numColumns, int)
+
     if vertical_border >= 2:
-        alignments = "|{0}|".format(first_col_align) + "|".join(middle_col_align * (numCols - 1)) + "|"  # and not layered_headline
+        alignments = "|{0}|".format(first_col_align) + "|".join(middle_col_align * (numColumns - 1)) + "|"  # and not layered_headline
     elif vertical_border == 1:
-        alignments = "|{0}|".format(first_col_align) + (middle_col_align * (numCols - 1)) + "|"
+        alignments = "|{0}|".format(first_col_align) + (middle_col_align * (numColumns - 1)) + "|"
     else:
-        alignments = first_col_align + (middle_col_align * (numCols - 1))
+        alignments = first_col_align + (middle_col_align * (numColumns - 1))
     text = r"\begin{tabular}{" + alignments + "}\n"
     if horizontal_border >= 1:
         text += r"\hline" + "\n" if not useBooktabs else r"\toprule" + "\n"
