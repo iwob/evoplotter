@@ -225,6 +225,11 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
             r = s.split("10^{")
             return r[1][:-2]
 
+    rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
+    def cellShading(a, b, c):
+        assert c >= b >= a
+        return printer.CellShading(a, b, c, "colorLow", "colorMedium", "colorHigh")
+
     status_color_scheme = reporting.ColorScheme3(["1.0, 1.0, 1.0", "0.65, 0.0, 0.0", "0.8, 0, 0"],
                                                  ["white", "light red", "red"])
 
@@ -238,12 +243,12 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         TableGenerator(fun_successRate, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Success rates (properties met)",
                        color_scheme=reporting.color_scheme_darkgreen,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       cellRenderers=[rBold, cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        outputFiles=[results_dir + "/tables/cdgp_succRate_{0}.tex".format(utils.normalize_name(v.get_caption())) for v in variants]
                        ),
         TableGenerator(get_averageAlgorithmRanksCDGP(dim_cols[:-1], dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
-                       Dim(dim_cols[-1]), Dim(dim_rows[-1]),
+                       Dim(dim_rows[-1]), Dim(dim_cols[-1]),
                        headerRowNames=headerRowNames,
                        title="Average ranks of the solvers (success rate)",
                        color_scheme=reporting.color_scheme_violet,
@@ -255,7 +260,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         #                 color_scheme=""),
         TableGenerator(
             get_averageAlgorithmRanksCDGP(dim_operatorProbs, dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
-            Dim(dim_cols[-1]), dim_methodGPR + dim_methodCDGP + dim_methodCDGPprops,
+            Dim(dim_cols[-1]), dim_methodGPR + dim_methodCDGP,
             headerRowNames=headerRowNames,
             title="Average ranks of the solvers (success rate)",
             color_scheme=reporting.color_scheme_violet,
@@ -516,25 +521,25 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 
     # ----- One big table -----
-    # dim_cols_cdgp = dim_methodCDGP * dim_evoMode * dim_sel * dim_testsRatio
-    # dim_cols_ea = dim_cols_cdgp + dim_methodGPR * dim_evoMode * dim_sel * dim_testsRatio
+    # dim_cols_cdgp = dim_methodCDGP * dim_evoMode * dim_sel * dim_testsRatio + dim_methodGPR * dim_evoMode * dim_sel * dim_testsRatio
+    # dim_cols_ea = dim_cols_cdgp
     # dim_cols = dim_methodBaseline + dim_cols_ea
     # variants = None
     # -------------------------
 
     # ----- Several tables -----
-    # dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio
-    # dim_cols_ea = dim_cols_cdgp + dim_methodGPR * dim_sel * dim_testsRatio
-    # dim_cols = dim_cols_ea  # dim_methodBaseline
-    # variants = dim_evoMode.configs
+    dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio + dim_methodGPR * dim_sel * dim_testsRatio
+    dim_cols_ea = dim_cols_cdgp
+    dim_cols = dim_cols_ea  # dim_methodBaseline
+    variants = dim_evoMode.configs
     # -------------------------
 
 
     # ----- Several tables (GPR-divided) -----
-    dim_cols_cdgp = dim_sel * dim_testsRatio
-    dim_cols_ea = dim_cols_cdgp
-    dim_cols = dim_cols_ea  # dim_methodBaseline
-    variants = (dim_evoMode * (dim_methodCDGP + dim_methodGPR)).configs
+    # dim_cols_cdgp = dim_sel * dim_testsRatio
+    # dim_cols_ea = dim_cols_cdgp
+    # dim_cols = dim_cols_ea  # dim_methodBaseline
+    # variants = (dim_evoMode * (dim_methodCDGP + dim_methodGPR)).configs
     # -------------------------
 
     dim_cols += dim_cols.dim_true_within()
@@ -627,5 +632,5 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 if __name__ == "__main__":
     # reports_e0_paramTests()
-    # reports_e0_lia()
-    reports_e0_slia()
+    reports_e0_lia()
+    # reports_e0_slia()
