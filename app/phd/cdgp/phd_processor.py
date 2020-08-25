@@ -206,17 +206,13 @@ def createSubsectionWithTables(title, tables, props):
     return reporting.Subsection(title, get_content_of_subsections(subsects_main))
 
 
+def cellShading(a, b, c):
+    assert c >= b >= a
+    return printer.CellShading(a, b, c, "colorLow", "colorMedium", "colorHigh")
 
 
 def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, headerRowNames, results_dir, variants=None):
     vb = 1  # vertical border
-
-    # ----------------------------------------------------
-    # Cleaning experiment here, because dimension can be easily constructed.
-    # dim_rows_v3 = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True)
-    # utils.reorganizeExperimentFiles(props, dim_rows_v3 * dim_benchmarkNumTests * dim_cols, target_dir="./exp3_final/", maxRuns=numRuns)
-    # utils.deleteFilesByPredicate(props, lambda p: len(p["maxGenerations"]) > 7, simulate=False)
-    # ----------------------------------------------------
 
     def scNotColorValueExtractor(s):
         if s == "-" or "10^{" not in s:
@@ -226,9 +222,6 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
             return r[1][:-2]
 
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
-    def cellShading(a, b, c):
-        assert c >= b >= a
-        return printer.CellShading(a, b, c, "colorLow", "colorMedium", "colorHigh")
 
     status_color_scheme = reporting.ColorScheme3(["1.0, 1.0, 1.0", "0.65, 0.0, 0.0", "0.8, 0, 0"],
                                                  ["white", "light red", "red"])
@@ -237,7 +230,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         TableGenerator(get_num_computed, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Status (correctly finished runs)",
                        color_scheme=reversed(status_color_scheme),
-                       default_color_thresholds=(0.0, 0.8*numRuns, numRuns),
+                       cellRenderers=[cellShading(0.0, 0.8*numRuns, numRuns)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(fun_successRate, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
@@ -287,23 +280,23 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        TableGenerator(get_avg_runtime, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Average runtime [s]",
                        color_scheme=reporting.color_scheme_violet,
-                       default_color_thresholds=(0.0, 900.0, 1800.0),
+                       cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        outputFiles=[results_dir + "/tables/cdgp_avgRuntime_{0}.tex".format(utils.normalize_name(v.get_caption())) for v in variants]
                        ),
-        TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Average runtime (only successful) [s]",
                        color_scheme=reporting.color_scheme_violet,
-                       default_color_thresholds=(0.0, 900.0, 1800.0),
+                       cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        TableGenerator(get_avg_runtimeOnlyUnsuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        TableGenerator(get_avg_runtimeOnlyUnsuccessful, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Average runtime (only unsuccessful) [s]",
                        color_scheme=reporting.color_scheme_violet,
-                       default_color_thresholds=(0.0, 900.0, 1800.0),
+                       cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
     ]
@@ -328,37 +321,37 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames,
         TableGenerator(get_stats_size, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average sizes of best of runs (number of nodes)",
                        color_scheme=reporting.color_scheme_yellow,
-                       default_color_thresholds=(0.0, 100.0, 200.0),
+                       cellRenderers=[cellShading(0.0, 100.0, 200.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         # TableGenerator(get_stats_sizeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
         #                title="Average sizes of best of runs (number of nodes) (only successful)",
         #                color_scheme=reporting.color_scheme_yellow,
-        #                default_color_thresholds=(0.0, 100.0, 200.0),
+        #                cellRenderers=[cellShading(0.0, 100.0, 200.0)],
         #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
         #                ),
         TableGenerator(get_avg_generation, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average generation (all)",
                        color_scheme=reporting.color_scheme_teal,
-                       default_color_thresholds=(0.0, 5000.0, 10000.0),
+                       cellRenderers=[cellShading(0.0, 5000.0, 10000.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(get_avg_evaluated, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average number of evaluated solutions",
                        color_scheme=reporting.color_scheme_brown,
-                       default_color_thresholds=(0.0, 5000.0, 10000.0),
+                       cellRenderers=[cellShading(0.0, 5000.0, 10000.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         # TableGenerator(get_avg_evaluatedSuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
         #                title="Average number of evaluated solutions",
         #                color_scheme=reporting.color_scheme_brown,
-        #                default_color_thresholds=(500.0, 25000.0, 100000.0),
+        #                cellRenderers = [cellShading(500.0, 25000.0, 100000.0)],
         #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
         #                ),
         # TableGenerator(get_avg_doneAlgRestarts, dim_rows, dim_cols, headerRowNames=headerRowNames,
         #                title="Number of algorithm restarts  (avg)",
         #                color_scheme=reporting.color_scheme_gray_light,
-        #                default_color_thresholds=(0.0, 1e2, 1e4),
+        #                cellRenderers = [cellShading(0.0, 1e2, 1e4)],
         #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
         #                ),
     ]
@@ -372,44 +365,44 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
 
     tables = [
         TableGenerator(get_avg_totalTests,
-                       Dim(dim_rows.configs), Dim(dim_cols.configs),
+                       dim_rows, Dim(dim_cols[:-1]),
                        headerRowNames=headerRowNames,
                        title="Average sizes of $T_C$ (total tests in run)",
                        color_scheme=reporting.color_scheme_blue, middle_col_align="l",
-                       default_color_thresholds=(0.0, 1000.0, 2000.0),
+                       cellRenderers=[cellShading(0.0, 1000.0, 2000.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        outputFiles=[results_dir + "/tables/cdgp_Tc_{0}.tex".format(utils.normalize_name(v.get_caption())) for v in variants]
                        ),
         TableGenerator(get_stats_maxSolverTime,
-                       Dim(dim_rows.configs), Dim(dim_cols.configs),
+                       dim_rows, dim_cols,
                        headerRowNames=headerRowNames,
                        title="Max solver time per query [s]",
                        color_scheme=reporting.color_scheme_violet, middle_col_align="l",
-                       default_color_thresholds=(0.0, 5.0, 10.0),
+                       cellRenderers=[cellShading(0.0, 5.0, 10.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(get_stats_avgSolverTime,
-                       Dim(dim_rows.configs), Dim(dim_cols.configs),
+                       dim_rows, dim_cols,
                        headerRowNames=headerRowNames,
                        title="Avg solver time per query [s]",
                        color_scheme=reporting.color_scheme_brown, middle_col_align="l",
-                       default_color_thresholds=(0.0, 5.0, 10.0),
+                       cellRenderers=[cellShading(0.0, 5.0, 10.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(get_avgSolverTotalCalls,
-                       Dim(dim_rows.configs), Dim(dim_cols.configs),
+                       dim_rows, dim_cols,
                        headerRowNames=headerRowNames,
                        title="Avg number of solver calls (in thousands; 1=1000)",
                        color_scheme=reporting.color_scheme_blue, middle_col_align="l",
-                       default_color_thresholds=(0.0, 5.0, 10.0),
+                       cellRenderers=[cellShading(0.0, 5.0, 10.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         TableGenerator(get_numSolverCallsOverXs,
-                       Dim(dim_rows.configs), Dim(dim_cols.configs),
+                       dim_rows, dim_cols,
                        headerRowNames=headerRowNames,
                        title="Number of solver calls $>$ 0.5s",
                        color_scheme=reporting.color_scheme_blue, middle_col_align="l",
-                       default_color_thresholds=(0.0, 5.0, 10.0),
+                       cellRenderers=[cellShading(0.0, 10.0, 20.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
         # TableGenerator(get_freqCounterexamples,
@@ -417,7 +410,7 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
         #                headerRowNames=headerRowNames,
         #                title="The most frequently found counterexamples for each benchmark and configuration",
         #                color_scheme=reporting.color_scheme_blue, middle_col_align="l",
-        #                default_color_thresholds=(0.0, 5.0, 10.0),
+        #                cellRenderers=[cellShading(0.0, 5.0, 10.0)],
         #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
         #                ),
      ]
