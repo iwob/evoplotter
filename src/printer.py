@@ -582,7 +582,7 @@ def latex_table(props, dim_rows, dim_cols, fun, latexize_underscores=True, layer
                               vertical_border=vertical_border, headerRowNames=headerRowNames)
     body += text_table_body(props, dim_rows, dim_cols, fun, d_cols=" & ", d_rows="\\\\\n")
 
-    text = latex_table_wrapper(body, dim_cols, latexize_underscores=latexize_underscores, vertical_border=vertical_border,
+    text = latex_table_wrapper(body, numColumns=len(dim_cols)+1, latexize_underscores=latexize_underscores, vertical_border=vertical_border,
                                first_col_align=first_col_align, middle_col_align=middle_col_align)
     return text
 

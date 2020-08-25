@@ -126,8 +126,8 @@ class TestsPrinter(unittest.TestCase):
     def test_text_listing(self):
         dim = self.dim_rows * self.dim_cols
         text = printer.text_listing(self.data, dim, lambda ds: sum([d["x"] for d in ds]), d_configs="\n\n")
-        self.assertEqual("(*) CONFIG: r0_c0\n6\n\n" + "(*) CONFIG: r0_c1\n15\n\n" + "(*) CONFIG: r0_c2\n24\n\n" +
-                         "(*) CONFIG: r1_c0\n36\n\n" + "(*) CONFIG: r1_c1\n45\n\n" + "(*) CONFIG: r1_c2\n54\n\n", text)
+        self.assertEqual("(*) CONFIG: r0/c0\n6\n\n" + "(*) CONFIG: r0/c1\n15\n\n" + "(*) CONFIG: r0/c2\n24\n\n" +
+                         "(*) CONFIG: r1/c0\n36\n\n" + "(*) CONFIG: r1/c1\n45\n\n" + "(*) CONFIG: r1/c2\n54\n\n", text)
 
 
     def test_decorate(self):
