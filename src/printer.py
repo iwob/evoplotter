@@ -51,11 +51,11 @@ class CellShading(CellRenderer):
           gradient, that is closer a given cell value is to the MidNumber, more MidColor'ed it becomes.
         :param MaxColor: (str) name of the LaTeX color representing the highest value."""
         def color_cell(v, body):
-            if v == "-" or v == "-" or v.strip().lower() == "nan" or not utils.isfloat(v.strip()):
+            if isinstance(v, str) and (v == "-" or v == "-" or v.strip().lower() == "nan" or not utils.isfloat(v.strip())):
                 return v
             else:
                 # Computing color gradient.
-                val = float(v.strip())
+                val = float(v.strip()) if isinstance(v, str) else float(v)
                 if val > MidNumber:
                     PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber - MidNumber), 100.0), 0.0)
                     color = "{0}!{1:.1f}!{2}".format(MaxColor, PercentColor, MidColor)
