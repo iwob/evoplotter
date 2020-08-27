@@ -85,6 +85,9 @@ class Dim(object):
             raise Exception("To the Dimension may be added only a Config or other Dimension.")
     __rmul__ = __mul__
 
+    def __reversed__(self):
+        return Dim(list(reversed(self.configs)))
+
     def __str__(self):
         return str([c.get_caption() for c in self.configs])
 
