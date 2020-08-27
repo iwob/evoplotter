@@ -214,6 +214,7 @@ def cellShading(a, b, c):
 
 def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, headerRowNames, results_dir, variants=None):
     vb = 1  # vertical border
+    variants_ids = ["all"] if variants is None else [v.get_caption() for v in variants]
 
     def scNotColorValueExtractor(s):
         if s == "-" or "10^{" not in s:
@@ -239,7 +240,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        color_scheme=reporting.color_scheme_darkgreen,
                        cellRenderers=[rBold, cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       outputFiles=[results_dir + "/tables/cdgp_succRate_{0}.tex".format(utils.normalize_name(v.get_caption())) for v in variants]
+                       outputFiles=[results_dir + "/tables/cdgp_succRate_{0}.tex".format(utils.normalize_name(vid)) for vid in variants_ids]
                        ),
         TableGenerator(get_averageAlgorithmRanksCDGP(dim_cols[:-1], dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
                        Dim(dim_rows[-1]), Dim(dim_cols[-1]),
@@ -286,7 +287,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        color_scheme=reporting.color_scheme_violet,
                        cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       outputFiles=[results_dir + "/tables/cdgp_avgRuntime_{0}.tex".format(utils.normalize_name(v.get_caption())) for v in variants]
+                       outputFiles=[results_dir + "/tables/cdgp_avgRuntime_{0}.tex".format(utils.normalize_name(vid)) for vid in variants_ids]
                        ),
         TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Average runtime (only successful) [s]",
@@ -363,6 +364,7 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames,
 
 def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowNames, results_dir, variants=None):
     vb = 1  # vertical border
+    variants_ids = ["all"] if variants is None else [v.get_caption() for v in variants]
 
     tables = [
         TableGenerator(get_avg_totalTests,
@@ -372,7 +374,7 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
                        color_scheme=reporting.color_scheme_blue, middle_col_align="l",
                        cellRenderers=[cellShading(0.0, 1000.0, 2000.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       outputFiles=[results_dir + "/tables/cdgp_Tc_{0}.tex".format(utils.normalize_name(v.get_caption())) for v in variants]
+                       outputFiles=[results_dir + "/tables/cdgp_Tc_{0}.tex".format(utils.normalize_name(vid)) for vid in variants_ids]
                        ),
         TableGenerator(get_stats_maxSolverTime,
                        dim_rows, dim_cols,
@@ -638,19 +640,19 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 
     # ----- One big table -----
-    # dim_cols_cdgp = dim_methodCDGP * dim_evoMode * dim_sel * dim_testsRatio
-    # dim_cols_ea = dim_cols_cdgp
-    # dim_cols = dim_cols_ea  #dim_methodBaseline + dim_cols_ea
-    # variants = None  # variants_benchmarkNumTests
-    # headerRowNames = ["method"]
+    dim_cols_cdgp = dim_methodCDGP * dim_evoMode * dim_sel * dim_testsRatio
+    dim_cols_ea = dim_cols_cdgp
+    dim_cols = dim_cols_ea
+    variants = None
+    headerRowNames = ["method", "scheme", "selection", r"$\alpha$"]
     # -------------------------
 
     # ----- Several tables -----
-    dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio
-    dim_cols_ea = dim_cols_cdgp
-    dim_cols = dim_cols_ea  # dim_methodBaseline + dim_cols_ea
-    variants = dim_evoMode.configs
-    headerRowNames = ["", "method"]
+    # dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio
+    # dim_cols_ea = dim_cols_cdgp
+    # dim_cols = dim_cols_ea
+    # variants = dim_evoMode.configs
+    # headerRowNames = ["", "method", "selection", r"$\alpha$"]
     # -------------------------
 
 
