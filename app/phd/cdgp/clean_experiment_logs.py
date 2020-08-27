@@ -20,8 +20,8 @@ def cleanLIA():
 
 
 def cleanSLIA():
-    folders_in = ["SLIA_ORIG"]
-    folder_out = "SLIA/"
+    folders_in = ["SLIA_hardTimeout_ORIG"]
+    folder_out = "SLIA_hardTimeout/"
     ensure_clear_dir(folder_out)
 
     props = phd_utils.load_correct_props_simple(folders_in)
@@ -34,5 +34,5 @@ def cleanSLIA():
 
 
 if __name__ == "__main__":
-    cleanLIA()
-    # cleanSLIA()
+    # cleanLIA()
+    cleanSLIA()

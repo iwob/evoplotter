@@ -120,8 +120,8 @@ dim_sel = Dim([
 # dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
 #                    Config("$generational$", p_generational, evolutionMode="generational")])
 dim_evoMode = Dim([
-    Config("$steadyState$", p_dict_matcher({"evolutionMode": "steadyState"}), evolutionMode="steadyState"),
     Config("$generational$", p_dict_matcher({"evolutionMode": "generational"}), evolutionMode="generational"),
+    Config("$steadyState$", p_dict_matcher({"evolutionMode": "steadyState"}), evolutionMode="steadyState"),
 ])
 dim_testsRatio = Dim([
     Config("$0.0$", p_testsRatio_equalTo("0.0"), testsRatio="0.0"),
@@ -191,9 +191,10 @@ def createSubsectionWithTables(title, tables, props):
     subsects_main = []
     for t in tables:
         tsv = t.apply_listed(props)
-        assert len(tsv) == len(t.table_variants), "Number of output files must be the same as the number of table variants."
+        assert len(tsv) == len(t.table_variants_to_be_used), "Number of output files must be the same as the number of table variants."
         if t.outputFiles is not None:
             for tsv_txt, path in zip(tsv, t.outputFiles):
+                os.makedirs(os.path.dirname(path), exist_ok=True)  # automatically create directories
                 f = open(path, "w")
                 f.write(tsv_txt)
                 f.close()
@@ -293,12 +294,12 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        TableGenerator(get_avg_runtimeOnlyUnsuccessful, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
-                       title="Average runtime (only unsuccessful) [s]",
-                       color_scheme=reporting.color_scheme_violet,
-                       cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
-                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       ),
+        # TableGenerator(get_avg_runtimeOnlyUnsuccessful, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
+        #                title="Average runtime (only unsuccessful) [s]",
+        #                color_scheme=reporting.color_scheme_violet,
+        #                cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
     ]
 
     return createSubsectionWithTables(title, tables, props)
@@ -419,6 +420,43 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
 
 
 
+def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, results_dir, variants=None):
+    assert EXP_TYPE == "SLIA" or EXP_TYPE == "LIA"
+    vb = 1  # vertical border
+
+    dim_rows = reversed(dimensions_dict["testsRatio"])
+    dim_cols = dimensions_dict["method"] * dimensions_dict["evoMode"] * dimensions_dict["selection"]
+    shTc = cellShading(0.0, 5000.0, 10000.0) if EXP_TYPE == "LIA" else cellShading(0.0, 250.0, 500.0)
+    tables = [
+        TableGenerator(get_avg_totalTests,
+                       dim_rows, dim_cols,
+                       headerRowNames=[],
+                       title="Average sizes of $T_C$ (total tests in run)",
+                       color_scheme=reporting.color_scheme_blue, middle_col_align="l",
+                       cellRenderers=[shTc],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[
+                           results_dir + "/tables/custom/cdgp_Tc_byTestsRatio.tex"]
+                       ),
+        TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=[],
+                       title="Average runtime [s]",
+                       color_scheme=reporting.color_scheme_violet,
+                       cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[
+                           results_dir + "/tables/custom/cdgp_runtime_byTestsRatio.tex"]
+                       ),
+        TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, dim_cols, headerRowNames=[],
+                       title="Average runtime (only successful) [s]",
+                       color_scheme=reporting.color_scheme_violet,
+                       cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+    ]
+
+    return createSubsectionWithTables(title, tables, props)
+
+
 
 user_declarations = r"""\definecolor{darkred}{rgb}{0.56, 0.05, 0.0}
 \definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0}
@@ -509,8 +547,16 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders, results_dir)
     standardize_benchmark_names(props)
-    dim_rows = get_benchmarks_from_props(props)  #, simplify_name_lambda=simplify_benchmark_name)
-    dim_rows += dim_rows.dim_true_within("ALL")
+    dim_benchmarks = get_benchmarks_from_props(props)  #, simplify_name_lambda=simplify_benchmark_name)
+    dim_rows = dim_benchmarks + dim_benchmarks.dim_true_within("ALL")
+
+    dimensions_dict = {"benchmark": dim_benchmarks,
+                       "testsRatio": dim_testsRatio,
+                       "evoMode": dim_evoMode,
+                       "selection": dim_sel,
+                       "method": dim_methodCDGP + dim_methodGPR,
+                       "method_CDGP": dim_methodCDGP,
+                       "method_GPR": dim_methodGPR,}
 
 
     # ----- One big table -----
@@ -544,6 +590,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
         (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 50, headerRowNames, results_dir, variants]),
         (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames, results_dir, variants]),
         (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames, results_dir, variants]),
+        (create_subsection_custom_tables, ["Custom tables", "LIA", dimensions_dict, results_dir, None])
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]
@@ -558,7 +605,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 def reports_e0_slia():
 
-    name = "e0_slia"
+    name = "e0_slia_hardTimeout"
     results_dir = "results/results_{0}".format(name)
     ensure_result_dir(results_dir)
     title = "Final CDGP experiment for the SLIA logic."
@@ -575,12 +622,19 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 """
 
     # folders = ["phd_cdgp_e0_paramTests_01", "phd_cdgp_e0_paramTests_02"]
-    folders = ["SLIA"]
+    folders = ["SLIA_hardTimeout"]
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders, results_dir)
     standardize_benchmark_names(props)
-    dim_rows = get_benchmarks_from_props(props)  #, simplify_name_lambda=simplify_benchmark_name)
-    dim_rows += dim_rows.dim_true_within("ALL")
+    dim_benchmarks = get_benchmarks_from_props(props)  #, simplify_name_lambda=simplify_benchmark_name)
+    dim_rows = dim_benchmarks + dim_benchmarks.dim_true_within("ALL")
+
+    dimensions_dict = {"benchmark": dim_benchmarks,
+                       "testsRatio": dim_testsRatio,
+                       "evoMode": dim_evoMode,
+                       "selection": dim_sel,
+                       "method": dim_methodCDGP,
+                       "method_CDGP": dim_methodCDGP}
 
 
     # ----- One big table -----
@@ -610,6 +664,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
         (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 50, headerRowNames, results_dir, variants]),
         (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames, results_dir, variants]),
         (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames, results_dir, variants]),
+        (create_subsection_custom_tables, ["Custom tables", "SLIA", dimensions_dict, results_dir, None]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]
@@ -625,5 +680,5 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 if __name__ == "__main__":
     # reports_e0_paramTests()
-    reports_e0_lia()
-    # reports_e0_slia()
+    # reports_e0_lia()
+    reports_e0_slia()
