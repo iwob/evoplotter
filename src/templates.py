@@ -75,6 +75,7 @@ class TableGenerator:
         self.headerRowNames = headerRowNames
         # create a table for each variant and put them next to each other
         self.table_variants = table_variants
+        self.table_variants_to_be_used = self.table_variants if self.table_variants is not None else [lambda p: True]
         self.default_color_thresholds = default_color_thresholds
         self.layered_headline = layered_headline
         self.color_value_extractor = color_value_extractor
@@ -98,8 +99,7 @@ class TableGenerator:
     def apply_listed(self, props):
         """The same as apply, but returned is a list of tables."""
         tables = []
-        variants_to_be_used = self.table_variants if self.table_variants is not None else [lambda p: True]
-        for variant in variants_to_be_used:  # each variant is some predicate on data
+        for variant in self.table_variants_to_be_used:  # each variant is some predicate on data
             txt = self.__get_table_text(variant, props)
             tables.append(txt)
         return tables
