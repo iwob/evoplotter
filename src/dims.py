@@ -141,6 +141,12 @@ class Dim(object):
         return Dim(configs)
 
     @classmethod
+    def from_names(cls, names):
+        """Creates a dummy Dim object with config names but no lambdas."""
+        configs = [Config(name, None) for name in names]
+        return Dim(configs)
+
+    @classmethod
     def from_data(cls, props, extr):
         """Creates a Dim object by collecting all unique values in the data.
         Extractor (extr) is a function used to get values."""
@@ -149,14 +155,15 @@ class Dim(object):
         return Dim(configs)
 
     @classmethod
-    def from_dict(cls, props, key):
+    def from_dict(cls, props, key, nameFun=None):
         """Creates a Dim object by collecting all unique values under the specified
         key in the dictionaries."""
         s = utils.get_unique_values(props, lambda p: p[key])
         configs = []
         for el in s:
             kwargs = {key: el}
-            configs.append(Config(el, lambda p, key=key, el=el: p[key] == el, **kwargs))
+            name = el if nameFun is None else nameFun(el)
+            configs.append(Config(name, lambda p, key=key, el=el: p[key] == el, **kwargs))
         return Dim(configs)
 
     @classmethod

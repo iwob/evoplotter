@@ -137,7 +137,7 @@ class TableContent(object):
      dimensions for columns and rows."""
     def __init__(self, cells, dimCols=None, dimRows=None):
         assert isinstance(cells, list)
-        assert dimCols is None or all([len(c) == len(dimCols) for c in cells]), "Each column of cells array should have an associated dimension"
+        assert dimCols is None or all([len(c) == len(dimCols) for c in cells]), "Each column of the cells array should have an associated dimension"
         self.cells = cells
         self.dimCols = dimCols
         self.dimRows = dimRows
@@ -221,9 +221,8 @@ class Table(object):
                  showColumnNames=True, showRowNames=True):
         if cellRenderers is None:
             cellRenderers = []
-        assert isinstance(cells, list) or isinstance(cells, TableContent)
+        assert isinstance(cells, list), "Table expects array of cells as an input" #or isinstance(cells, TableContent)
         assert isinstance(cellRenderers, list)
-
         self.content = TableContent(cells, dimCols=dimCols, dimRows=dimRows) if isinstance(cells, list) else cells
 
         # if dimCols is None:
@@ -365,6 +364,22 @@ def latexToArray(text):
     return rows
 
 
+def latexToArrayRowNames(text):
+    """Converts the inside of the LaTeX tabular environment into a 2D array represented as nested lists.
+    The first column is treated as row names, and a list of them is returned."""
+    rows = []
+    names = []
+    for line in text.strip().split("\n"):
+        cols = [c.strip() for c in line.split("&")]
+        if cols[-1].endswith(r"\\"):
+            cols[-1] = cols[-1][:-2]
+        elif cols[-1].endswith(r"\\\hline"):
+            cols[-1] = cols[-1][:-8]
+        names.append(cols[0])
+        rows.append(cols[1:])
+    return rows, names
+
+
 def latexToArrayDims(text, createDimRows=True):
     """Converts the inside of the LaTeX tabular environment into a 2D array represented as nested lists, and
     additionally creates dummy dimensions with appropriate labels. dim_cols is currently unhandled."""
@@ -392,8 +407,9 @@ def generateTableContent(props, dimRows, dimCols, fun):
 
 
 def generateTableCells(props, dimRows, dimCols, fun):
-    """Populates a TableContent by creating a grid with values computed by fun
-     on intersections between dimensions."""
+    """Creates a 2d array containing the basic data structure for the table's content.
+    :param fun: (lambda) a function taking as an argument a list of properties.
+    """
     cells = []
     for i, dr in enumerate(dimRows):
         filtered_r = dr.filter_props(props)
@@ -672,8 +688,9 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
                     align = "c|"
                     # Necessary, because apparently multicolumn{c|} overrides {|l|}
                     # on the border of the table
-                    if i == 0:
-                        align = "|" + align
+                    # ! not necessary after all, some other part was fix
+                    # if i == 0:
+                    #     align = "|" + align
                 headerCells.append(r"\multicolumn{1}{" + align + "}{" + d.get_caption() + "}")
 
             firstColSep = headerRowNames[layer_no] + d_cols if tabFirstCol else ""
@@ -707,8 +724,9 @@ def latex_table_header_multilayered(dim_cols, d_cols=" & ", d_rows="\\\\\n", ver
                 #     align += "|"
                 # Necessary, because apparently multicolumn{c|} overrides {|l|}
                 # on the border of the table
-                if i == 0:
-                    align = "|" + align
+                # ! not necessary after all, some other part was fix
+                # if i == 0:
+                #     align = "|" + align
             ftext = r"\multicolumn{" + str(foccurs) + "}{" + align + "}{" + fname + "}" # \multicolumn{6}{c}{$EPS$}
             buffer.append(ftext)
 

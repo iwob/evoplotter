@@ -1,7 +1,6 @@
 from src import printer
 from src import reporting
 from src.dims import *
-from src.dims import Config
 
 
 tableBody = r"""
@@ -19,57 +18,80 @@ tableBody = r"""
     """
 
 
-def generateTable(verticalBorder, horizontalBorder, useBooktabs):
-    print("Generating a table for table_variants.tex ..")
+def generateTableText(verticalBorder, horizontalBorder, useBooktabs):
+    print("Generating a table for table_variants_text.tex ..")
     dimCx = Dim([("0.0", None), ("0.5", None)])
     dimSel = Dim([("T", None), ("L", None)])
     dimMethod = Dim([("U", None), ("P", None), ("S", None), ("IS", None)])
     dimSingleCol = Dim([("C", None), ("D", None)])
     main = dimSel * dimMethod * dimCx + dimSingleCol * dim_all * dim_all
-    dimCols = Dim([ConfigList([("method", None), ("", None), ("cx", None)])]) + main + Dim([("mean", None)])
+    dimCols = main + Dim([("mean", None)])
+    cells, rows_names = printer.latexToArrayRowNames(tableBody)  # maybe switch for pandas as a primary representation?
+    dimRows = Dim.from_names(rows_names)
 
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
     rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-    table = printer.Table(printer.latexToArray(tableBody), dimCols=dimCols, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
-                          horizontalBorder=horizontalBorder, useBooktabs=useBooktabs)
+    table = printer.Table(cells, dimRows=dimRows, dimCols=dimCols, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
+                          horizontalBorder=horizontalBorder, useBooktabs=useBooktabs, headerRowNames=["method", "", "cx"])
     return table
 
 
-def generateTableRemovedCols(verticalBorder, horizontalBorder, useBooktabs):
-    print("Generating a table for table_variants_removedCols.tex ..")
-    dimCx = Dim([("0.0", None), ("0.5", None)])
-    dimSel = Dim([("T", None), ("L", None)])
-    dimMethod = Dim([("U", None), ("P", None), ("S", None), ("IS", None)])
-    dimSingleCol = Dim([("C", None), ("D", None)])
-    main = dimSel * dimMethod * dimCx + dimSingleCol
-    dimCols = Dim([ConfigList([("method", None), ("", None), ("cx", None)])]) + main + Dim([("mean", None)])
-
-    rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
-    rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-    table = printer.Table(printer.latexToArray(tableBody), dimCols=dimCols, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
-                          horizontalBorder=horizontalBorder, useBooktabs=useBooktabs)
-
-    table.leaveColumns([0, 1, 3, 7, 9, 11, 15])  # leaving out S and C
-    return table
-
-
-def generateTableRemovedColsNoRowColNames(verticalBorder, horizontalBorder, useBooktabs):
-    print("Generating a table for table_variants_removedCols_NoRowColNames.tex ..")
+def generateTableTextRemovedCols(verticalBorder, horizontalBorder, useBooktabs):
+    print("Generating a table for table_variants_text_rc.tex ..")
     dimCx = Dim([("0.0", None), ("0.5", None)])
     dimSel = Dim([("T", None), ("L", None)])
     dimMethod = Dim([("U", None), ("P", None), ("S", None), ("IS", None)])
     dimSingleCol = Dim([("C", None), ("D", None)])
     main = dimSel * dimMethod * dimCx + dimSingleCol
     dimCols = main + Dim([("mean", None)])
+    cells, rows_names = printer.latexToArrayRowNames(tableBody)  # maybe switch for pandas as a primary representation?
+    dimRows = Dim.from_names(rows_names)
 
     rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
     rShading = printer.CellShading(0.0, 0.5, 1.0, "colorLow", "colorMedium", "colorHigh")
-    cells, dimRows, _ = printer.latexToArrayDims(tableBody, createDimRows=True)
-    table = printer.Table(cells, dimCols=dimCols, dimRows=dimRows, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
-                          horizontalBorder=horizontalBorder, useBooktabs=useBooktabs, showColumnNames=False, showRowNames=False)
+    table = printer.Table(cells, dimRows=dimRows, dimCols=dimCols, cellRenderers=[rBold, rShading], verticalBorder=verticalBorder,
+                          horizontalBorder=horizontalBorder, useBooktabs=useBooktabs, headerRowNames=["method", "", "cx"])
 
-    table.leaveColumns([0, 1, 3, 7, 9, 11, 15])  # leaving out S and C
+    table.leaveColumns([0, 2, 6, 8, 10, 14])  # leaving out S and C
     return table
+
+
+
+data = [
+    {"A": 0, "B": 1, "C": 0, "D": 4, "E": 0, "F": 0, "value": 2},
+    {"A": 1, "B": 1, "C": 0, "D": 4, "E": 0, "F": 0, "value": 4},
+    {"A": 0, "B": 0, "C": 0, "D": 4, "E": 0, "F": 0, "value": 0},
+    {"A": 0, "B": 0, "C": 0, "D": 4, "E": 0, "F": 0, "value": 3},
+    {"A": 0, "B": 0, "C": 1, "D": 4, "E": 0, "F": 0, "value": 1},
+    {"A": 0, "B": 0, "C": 1, "D": 4, "E": 0, "F": 0, "value": 9},
+    {"A": 0, "B": 1, "C": 1, "D": 4, "E": 0, "F": 1, "value": 1},
+    {"A": 0, "B": 1, "C": 1, "D": 4, "E": 0, "F": 1, "value": 3},
+    {"A": 0, "B": 1, "C": 0, "D": 4, "E": 0, "F": 1, "value": 0},
+    {"A": 0, "B": 1, "C": 0, "D": 4, "E": 0, "F": 1, "value": 4},
+    {"A": 1, "B": 1, "C": 0, "D": 4, "E": 0, "F": 2, "value": 5},
+    {"A": 1, "B": 1, "C": 1, "D": 4, "E": 0, "F": 2, "value": 7},
+    {"A": 1, "B": 0, "C": 1, "D": 4, "E": 0, "F": 2, "value": 1},
+    {"A": 1, "B": 0, "C": 1, "D": 4, "E": 0, "F": 2, "value": 2},
+    {"A": 1, "B": 0, "C": 0, "D": 4, "E": 0, "F": 3, "value": 2},
+    {"A": 1, "B": 0, "C": 0, "D": 4, "E": 0, "F": 3, "value": 4},
+    {"A": 1, "B": 0, "C": 0, "D": 4, "E": 0, "F": 3, "value": 2},
+    {"A": 1, "B": 0, "C": 0, "D": 4, "E": 0, "F": 3, "value": 4},
+]
+
+
+def generateTableData(verticalBorder, horizontalBorder, useBooktabs):
+    print("Generating a table for table_variants_data.tex ..")
+
+    dimCols = Dim.from_dict(data, "A", nameFun=lambda v: "A={0}".format(v)) * Dim.from_dict(data, "B", nameFun=lambda v: "B={0}".format(v))
+    dimRows = Dim.from_dict(data, "F", nameFun=lambda v: "F={0}".format(v))
+
+    cells = printer.generateTableCells(data, dimRows=dimRows, dimCols=dimCols, fun=lambda props: sum([p["value"] for p in props]))
+
+    rShading = printer.CellShading(0.0, 5.0, 10.0, "colorLow", "colorMedium", "colorHigh")
+    table = printer.Table(cells, dimCols=dimCols, dimRows=dimRows, cellRenderers=[rShading], verticalBorder=verticalBorder,
+                          horizontalBorder=horizontalBorder, useBooktabs=useBooktabs, headerRowNames=["A-value"])
+    return table
+
 
 
 def generateReport(tableGenerator):
@@ -97,11 +119,11 @@ def generateReport(tableGenerator):
 
 
 
-report = generateReport(generateTable)
-report.save_and_compile("table_variants.tex")
+report = generateReport(generateTableText)
+report.save_and_compile("table_variants_text.tex")
 
-report = generateReport(generateTableRemovedCols)
-report.save_and_compile("table_variants_removedCols.tex")
+report = generateReport(generateTableTextRemovedCols)
+report.save_and_compile("table_variants_text_rc.tex")
 
-report = generateReport(generateTableRemovedColsNoRowColNames)
-report.save_and_compile("table_variants_removedCols_NoRowColNames.tex")
+report = generateReport(generateTableData)
+report.save_and_compile("table_variants_data.tex")
