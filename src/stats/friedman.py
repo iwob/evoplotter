@@ -27,7 +27,7 @@ def pandasTableFromROutput(output, key, numLines, tmpCsv="tmp.csv"):
 
 class FriedmanResult:
     """Stores results of the Friedman test."""
-    def __init__(self, output, p_value, ranks, cmp_matrix=None, cmp_method=""):
+    def __init__(self, output, p_value, ranks, cmp_matrix=None, cmp_method="", binary_cmp_matrix=False):
         """
         :param output: raw output as returned by the R script.
         :param p_value: p value returned by R script.
@@ -42,8 +42,9 @@ class FriedmanResult:
         self.ranks = ranks
         self.cmp_matrix = cmp_matrix
         self.cmp_method = cmp_method
+        self.binary_cmp_matrix = binary_cmp_matrix
 
-    def getSignificantPairs(self):
+    def getSignificantPairs(self, p_threshold=0.05):
         """Returns a list of tuples, where the first element is significantly better than the second."""
         if self.cmp_matrix is None:
             return []
@@ -51,7 +52,8 @@ class FriedmanResult:
             res = []
             for i in range(self.cmp_matrix.shape[0]):
                 for j in range(self.cmp_matrix.shape[1]):
-                    if self.cmp_matrix.iat[i,j] == 1:
+                    if (self.binary_cmp_matrix and self.cmp_matrix.iat[i,j] == 1) or\
+                       (not self.binary_cmp_matrix and self.cmp_matrix.iat[i,j] <= p_threshold):
                         L = self.cmp_matrix.index.values[i]
                         R = self.cmp_matrix.columns.values[j]
                         res.append((L, R))
@@ -69,9 +71,9 @@ class FriedmanResult:
 
 
 def runFriedmanPython(table):
-    """Runs a Friedman statistical test with Nemenyi posthoc test using python implementation in scikit_posthocs package."""
+    """Runs a Friedman statistical test with Nemenyi posthoc test using implementation in scikit_posthocs package."""
     assert isinstance(table, printer.Table)
-    data = np.array(table.content.rows)
+    data = np.array(table.content.cells, dtype=np.float32)
     return runFriedmanPython_array(data)
 
 
@@ -82,7 +84,7 @@ def runFriedmanPython_array(data):
     # https://scikit-posthocs.readthedocs.io/en/latest/generated/scikit_posthocs.posthoc_nemenyi_friedman/#id2
     # P. Nemenyi (1963) Distribution-free Multiple Comparisons. Ph.D. thesis, Princeton University.
     pc = sp.posthoc_nemenyi_friedman(data)
-    return FriedmanResult("", p_value, None, cmp_matrix=pc, cmp_method="nemenyi")
+    return FriedmanResult("", p_value, None, cmp_matrix=pc, binary_cmp_matrix=False, cmp_method="nemenyi")
 
 
 def runFriedmanKK(table):
@@ -129,7 +131,7 @@ def runFriedmanKK_csv(text):
             cmp_matrix = pandasTableFromROutput(output, "$cmp.matrix", numLines=ranks.shape[1]+1, tmpCsv="tmpCmpMatrix.csv")
             # print("cmp_matrix:", cmp_matrix)
 
-        friedmanResult = FriedmanResult(output, p_value, ranks, cmp_matrix, cmp_method=cmp_method)
+        friedmanResult = FriedmanResult(output, p_value, ranks, cmp_matrix, cmp_method=cmp_method, binary_cmp_matrix=True)
 
     except subprocess.CalledProcessError as exc:
         output = exc.output #.decode("utf-8")
@@ -137,6 +139,6 @@ def runFriedmanKK_csv(text):
         print("Status: FAIL, return code: {0}, msg: {1}".format(exc.returncode, output))
         friedmanResult = FriedmanResult(output, None, None, None)
 
-    # call(["rm", "-f", csvFile])
+    call(["rm", "-f", csvFile])
     os.chdir(cwd)
     return friedmanResult

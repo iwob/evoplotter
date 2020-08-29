@@ -221,9 +221,12 @@ class Table(object):
                  showColumnNames=True, showRowNames=True):
         if cellRenderers is None:
             cellRenderers = []
-        assert isinstance(cells, list), "Table expects array of cells as an input" #or isinstance(cells, TableContent)
+        assert isinstance(cells, list) or isinstance(cells, TableContent) #"Table expects array of cells as an input" #
         assert isinstance(cellRenderers, list)
-        self.content = TableContent(cells, dimCols=dimCols, dimRows=dimRows) if isinstance(cells, list) else cells
+        if isinstance(cells, list):
+            self.content = TableContent(cells, dimCols=dimCols, dimRows=dimRows) if isinstance(cells, list) else cells
+        else:
+            self.content = cells
 
         # if dimCols is None:
         #     # Create a dummy dimCols for the header
