@@ -191,7 +191,7 @@ def createSubsectionWithTables(title, tables, props):
     subsects_main = []
     for t in tables:
         tsv = t.apply_listed(props)
-        assert len(tsv) == len(t.table_variants_to_be_used), "Number of output files must be the same as the number of table variants."
+        assert len(tsv) == len(t.variants_to_be_used), "Number of output files must be the same as the number of table variants."
         if t.outputFiles is not None:
             for tsv_txt, path in zip(tsv, t.outputFiles):
                 os.makedirs(os.path.dirname(path), exist_ok=True)  # automatically create directories
@@ -250,9 +250,6 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        # FriedmannTestKK(Dim(dim_rows[:-1]), Dim(dim_cols[2:-1]), fun_successRate,
-        #                 title="Friedman test for success rates (KK)",
-        #                 color_scheme=""),
         TableGenerator(
             get_averageAlgorithmRanksCDGP(dim_operatorProbs, dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
             Dim(dim_cols[-1]), dim_methodGPR + dim_methodCDGP,
@@ -454,6 +451,22 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                        cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
+        FriedmannTestPython(dimensions_dict["benchmark"],
+                            dimensions_dict["method"] * dimensions_dict["evoMode"] * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
+                            get_successRate, p_treshold=0.05,
+                            title="Friedman test for success rates (all columns)"),
+        FriedmannTestPython(dimensions_dict["benchmark"],
+                            dimensions_dict["method"] * Dim(dimensions_dict["evoMode"][0]) * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
+                            get_successRate, p_treshold=0.05,
+                            title="Friedman test for success rates (generational variants only)"),
+        FriedmannTestPython(dimensions_dict["benchmark"],
+                            dimensions_dict["method"] * Dim(dimensions_dict["evoMode"][1]) * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
+                            get_successRate, p_treshold=0.05,
+                            title="Friedman test for success rates (steadyState variants only)"),
+        FriedmannTestPython(dimensions_dict["benchmark"],
+                            dimensions_dict["method"] * dimensions_dict["testsRatio"],
+                            get_successRate, p_treshold=0.05,
+                            title="Friedman test for success rates (testsRatio)"),
     ]
 
     return createSubsectionWithTables(title, tables, props)
@@ -682,5 +695,5 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 if __name__ == "__main__":
     # reports_e0_paramTests()
-    # reports_e0_lia()
-    reports_e0_slia()
+    reports_e0_lia()
+    # reports_e0_slia()
