@@ -243,8 +243,9 @@ class FriedmannTestPython:
                     return rank
             return None
 
-        pairs = [(R, L) for (L, R) in pairs if getRank(L) > getRank(R)]  # make the elements with lower rank go first
-        pairs.sort(key=lambda x: getRank(x[0]))  # start with the lowest ranks
+        pairs = list(map(lambda p: (p[1], p[0]) if getRank(p[0]) > getRank(p[1]) else (p[0], p[1]), pairs))  # make the elements with lower rank go first
+        # pairs = [(R, L) for (L, R) in pairs if getRank(L) > getRank(R)]  # make the elements with lower rank go first
+        pairs.sort(key=lambda x: (getRank(x[0]), getRank(x[1])))  # start with the lowest ranks
 
         for L, R in pairs:
             L_caption = getName(L)
