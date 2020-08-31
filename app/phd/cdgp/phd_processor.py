@@ -434,7 +434,7 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                        color_scheme=reporting.color_scheme_darkgreen,
                        cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       outputFiles=[results_dir + "/tables/custom/cdgp_succRate_byTestsRatio.tex"]
+                       outputFiles=[results_dir + "/tables/custom/cdgp_succRate_rowsAsTestsRatio.tex"]
                        ),
         TableGenerator(fun_successRate,
                        dim_rows,
@@ -443,7 +443,7 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                        color_scheme=reporting.color_scheme_darkgreen,
                        cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       outputFiles=[results_dir + "/tables/custom/cdgp_succRate_byTestsRatio_colsAsEvoMode.tex"]
+                       outputFiles=[results_dir + "/tables/custom/cdgp_succRate_rowsAsTestsRatio_colsAsEvoMode.tex"]
                        ),
         TableGenerator(fun_successRate,
                        dim_rows,
@@ -452,7 +452,7 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                        color_scheme=reporting.color_scheme_darkgreen,
                        cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       outputFiles=[results_dir + "/tables/custom/cdgp_succRate_byTestsRatio_colsAsSelection.tex"]
+                       outputFiles=[results_dir + "/tables/custom/cdgp_succRate_rowsAsTestsRatio_colsAsSelection.tex"]
                        ),
         TableGenerator(get_avg_totalTests,
                        dim_rows, dim_cols,
@@ -462,7 +462,7 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                        cellRenderers=[shTc],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        outputFiles=[
-                           results_dir + "/tables/custom/cdgp_Tc_byTestsRatio.tex"]
+                           results_dir + "/tables/custom/cdgp_Tc_rowsAsTestsRatio.tex"]
                        ),
         TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=[],
                        title="Average runtime [s]",
@@ -470,7 +470,7 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                        cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        outputFiles=[
-                           results_dir + "/tables/custom/cdgp_runtime_byTestsRatio.tex"]
+                           results_dir + "/tables/custom/cdgp_runtime_rowsAsTestsRatio.tex"]
                        ),
         TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, dim_cols, headerRowNames=[],
                        title="Average runtime (only successful) [s]",
@@ -732,5 +732,5 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 if __name__ == "__main__":
     # reports_e0_paramTests()
-    # reports_e0_lia()
-    reports_e0_slia()
+    reports_e0_lia()
+    # reports_e0_slia()
