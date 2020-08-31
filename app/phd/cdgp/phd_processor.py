@@ -211,6 +211,8 @@ def cellShading(a, b, c):
     assert c >= b >= a
     return printer.CellShading(a, b, c, "colorLow", "colorMedium", "colorHigh")
 
+rBoldWhen1 = printer.LatexTextbf(lambda v, b: v == "1.00")
+
 
 def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, headerRowNames, results_dir, variants=None):
     vb = 1  # vertical border
@@ -222,8 +224,6 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         else:
             r = s.split("10^{")
             return r[1][:-2]
-
-    rBold = printer.LatexTextbf(lambda v, b: v == "1.00")
 
     status_color_scheme = reporting.ColorScheme3(["1.0, 1.0, 1.0", "0.65, 0.0, 0.0", "0.8, 0, 0"],
                                                  ["white", "light red", "red"])
@@ -238,7 +238,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         TableGenerator(fun_successRate, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Success rates (properties met)",
                        color_scheme=reporting.color_scheme_darkgreen,
-                       cellRenderers=[rBold, cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        outputFiles=[results_dir + "/tables/cdgp_succRate_{0}.tex".format(utils.normalize_name(vid)) for vid in variants_ids]
                        ),
@@ -427,6 +427,33 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
     dim_cols = dimensions_dict["method"] * dimensions_dict["evoMode"] * dimensions_dict["selection"]
     shTc = cellShading(0.0, 5000.0, 10000.0) if EXP_TYPE == "LIA" else cellShading(0.0, 250.0, 500.0)
     tables = [
+        TableGenerator(fun_successRate,
+                       dim_rows,
+                       dimensions_dict["method"] * dimensions_dict["evoMode"] * dimensions_dict["selection"],
+                       title="Success rates", headerRowNames=[],
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[results_dir + "/tables/custom/cdgp_succRate_byTestsRatio.tex"]
+                       ),
+        TableGenerator(fun_successRate,
+                       dim_rows,
+                       dimensions_dict["method"] * dimensions_dict["evoMode"],
+                       title="Success rates", headerRowNames=[],
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[results_dir + "/tables/custom/cdgp_succRate_byTestsRatio_colsAsEvoMode.tex"]
+                       ),
+        TableGenerator(fun_successRate,
+                       dim_rows,
+                       dimensions_dict["method"] * dimensions_dict["selection"],
+                       title="Success rates", headerRowNames=[],
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[results_dir + "/tables/custom/cdgp_succRate_byTestsRatio_colsAsSelection.tex"]
+                       ),
         TableGenerator(get_avg_totalTests,
                        dim_rows, dim_cols,
                        headerRowNames=[],
@@ -463,6 +490,15 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                             dimensions_dict["method"] * Dim(dimensions_dict["evoMode"][1]) * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
                             get_successRate, p_treshold=0.05,
                             title="Friedman test for success rates (steadyState variants only)"),
+        TableGenerator(fun_successRate,
+                       dimensions_dict["benchmark"],
+                       dimensions_dict["method"] * dimensions_dict["testsRatio"],
+                       title="Success rates", headerRowNames=[],
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[results_dir + "/tables/custom/cdgp_succRate_colsAsTestsRatio.tex"]
+                       ),
         FriedmannTestPython(dimensions_dict["benchmark"],
                             dimensions_dict["method"] * dimensions_dict["testsRatio"],
                             get_successRate, p_treshold=0.05,
@@ -600,7 +636,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
     dim_cols_ea += dim_cols_ea.dim_true_within()
     dim_cols_cdgp += dim_cols_cdgp.dim_true_within()
 
-    headerRowNames = ["method"]
+    headerRowNames = [""]
     subs = [
         (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 50, headerRowNames, results_dir, variants]),
         (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames, results_dir, variants]),
@@ -657,7 +693,8 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
     dim_cols_ea = dim_cols_cdgp
     dim_cols = dim_cols_ea
     variants = None
-    headerRowNames = ["method", "scheme", "selection", r"$\alpha$"]
+    # headerRowNames = ["method", "scheme", "selection", r"$\alpha$"]
+    headerRowNames = []
     # -------------------------
 
     # ----- Several tables -----
@@ -695,5 +732,5 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 if __name__ == "__main__":
     # reports_e0_paramTests()
-    reports_e0_lia()
-    # reports_e0_slia()
+    # reports_e0_lia()
+    reports_e0_slia()
