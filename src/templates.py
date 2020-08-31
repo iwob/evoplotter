@@ -3,6 +3,7 @@ import numpy as np
 from . import reporting
 from . import printer
 from .dims import *
+import pandas as pd
 
 
 def create_section(title, desc, props, subsects, figures_list):
@@ -208,7 +209,7 @@ class FriedmannTestKK:
 
 class FriedmannTestPython:
     def __init__(self, dimRows, dimCols, fun, title="", p_treshold=0.05, color_scheme="", showRanks=True, variants=None,
-                 higherValuesBetter=True):
+                 higherValuesBetter=True, printOnlyOverDiagonal=True):
         self.dimRows = dimRows
         self.dimCols = dimCols
         self.fun = fun
@@ -220,6 +221,7 @@ class FriedmannTestPython:
         self.variants_to_be_used = self.variants if self.variants is not None else [lambda p: True]
         self.outputFiles = None
         self.higherValuesBetter = higherValuesBetter
+        self.printOnlyOverDiagonal = printOnlyOverDiagonal
 
     def getFriedmanData(self, props):
         """Runs R script to obtain FriedmanData."""
@@ -285,8 +287,19 @@ class FriedmannTestPython:
         text += r"\noindent \textbf{Significant pairs:} "
         if friedmanData.cmp_matrix is not None:
             text += r"\\" + "\n"
-            fBold = lambda v: r"\textbf{" + ("%1.3f" % v) + "}" if v < self.p_treshold else "%1.3f" % v
-            text += friedmanData.cmp_matrix.to_latex(escape=False, formatters=[fBold] * friedmanData.cmp_matrix.shape[1])
+            def fBold(v):
+                if pd.isnull(v):
+                    return ""
+                else:
+                    return r"\textbf{" + ("%1.3f" % v) + "}" if v < self.p_treshold else "%1.3f" % v
+            cmp_matrix = friedmanData.cmp_matrix.copy()
+            # Print only elements over the diagonal
+            if self.printOnlyOverDiagonal:
+                for i in range(cmp_matrix.shape[0]):
+                    for j in range(cmp_matrix.shape[1]):
+                        if i >= j:
+                            cmp_matrix.at[i, j] = None
+            text += cmp_matrix.to_latex(escape=False, formatters=[fBold] * friedmanData.cmp_matrix.shape[1], na_rep="")
             text += "\n\n" + r"\vspace{0.5cm}" + "\n"
             text += r"\noindent " + self.getSignificantPairsTable(friedmanData, avgRanks) + r"\\\\"
             # text += r"\vspace{0.5cm}" + "\n"
