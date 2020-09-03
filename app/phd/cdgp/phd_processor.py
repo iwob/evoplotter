@@ -469,14 +469,14 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                        color_scheme=reporting.color_scheme_violet,
                        cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
-                       outputFiles=[
-                           results_dir + "/tables/custom/cdgp_runtime_rowsAsTestsRatio.tex"]
+                       outputFiles=[results_dir + "/tables/custom/cdgp_runtime_rowsAsTestsRatio.tex"]
                        ),
         TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, dim_cols, headerRowNames=[],
                        title="Average runtime (only successful) [s]",
                        color_scheme=reporting.color_scheme_violet,
                        cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[results_dir + "/tables/custom/cdgp_runtime_rowsAsTestsRatio_successful.tex"]
                        ),
         FriedmannTestPython(dimensions_dict["benchmark"],
                             dimensions_dict["method"] * dimensions_dict["evoMode"] * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
