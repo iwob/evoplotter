@@ -209,7 +209,7 @@ class FriedmannTestKK:
 
 class FriedmannTestPython:
     def __init__(self, dimRows, dimCols, fun, title="", p_treshold=0.05, color_scheme="", showRanks=True, variants=None,
-                 higherValuesBetter=True, printOnlyOverDiagonal=True):
+                 higherValuesBetter=True, printOnlyOverDiagonal=True, pathFriedmanViz=None):
         self.dimRows = dimRows
         self.dimCols = dimCols
         self.fun = fun
@@ -222,6 +222,7 @@ class FriedmannTestPython:
         self.outputFiles = None
         self.higherValuesBetter = higherValuesBetter
         self.printOnlyOverDiagonal = printOnlyOverDiagonal
+        self.pathFriedmanViz = pathFriedmanViz
 
     def getFriedmanData(self, props):
         """Runs R script to obtain FriedmanData."""
@@ -230,28 +231,112 @@ class FriedmannTestPython:
         from src.stats import friedman
         return friedman.runFriedmanPython(table)
 
-    def getSignificantPairsTable(self, friedmanData, avgRanks):
-        pairs = friedmanData.getSignificantPairs()
-        pairs = [(L, R) for (L, R) in pairs if L < R]  # remove redundant pairs (cmp_matrix is symmetric)
-        text = r"\begin{tabular}{lllclll|l}" + "\n"
-
+    def getGraphvizFigure(self, pairs, collapse_nodes=True):
+        """Returns a text of the Graphviz file illustrating the results of the test.
+        :param friedmanData: results of the Friedman test.
+        :param pairs: (tuple[int, int]) a pairs (L, R), where L is the index of the significantly better configuration than R.
+        :param collapse_nodes: (bool) if true, then configurations dominated by all Ls will be put into a single block.
+        :return: (str) text of GraphViz script.
+        """
         def getName(i):
             return self.dimCols[i].get_caption()
 
-        def getRank(i):
-            name = getName(i)
-            for n, rank in avgRanks:
-                if n == name:
-                    return rank
-            return None
+        dominance_dict = {}
+        for L, R in pairs:
+            if L not in dominance_dict:
+                dominance_dict[L] = [R]
+            else:
+                dominance_dict[L].append(R)
 
-        pairs = list(map(lambda p: (p[1], p[0]) if getRank(p[0]) > getRank(p[1]) else (p[0], p[1]), pairs))  # make the elements with lower rank go first
+        text_edges = ""
+        all_L = set()
+        all_R = set()
+        for L in dominance_dict:
+            for R in dominance_dict[L]:
+                all_L.add(L)
+                all_R.add(R)
+
+        R_dominated_all = []
+        R_not_dominated_all = []
+        for R in all_R:
+            if all([R in dominance_dict[L] for L in dominance_dict]):
+                R_dominated_all.append(R)
+            else:
+                R_not_dominated_all.append(R)
+        assert len(R_not_dominated_all) + len(R_dominated_all) == len(all_R)
+
+        L_dominates_all = []
+        L_not_dominates_all = []
+        for L in all_L:
+            if all([R in dominance_dict[L] for R in R_not_dominated_all]):
+                L_dominates_all.append(L)
+            else:
+                L_not_dominates_all.append(L)
+        assert len(L_not_dominates_all) + len(L_dominates_all) == len(all_L)
+
+        distinct_leader_node = len(L_dominates_all) >= 1
+
+        if distinct_leader_node:
+            text_edges += "L_dominates_all [label=\"{0}\" fontcolor=blue]".format("\\n".join([getName(L) for L in L_dominates_all]))
+        text_edges += "R_dominated_all [label=\"{0}\" fontcolor=red]".format("\\n".join([getName(R) for R in R_dominated_all]))
+
+        text_edges += '\tR_dominated_all -> {'
+        text_edges += " ".join(['"{0}"'.format(getName(L)) for L in L_not_dominates_all])
+        if distinct_leader_node:
+            text_edges += " L_dominates_all "
+        text_edges += "};\n"
+
+        for R in R_not_dominated_all:
+            if distinct_leader_node:
+                text_edges += '\t"{0}" -> {{ {1} L_dominates_all }};\n'.format(getName(R), " ".join(['"{0}"'.format(getName(L)) for L in L_not_dominates_all if R in dominance_dict[L]]))
+            else:
+                text_edges += '\t"{0}" -> {{ {1} }};\n'.format(getName(R), " ".join(['"{0}"'.format(getName(L)) for L in L_not_dominates_all if R in dominance_dict[L]]))
+
+        text  = "digraph {\n"
+        text += "\tlayout=\"circo\";\n"
+        text += "\tnode [shape=plaintext]\n"
+        text += text_edges
+        text += "}"
+        return text
+
+    def getName(self, i):
+        """Returns a name of the config with index i."""
+        return self.dimCols[i].get_caption()
+
+    def getRank(self, i, avgRanks):
+        """Returns a rank of the config with index i."""
+        name = self.getName(i)
+        for n, rank in avgRanks:
+            if n == name:
+                return rank
+        return None
+
+    def getSortedSignificantPairs(self, friedmanData, avgRanks):
+        """Returns a sorted list of (L,R) pairs, where L is significantly better than R."""
+        getRank = lambda i: self.getRank(i, avgRanks)
+        pairs = friedmanData.getSignificantPairs()
+        pairs = [(L, R) for (L, R) in pairs if L < R]  # remove redundant pairs (cmp_matrix is symmetric)
+        pairs = list(map(lambda p: (p[1], p[0]) if getRank(p[0]) > getRank(p[1]) else (p[0], p[1]),
+                         pairs))  # make the elements with lower rank go first
         # pairs = [(R, L) for (L, R) in pairs if getRank(L) > getRank(R)]  # make the elements with lower rank go first
         pairs.sort(key=lambda x: (getRank(x[0]), getRank(x[1])))  # start with the lowest ranks
+        return pairs
 
+
+    def getSignificantPairsTable(self, friedmanData, avgRanks, pairs=None):
+        getName = lambda i: self.getName(i)
+        getRank = lambda i: self.getRank(i, avgRanks)
+        if pairs is None:
+            pairs = self.getSortedSignificantPairs(friedmanData, avgRanks)
+
+        past_L = None
+        text = r"\begin{tabular}{lllclll|l}" + "\n"
         for L, R in pairs:
             L_caption = getName(L)
             L_rank = round(getRank(L), 2)
+            if past_L is None or past_L != L_caption:
+                past_L = L_caption
+                L_caption = r"\textcolor{blue}{" + L_caption + "}"
             R_caption = getName(R)
             R_rank = round(getRank(R), 2)
             sign = ">" if L_rank < R_rank else "<"
@@ -286,6 +371,7 @@ class FriedmannTestPython:
 
         text += r"\noindent \textbf{Significant pairs:} "
         if friedmanData.cmp_matrix is not None:
+            pairs = self.getSortedSignificantPairs(friedmanData, avgRanks)
             text += r"\\" + "\n"
             def fBold(v):
                 if pd.isnull(v):
@@ -301,10 +387,14 @@ class FriedmannTestPython:
                             cmp_matrix.at[i, j] = None
             text += cmp_matrix.to_latex(escape=False, formatters=[fBold] * friedmanData.cmp_matrix.shape[1], na_rep="")
             text += "\n\n" + r"\vspace{0.5cm}" + "\n"
-            text += r"\noindent " + self.getSignificantPairsTable(friedmanData, avgRanks) + r"\\\\"
+            text += r"\noindent " + self.getSignificantPairsTable(friedmanData, avgRanks, pairs=pairs) + r"\\\\"
             # text += r"\vspace{0.5cm}" + "\n"
             posthoc_method = friedmanData.cmp_method if friedmanData.cmp_method is not None else "not specified"
             text += r"\noindent \textbf{Post-hoc method:} " + posthoc_method + "\n\n"
+
+            if self.pathFriedmanViz is not None:
+                utils.save_to_file(self.pathFriedmanViz, self.getGraphvizFigure(pairs, collapse_nodes=True))
+                utils.compile_graphviz_file_to_pdf(self.pathFriedmanViz)
         else:
             text += "None"  + "\n\n"
 

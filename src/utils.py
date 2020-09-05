@@ -1,5 +1,6 @@
 import os
 import shutil
+import subprocess
 from . import dims
 
 
@@ -139,6 +140,12 @@ def save_to_file(file_path, content):
     file = open(file_path, "w")
     file.write(content)
     file.close()
+
+
+def compile_graphviz_file_to_pdf(path):
+    cmd = "dot -Tpdf {0} -o {1}".format(path, path[:path.rfind(".")] + ".pdf")
+    process = subprocess.Popen(cmd, shell=True)
+    process.communicate()
 
 
 def normalize_name(name):
