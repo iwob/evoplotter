@@ -209,7 +209,7 @@ class FriedmannTestKK:
 
 class FriedmannTestPython:
     def __init__(self, dimRows, dimCols, fun, title="", p_treshold=0.05, color_scheme="", showRanks=True, variants=None,
-                 higherValuesBetter=True, printOnlyOverDiagonal=True, pathFriedmanViz=None):
+                 higherValuesBetter=True, printOnlyOverDiagonal=True, pathFriedmanViz=None, workingDir=None):
         self.dimRows = dimRows
         self.dimCols = dimCols
         self.fun = fun
@@ -223,6 +223,10 @@ class FriedmannTestPython:
         self.higherValuesBetter = higherValuesBetter
         self.printOnlyOverDiagonal = printOnlyOverDiagonal
         self.pathFriedmanViz = pathFriedmanViz
+        if workingDir is not None and workingDir.endswith("/"):
+            workingDir = workingDir[:-1]
+        self.workingDir = workingDir
+
 
     def getFriedmanData(self, props):
         """Runs R script to obtain FriedmanData."""
@@ -248,52 +252,64 @@ class FriedmannTestPython:
             else:
                 dominance_dict[L].append(R)
 
-        text_edges = ""
-        all_L = set()
-        all_R = set()
-        for L in dominance_dict:
-            for R in dominance_dict[L]:
-                all_L.add(L)
-                all_R.add(R)
+        def get_text_edges():
+            def text_edges_v3_helper(dominance_dict_L_to_R):
+                if len(dominance_dict_L_to_R) == 0:
+                    return []
+                all_L = set()
+                all_R = set()
+                for L in dominance_dict:
+                    for R in dominance_dict[L]:
+                        all_L.add(L)
+                        all_R.add(R)
 
-        R_dominated_all = []
-        R_not_dominated_all = []
-        for R in all_R:
-            if all([R in dominance_dict[L] for L in dominance_dict]):
-                R_dominated_all.append(R)
-            else:
-                R_not_dominated_all.append(R)
-        assert len(R_not_dominated_all) + len(R_dominated_all) == len(all_R)
+                R_dominated_all = []
+                R_not_dominated_all = []
+                for R in all_R:
+                    if all([R in dominance_dict_L_to_R[L] for L in dominance_dict_L_to_R]):
+                        R_dominated_all.append(R)
+                    else:
+                        R_not_dominated_all.append(R)
+                assert len(R_not_dominated_all) + len(R_dominated_all) == len(all_R)
 
-        L_dominates_all = []
-        L_not_dominates_all = []
-        for L in all_L:
-            if all([R in dominance_dict[L] for R in R_not_dominated_all]):
-                L_dominates_all.append(L)
-            else:
-                L_not_dominates_all.append(L)
-        assert len(L_not_dominates_all) + len(L_dominates_all) == len(all_L)
+                Ls_dominating_only_this = [L for L in dominance_dict_L_to_R if set(dominance_dict_L_to_R[L]) == set(R_dominated_all)]
 
-        distinct_leader_node = len(L_dominates_all) >= 1
+                new_dominance_dict_L_to_R = dominance_dict_L_to_R.copy()
+                for L in Ls_dominating_only_this:
+                    del new_dominance_dict_L_to_R[L]
+                for L in new_dominance_dict_L_to_R:
+                    for R in R_dominated_all:
+                        if R in new_dominance_dict_L_to_R[L]:
+                            new_dominance_dict_L_to_R[L].remove(R)
 
-        if distinct_leader_node:
-            text_edges += "L_dominates_all [label=\"{0}\" fontcolor=blue]".format("\\n".join([getName(L) for L in L_dominates_all]))
-        text_edges += "R_dominated_all [label=\"{0}\" fontcolor=red]".format("\\n".join([getName(R) for R in R_dominated_all]))
+                level_tuple = "\\n".join([getName(L) for L in Ls_dominating_only_this]), "\\n".join([getName(R) for R in R_dominated_all])
+                result = [level_tuple]
+                result.extend(text_edges_v3_helper(new_dominance_dict_L_to_R))
+                return result
 
-        text_edges += '\tR_dominated_all -> {'
-        text_edges += " ".join(['"{0}"'.format(getName(L)) for L in L_not_dominates_all])
-        if distinct_leader_node:
-            text_edges += " L_dominates_all "
-        text_edges += "};\n"
+            levels = text_edges_v3_helper(dominance_dict)
+            text_edges = ""
+            prev_levels = []
+            for i, level in enumerate(levels):
+                nodeL, nodeR = level
+                if i == 0:
+                    text_edges += '\t"{0}" [fontcolor=red]\n'.format(nodeR)
+                if i == len(levels)-1:
+                    text_edges += '\t"{0}" [fontcolor=blue]\n'.format(nodeL)
+                text_edges += '\t"{0}" -> "{1}"\n'.format(nodeR, nodeL)
+                for pL, pR in prev_levels:
+                    text_edges += '\t"{0}" -> "{1}"\n'.format(pR, nodeL)
+                prev_levels.append((nodeL, nodeR))
+            return text_edges
 
-        for R in R_not_dominated_all:
-            if distinct_leader_node:
-                text_edges += '\t"{0}" -> {{ {1} L_dominates_all }};\n'.format(getName(R), " ".join(['"{0}"'.format(getName(L)) for L in L_not_dominates_all if R in dominance_dict[L]]))
-            else:
-                text_edges += '\t"{0}" -> {{ {1} }};\n'.format(getName(R), " ".join(['"{0}"'.format(getName(L)) for L in L_not_dominates_all if R in dominance_dict[L]]))
+
+        text_edges= get_text_edges()
 
         text  = "digraph {\n"
-        text += "\tlayout=\"circo\";\n"
+        # text += "\tlayout=\"circo\"\n"
+        text += "\trankdir=TB\n"  #LR
+        text += "\tsplines=\"line\"\n"
+        text += "\tK=1.0\n"  # can be used to push nodes apart
         text += "\tnode [shape=plaintext]\n"
         text += text_edges
         text += "}"
@@ -345,6 +361,7 @@ class FriedmannTestPython:
         text += r"\end{tabular}" + "\n"
         return text
 
+
     def apply(self, props, **kwargs):
         """Returns a content of the subsection as a LaTeX formatted string."""
         friedmanData = self.getFriedmanData(props)
@@ -388,13 +405,15 @@ class FriedmannTestPython:
             text += cmp_matrix.to_latex(escape=False, formatters=[fBold] * friedmanData.cmp_matrix.shape[1], na_rep="")
             text += "\n\n" + r"\vspace{0.5cm}" + "\n"
             text += r"\noindent " + self.getSignificantPairsTable(friedmanData, avgRanks, pairs=pairs) + r"\\\\"
-            # text += r"\vspace{0.5cm}" + "\n"
+            if self.pathFriedmanViz is not None:
+                assert self.workingDir is not None, "In order to save a graphviz file a working directory needs to be specified"
+                utils.save_to_file(self.workingDir + "/" + self.pathFriedmanViz, self.getGraphvizFigure(pairs, collapse_nodes=True))
+                utils.compile_graphviz_file_to_pdf(self.workingDir + "/" + self.pathFriedmanViz)
+                pdf_name = self.pathFriedmanViz[:self.pathFriedmanViz.rfind(".")] + ".pdf"
+                text += r"\includegraphics{" + pdf_name + "}"
+            text += r"\\" + "\n"
             posthoc_method = friedmanData.cmp_method if friedmanData.cmp_method is not None else "not specified"
             text += r"\noindent \textbf{Post-hoc method:} " + posthoc_method + "\n\n"
-
-            if self.pathFriedmanViz is not None:
-                utils.save_to_file(self.pathFriedmanViz, self.getGraphvizFigure(pairs, collapse_nodes=True))
-                utils.compile_graphviz_file_to_pdf(self.pathFriedmanViz)
         else:
             text += "None"  + "\n\n"
 
