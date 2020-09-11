@@ -187,23 +187,26 @@ def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowN
     return text
 
 
+def getAndSaveTextForTableVariants(table, props, outputFiles=None):
+    """Produces a list of LaTeX codes for each table variant. If outputFiles are specified,
+    then the outputs will be saved there."""
+    tsv = table.apply_listed(props)
+    assert len(tsv) == len(table.variants_to_be_used), "Number of output files must be the same as the number of table variants."
+    if outputFiles is not None:
+        for tsv_txt, path in zip(tsv, outputFiles):
+            os.makedirs(os.path.dirname(path), exist_ok=True)  # automatically create directories
+            f = open(path, "w")
+            f.write(tsv_txt)
+            f.close()
+    return tsv
+
+
 def createSubsectionWithTables(title, tables, props):
     subsects_main = []
     for t in tables:
-        tsv = t.apply_listed(props)
-        assert len(tsv) == len(t.variants_to_be_used), "Number of output files must be the same as the number of table variants."
-        if t.outputFiles is not None:
-            for tsv_txt, path in zip(tsv, t.outputFiles):
-                os.makedirs(os.path.dirname(path), exist_ok=True)  # automatically create directories
-                f = open(path, "w")
-                f.write(tsv_txt)
-                f.close()
-
-        table_variants_text = r"\noindent " + " ".join(tsv)
-
-        tup = (t.title, table_variants_text, t.color_scheme)
+        tsv = getAndSaveTextForTableVariants(t, props, t.outputFiles)
+        tup = (t.title, r"\noindent " + " ".join(tsv), t.color_scheme)
         subsects_main.append(tup)
-
     return reporting.Subsection(title, get_content_of_subsections(subsects_main))
 
 
@@ -259,9 +262,6 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
             default_color_thresholds=(0.0, 900.0, 1800.0),
             vertical_border=vb, table_postprocessor=post, table_variants=variants,
         ),
-        # FriedmannTestKK(Dim(dim_rows[:-1]), dim_operatorProbs, fun_successRate,
-        #                 title="Friedman test for success rates (KK)",
-        #                 color_scheme=""),
         TableGenerator(
             get_averageAlgorithmRanksCDGP(dim_operatorProbs, dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
             Dim(dim_cols[-1]), Dim(dim_rows[-1]),
@@ -317,18 +317,18 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames,
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        TableGenerator(get_stats_size, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        TableGenerator(fun_size, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average sizes of best of runs (number of nodes)",
                        color_scheme=reporting.color_scheme_yellow,
                        cellRenderers=[cellShading(0.0, 100.0, 200.0)],
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        ),
-        # TableGenerator(get_stats_sizeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
-        #                title="Average sizes of best of runs (number of nodes) (only successful)",
-        #                color_scheme=reporting.color_scheme_yellow,
-        #                cellRenderers=[cellShading(0.0, 100.0, 200.0)],
-        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
-        #                ),
+        TableGenerator(fun_sizeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Average sizes of best of runs (number of nodes) (only successful)",
+                       color_scheme=reporting.color_scheme_yellow,
+                       cellRenderers=[cellShading(0.0, 100.0, 200.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
         TableGenerator(get_avg_generation, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average generation (all)",
                        color_scheme=reporting.color_scheme_teal,
@@ -478,23 +478,35 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                        vertical_border=vb, table_postprocessor=post, table_variants=variants,
                        outputFiles=[results_dir + "/tables/custom/cdgp_runtime_rowsAsTestsRatio_successful.tex"]
                        ),
+        # FriedmannTestPython(dimensions_dict["benchmark"],
+        #                     dimensions_dict["method"] * dimensions_dict["evoMode"] * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
+        #                     get_successRate, p_treshold=0.05,
+        #                     title="Friedman test for success rates (all columns)",
+        #                     pathFriedmanViz="tables/custom/friedman_all.gv",
+        #                     workingDir=results_dir),
+        # FriedmannTestPython(dimensions_dict["benchmark"],
+        #                     dimensions_dict["method"] * Dim(dimensions_dict["evoMode"][0]) * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
+        #                     get_successRate, p_treshold=0.05,
+        #                     title="Friedman test for success rates (generational variants only)",
+        #                     pathFriedmanViz="tables/custom/friedman_generational.gv",
+        #                     workingDir=results_dir),
+        # FriedmannTestPython(dimensions_dict["benchmark"],
+        #                     dimensions_dict["method"] * Dim(dimensions_dict["evoMode"][1]) * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
+        #                     get_successRate, p_treshold=0.05,
+        #                     title="Friedman test for success rates (steadyState variants only)",
+        #                     pathFriedmanViz="tables/custom/friedman_steadyState.gv",
+        #                     workingDir=results_dir),
         FriedmannTestPython(dimensions_dict["benchmark"],
-                            dimensions_dict["method"] * dimensions_dict["evoMode"] * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
+                            dimensions_dict["method_CDGP"] * dimensions_dict["evoMode"] * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
                             get_successRate, p_treshold=0.05,
-                            title="Friedman test for success rates (all columns)",
-                            pathFriedmanViz="tables/custom/friedman_all.gv",
+                            title="Friedman test for success rates (CDGP variants)",
+                            pathFriedmanViz="tables/custom/friedman_cdgp.gv",
                             workingDir=results_dir),
         FriedmannTestPython(dimensions_dict["benchmark"],
-                            dimensions_dict["method"] * Dim(dimensions_dict["evoMode"][0]) * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
+                            dimensions_dict["method_GPR"] * dimensions_dict["evoMode"] * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
                             get_successRate, p_treshold=0.05,
-                            title="Friedman test for success rates (generational variants only)",
-                            pathFriedmanViz="tables/custom/friedman_generational.gv",
-                            workingDir=results_dir),
-        FriedmannTestPython(dimensions_dict["benchmark"],
-                            dimensions_dict["method"] * Dim(dimensions_dict["evoMode"][1]) * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
-                            get_successRate, p_treshold=0.05,
-                            title="Friedman test for success rates (steadyState variants only)",
-                            pathFriedmanViz="tables/custom/friedman_steadyState.gv",
+                            title="Friedman test for success rates (GPR variants)",
+                            pathFriedmanViz="tables/custom/friedman_gpr.gv",
                             workingDir=results_dir),
         TableGenerator(fun_successRate,
                        dimensions_dict["benchmark"],
@@ -511,6 +523,100 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                             title="Friedman test for success rates (testsRatio)",
                             pathFriedmanViz= "tables/custom/friedman_testsRatio.gv",
                             workingDir=results_dir),
+    ]
+
+    if EXP_TYPE == "LIA":  # LIA specific tables
+        tables.extend([
+            TableGenerator(fun_successRate,
+                           dimensions_dict["benchmark"],
+                           dimensions_dict["method_CDGP"] * dimensions_dict["testsRatio"],
+                           title="Success rates", headerRowNames=[],
+                           color_scheme=reporting.color_scheme_darkgreen,
+                           cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                           vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                           outputFiles=[results_dir + "/tables/custom/cdgp_succRate_colsAsTestsRatio2.tex"]
+                           ),
+            FriedmannTestPython(dimensions_dict["benchmark"],
+                                dimensions_dict["method_CDGP"] * dimensions_dict["testsRatio"],
+                                get_successRate, p_treshold=0.05,
+                                title="Friedman test for success rates (testsRatio)",
+                                pathFriedmanViz="tables/custom/friedman_testsRatio2.gv",
+                                workingDir=results_dir),
+        ])
+
+    return createSubsectionWithTables(title, tables, props)
+
+
+
+
+def create_subsection_formal(props_lia, props_slia, title, EXP_TYPE, dimensions, results_dir, variants=None):
+    assert EXP_TYPE == "SLIA" or EXP_TYPE == "LIA"
+    vb = 1  # vertical border
+
+    props = []
+    props.extend(props_lia)
+    props.extend(props_slia)
+
+    tables = [
+        TableGenerator(get_num_computed,
+                       dimensions["benchmark"], dimensions["method"],
+                       title="Status (correctly finished runs)",
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
+        TableGenerator(fun_successRate,
+                       dimensions["benchmark_lia"], dimensions["method"],
+                       title="Success rates", headerRowNames=[],
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[results_dir + "/tables/formal/succRate_lia.tex"]
+                       ),
+        TableGenerator(fun_successRate,
+                       dimensions["benchmark_slia"], dimensions["method"],
+                       title="Success rates",
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[results_dir + "/tables/formal/succRate_slia.tex"]
+                       ),
+        TableGenerator(fun_successRate,
+                       dimensions["benchmark"], dimensions["method"],
+                       title="Success rates",
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[results_dir + "/tables/formal/succRate_all.tex"]
+                       ),
+        TableGenerator(get_avg_runtime,
+                       dimensions["benchmark"], dimensions["method"],
+                       title="Average runtime [s]",
+                       color_scheme=reporting.color_scheme_violet,
+                       cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       #outputFiles=[results_dir + "/tables/formal/runtime_all.tex"]
+                       ),
+        TableGenerator(get_avg_runtimeOnlySuccessful,
+                       dimensions["benchmark"], dimensions["method"],
+                       title="Average runtime (only successful) [s]",
+                       color_scheme=reporting.color_scheme_violet,
+                       cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       outputFiles=[results_dir + "/tables/formal/runtime_rowsAsTestsRatio_successful.tex"]
+                       ),
+        # TableGenerator(fun_size,
+        #                dimensions["benchmark"], dimensions["method"],
+        #                title="Average sizes of best of runs (number of nodes)",
+        #                color_scheme=reporting.color_scheme_yellow,
+        #                cellRenderers=[cellShading(0.0, 100.0, 200.0)],
+        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
+        #                ),
+        TableGenerator(fun_sizeOnlySuccessful,
+                       dimensions["benchmark"], dimensions["method"],
+                       title="Average sizes of best of runs (number of nodes) (only successful)",
+                       color_scheme=reporting.color_scheme_yellow,
+                       cellRenderers=[cellShading(0.0, 100.0, 200.0)],
+                       vertical_border=vb, table_postprocessor=post, table_variants=variants,
+                       ),
     ]
 
     return createSubsectionWithTables(title, tables, props)
@@ -569,9 +675,9 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
     headerRowNames = ["method"]
     subs = [
-        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 25, headerRowNames, results_dir]),
-        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames, results_dir]),
-        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames, results_dir]),
+        (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows, dim_cols, 25, headerRowNames, results_dir]),
+        (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames, results_dir]),
+        (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames, results_dir]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]
@@ -579,7 +685,8 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 
     save_listings(props, dim_rows, dim_cols, results_dir=results_dir)
-    templates.prepare_report(props, sects, "cdgp_{0}.tex".format(name), dir_path=results_dir, paperwidth=190, user_declarations=user_declarations)
+    templates.prepare_report(sects, "cdgp_{0}.tex".format(name), dir_path=results_dir, paperwidth=190, user_declarations=user_declarations)
+
 
 
 
@@ -588,7 +695,7 @@ def reports_e0_lia():
     name = "e0_lia"
     results_dir = "results/results_{0}".format(name)
     ensure_result_dir(results_dir)
-    title = "Final CDGP experiment for the LIA logic."
+    title = "Final CDGP experiment for the LIA logic"
     desc = r"""
 \parbox{30cm}{
 Rerun of the CDGP experiments series for my PhD thesis.
@@ -621,23 +728,31 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
     # ----- One big table -----
     # dim_cols_cdgp = dim_methodCDGP * dim_evoMode * dim_sel * dim_testsRatio + dim_methodGPR * dim_evoMode * dim_sel * dim_testsRatio
     # dim_cols_ea = dim_cols_cdgp
-    # dim_cols = dim_methodBaseline + dim_cols_ea
+    # dim_cols = dim_cols_ea
     # variants = None
     # -------------------------
 
     # ----- Several tables -----
-    dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio + dim_methodGPR * dim_sel * dim_testsRatio
-    dim_cols_ea = dim_cols_cdgp
-    dim_cols = dim_cols_ea  # dim_methodBaseline
-    variants = dim_evoMode.configs
+    # dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio + dim_methodGPR * dim_sel * dim_testsRatio
+    # dim_cols_ea = dim_cols_cdgp
+    # dim_cols = dim_cols_ea
+    # variants = dim_evoMode.configs
+    # -------------------------
+
+
+    # ----- Several tables (GPR-divided and evoMode-divided) -----
+    # dim_cols_cdgp = dim_sel * dim_testsRatio
+    # dim_cols_ea = dim_cols_cdgp
+    # dim_cols = dim_cols_ea
+    # variants = (dim_evoMode * (dim_methodCDGP + dim_methodGPR)).configs
     # -------------------------
 
 
     # ----- Several tables (GPR-divided) -----
-    # dim_cols_cdgp = dim_sel * dim_testsRatio
-    # dim_cols_ea = dim_cols_cdgp
-    # dim_cols = dim_cols_ea  # dim_methodBaseline
-    # variants = (dim_evoMode * (dim_methodCDGP + dim_methodGPR)).configs
+    dim_cols_cdgp = dim_evoMode * dim_sel * dim_testsRatio
+    dim_cols_ea = dim_cols_cdgp
+    dim_cols = dim_cols_ea
+    variants = (dim_methodCDGP + dim_methodGPR).configs
     # -------------------------
 
     dim_cols += dim_cols.dim_true_within()
@@ -646,10 +761,10 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
     headerRowNames = [""]
     subs = [
-        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 50, headerRowNames, results_dir, variants]),
-        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames, results_dir, variants]),
-        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames, results_dir, variants]),
-        (create_subsection_custom_tables, ["Custom tables", "LIA", dimensions_dict, results_dir, None])
+        (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows, dim_cols, 50, headerRowNames, results_dir, variants]),
+        (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames, results_dir, variants]),
+        (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames, results_dir, variants]),
+        (create_subsection_custom_tables, [props, "Custom tables", "LIA", dimensions_dict, results_dir, None])
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]
@@ -657,7 +772,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 
     save_listings(props, dim_rows, dim_cols, results_dir=results_dir)
-    templates.prepare_report(props, sects, "cdgp_{0}.tex".format(name), dir_path=results_dir, paperwidth=190, user_declarations=user_declarations)
+    templates.prepare_report(sects, "cdgp_{0}.tex".format(name), dir_path=results_dir, paperwidth=190, user_declarations=user_declarations)
 
 
 
@@ -667,7 +782,7 @@ def reports_e0_slia():
     name = "e0_slia_hardTimeout"
     results_dir = "results/results_{0}".format(name)
     ensure_result_dir(results_dir)
-    title = "Final CDGP experiment for the SLIA logic."
+    title = "Final CDGP experiment for the SLIA logic"
     desc = r"""
 \parbox{30cm}{
 Rerun of the CDGP experiments series for my PhD thesis.
@@ -721,10 +836,10 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 
     subs = [
-        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 50, headerRowNames, results_dir, variants]),
-        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames, results_dir, variants]),
-        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames, results_dir, variants]),
-        (create_subsection_custom_tables, ["Custom tables", "SLIA", dimensions_dict, results_dir, None]),
+        (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows, dim_cols, 50, headerRowNames, results_dir, variants]),
+        (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames, results_dir, variants]),
+        (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames, results_dir, variants]),
+        (create_subsection_custom_tables, [props, "Custom tables", "SLIA", dimensions_dict, results_dir, None]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]
@@ -732,7 +847,58 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 
     save_listings(props, dim_rows, dim_cols, results_dir=results_dir)
-    templates.prepare_report(props, sects, "cdgp_{0}.tex".format(name), dir_path=results_dir, paperwidth=190, user_declarations=user_declarations)
+    templates.prepare_report(sects, "cdgp_{0}.tex".format(name), dir_path=results_dir, paperwidth=190, user_declarations=user_declarations)
+
+
+
+
+def reports_e0_formal():
+    name = "e0_formal"
+    results_dir = "results/results_{0}".format(name)
+    ensure_result_dir(results_dir)
+    title = "Comparison of CDGP with formal approaches to formal synthesis"
+    desc = r"""
+\parbox{30cm}{
+Rerun of the CDGP experiments series for my PhD thesis.
+}
+
+\begin{lstlisting}[breaklines]
+
+\end{lstlisting}
+"""
+    dim_methodEUSolver = Dim([Config("EUSolver", p_dict_matcher({"method": "eusolver"}), method="eusolver")])
+    dim_methodCVC4 = Dim([Config("CVC4", p_dict_matcher({"method": "cvc4_1.8"}), method="cvc4_1.8")])
+
+    # dim_bestCDGP_lia = Dim()
+
+    folders_lia = ["FORMAL/data_formal_lia"]
+    folders_slia = ["FORMAL/data_formal_slia"]
+    desc += "\n\\bigskip\\noindent Folders with data:\\\\"
+    desc += r"LIA: \lstinline{" + str(folders_lia) + "}\\\\\n"
+    desc += r"SLIA: \lstinline{" + str(folders_slia) + "}\\\\\n"
+    props_lia = load_correct_props(folders_lia, results_dir)
+    standardize_benchmark_names(props_lia)
+    dim_benchmarks_lia = get_benchmarks_from_props(props_lia)
+
+    props_slia = load_correct_props(folders_slia, results_dir)
+    standardize_benchmark_names(props_slia)
+    dim_benchmarks_slia = get_benchmarks_from_props(props_slia)
+
+    dimensions_dict = {"benchmark": dim_benchmarks_lia + dim_benchmarks_slia,
+                       "benchmark_lia": dim_benchmarks_lia,
+                       "benchmark_slia": dim_benchmarks_slia,
+                       "testsRatio": dim_testsRatio,
+                       "evoMode": dim_evoMode,
+                       "selection": dim_sel,
+                       "method": dim_methodEUSolver + dim_methodCVC4,
+                       "method_eusolver": dim_methodEUSolver,
+                       "method_cvc4_1.8": dim_methodCVC4,
+                       "method_CDGP": dim_methodCDGP}
+    subs = [
+        (create_subsection_formal, [props_lia, props_slia, "Custom tables", "SLIA", dimensions_dict, results_dir, None]),
+    ]
+    sects = [(title, desc, subs, [])]
+    templates.prepare_report(sects, "cdgp_{0}.tex".format(name), dir_path=results_dir, paperwidth=190, user_declarations=user_declarations)
 
 
 
@@ -742,3 +908,4 @@ if __name__ == "__main__":
     # reports_e0_paramTests()
     reports_e0_lia()
     # reports_e0_slia()
+    # reports_e0_formal()

@@ -634,7 +634,7 @@ def prepare_report(sects, filename, exp_prefix, simple_bench_names=True, print_s
             args2 = [props] + args
             subsects.append(fun(*args2))
 
-        s = create_section(title, desc, props, subsects, figures, exp_prefix)
+        s = create_section(title, desc, subsects, figures, exp_prefix)
         latex_sects.append(s)
 
     for s in latex_sects:
@@ -683,7 +683,7 @@ def prepare_report_for_dims(props, dim_rows, dim_cols, sects, fname, exp_prefix,
             args2 = [props] + args
             subsects.append(fun(*args2))
 
-        s = create_section(title, desc, props, subsects, figures, exp_prefix)
+        s = create_section(title, desc, subsects, figures, exp_prefix)
         latex_sects.append(s)
 
     for s in latex_sects:

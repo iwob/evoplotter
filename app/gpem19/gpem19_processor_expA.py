@@ -654,9 +654,9 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
     headerRowNames = ["method", "weight"]
     subs = [
-        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
-        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
-        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
+        (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
+        (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
+        (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]
@@ -676,7 +676,7 @@ columns=flexible,
 breaklines=true
 }
 """
-    templates.prepare_report(props, sects, "cdgp_expA01_withNoise.tex", paperwidth=190, user_declarations=user_declarations)
+    templates.prepare_report(sects, "cdgp_expA01_withNoise.tex", paperwidth=190, user_declarations=user_declarations)
 
 
 
@@ -726,9 +726,9 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
     headerRowNames = ["method", "weight"]
     subs = [
-        (create_subsection_shared_stats, ["Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
-        (create_subsection_ea_stats, ["EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
-        (create_subsection_cdgp_specific, ["CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
+        (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
+        (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
+        (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]
@@ -748,7 +748,7 @@ columns=flexible,
 breaklines=true
 }
 """
-    templates.prepare_report(props, sects, "cdgp_expA02_noNoise.tex", paperwidth=190, user_declarations=user_declarations)
+    templates.prepare_report(sects, "cdgp_expA02_noNoise.tex", paperwidth=190, user_declarations=user_declarations)
 
 
 

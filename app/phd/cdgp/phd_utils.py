@@ -68,7 +68,7 @@ def load_correct_props_simple(folders,  exts=None):
     return props
 
 
-def load_correct_props(folders, results_dir,  exts=None):
+def load_correct_props(folders, results_dir,  exts=None, filter_lambda=None):
     # if exts is None:
     #     exts = [".cdgp"]
     props_cdgpError = utils.load_properties_dirs(folders, exts=[".cdgp.error"], add_file_path=True)
@@ -83,6 +83,9 @@ def load_correct_props(folders, results_dir,  exts=None):
 
     # Filtering props so only correct ones are left
     props = [p for p in props0 if is_correct(p)]
+
+    if filter_lambda is not None:
+        props = [p for p in props if filter_lambda(p)]
 
     # print("Filtered (props):")
     # for p in props:
@@ -190,6 +193,8 @@ def isOptimalVerification(p):
 def is_optimal_solution(p):
     if p["method"] in {"CDGP", "CDGPprops", "GP", "GPR"}:
         return isOptimalVerification(p)  # and isOptimalTests(p)
+    elif "result.best.isOptimal" in p:
+        return p["result.best.isOptimal"] == "true"
     else:
         return False
 
@@ -284,13 +289,13 @@ def fun_trainMseBelowThresh(filtered):
     num_opt = get_num_trainMseBelowThresh(filtered)
     sr = float(num_opt) / float(len(filtered))
     return "{0}".format("%0.2f" % round(sr, 2))
-def get_stats_size(props):
+def fun_size(props):
     vals = [float(p["result.best.size"]) for p in props]
     if len(vals) == 0:
         return "-"#-1.0, -1.0
     else:
         return str(int(round(np.mean(vals)))) #, np.std(vals)
-def get_stats_sizeOnlySuccessful(props):
+def fun_sizeOnlySuccessful(props):
     vals = [float(p["result.best.size"]) for p in props if is_optimal_solution(p)]
     if len(vals) == 0:
         return "-"#-1.0, -1.0
