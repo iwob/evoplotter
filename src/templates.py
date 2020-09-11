@@ -6,10 +6,9 @@ from .dims import *
 import pandas as pd
 
 
-def create_section(title, desc, props, subsects, figures_list):
+def create_section(title, desc, subsects, figures_list):
     assert isinstance(title, str)
     assert isinstance(desc, str)
-    assert isinstance(props, list)
     assert isinstance(figures_list, list)
 
     section = reporting.Section(title, [])
@@ -24,11 +23,10 @@ def create_section(title, desc, props, subsects, figures_list):
     return section
 
 
-def prepare_report(props, sects, filename, dir_path="results/", paperwidth=75, user_declarations=""):
+def prepare_report(sects, filename, dir_path="results/", paperwidth=75, user_declarations=""):
     """Creates a LaTeX report of the results, where properties are shared for all subsections and
     dimension for rows (e.g. benchmarks) is also the same for each subsection.
 
-    :param props: (list[dict]) list of properties dicts to be processed.
     :param sects: ((title, desc, subsections, figures)), where figures are paths to images. Subsections
     are specified as pairs (function, arguments), where function is supposed to return reporting.Subsection.
     :param filename: (str) name of the LaTeX and PDF files to be generated.
@@ -41,12 +39,12 @@ def prepare_report(props, sects, filename, dir_path="results/", paperwidth=75, u
                                  packages=["pbox", "makecell"], user_declarations=user_declarations)
     latex_sects = []
     for title, desc, subsections, figures in sects:
-        subsects = []
-        for fun, args in subsections:
-            args2 = [props] + args
-            subsects.append(fun(*args2))
+        # subsects = []
+        # for fun, args in subsections:
+        #     subsects.append(fun(*args))
+        subsects = [fun(*args) for fun, args in subsections]
 
-        s = create_section(title, desc, props, subsects, figures)
+        s = create_section(title, desc, subsects, figures)
         latex_sects.append(s)
 
     for s in latex_sects:
