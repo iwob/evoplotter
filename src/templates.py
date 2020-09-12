@@ -60,7 +60,7 @@ def prepare_report(sects, filename, dir_path="results/", paperwidth=75, user_dec
 class TableGenerator:
     """Generates table from data. kwargs will be propagated to the table printing."""
     def __init__(self, f_cell, dim_rows, dim_cols, headerRowNames=None, title="", color_scheme=None,
-                 table_postprocessor=None, cellRenderers=None, vertical_border=1, table_variants=None,
+                 table_postprocessor=None, cellRenderers=None, vertical_border=1, variants=None,
                  default_color_thresholds=None, layered_headline=True, color_value_extractor=None,
                  only_nonempty_rows=True, outputFiles=None, **kwargs):
         assert outputFiles is None or isinstance(outputFiles, list), "outputFiles must be either None, or a list of configs"
@@ -78,8 +78,7 @@ class TableGenerator:
             headerRowNames = [""]
         self.headerRowNames = headerRowNames
         # create a table for each variant and put them next to each other
-        self.table_variants = table_variants
-        self.variants_to_be_used = self.table_variants if self.table_variants is not None else [lambda p: True]
+        self.variants = variants
         self.default_color_thresholds = default_color_thresholds
         self.layered_headline = layered_headline
         self.color_value_extractor = color_value_extractor
@@ -102,18 +101,36 @@ class TableGenerator:
 
     def apply_listed(self, props):
         """The same as apply, but returned is a list of tables."""
-        tables = []
-        for variant in self.variants_to_be_used:  # each variant is some predicate on data
-            txt = self.__get_table_text(variant, props)
-            tables.append(txt)
-        return tables
+        if self.variants is None:
+            dummy_variant = lambda p: True
+            return [self.getTableText(props, dummy_variant)]
+        else:
+            return [self.getTableText(props, variant) for variant in self.variants]
 
 
-    def __get_table_text(self, variant, props):
+    def generateTable(self, props, dim_rows=None, dim_cols=None):
+        """Generates a table object for the given props and dimensions."""
+        if dim_rows is None:
+            dim_rows = self.dim_rows
+        if dim_cols is None:
+            dim_cols = self.dim_cols
+        cells = printer.generateTableCells(props, dim_rows, dim_cols, self.f_cell)
+        table = printer.Table(cells, dimRows=dim_rows, dimCols=dim_cols,
+                              cellRenderers=self.cellRenderers,
+                              layeredHeadline=self.layered_headline,
+                              verticalBorder=self.vertical_border,
+                              headerRowNames=self.headerRowNames)
+        return table
+
+
+    def generateTableForVariant(self, props, variant):
+        """Generates a table for a given variant using dimensions defined for that table."""
         if isinstance(variant, ConfigList):
-            # dim_cols_to_be_used = Dim([(variant.get_caption(), lambda p: variant(p))]) * self.dim_cols
+            # if a variant is specified as a ConfigList then it has a caption, and it will be put in the table
+            # header so that it is clear for which variant the table was produced.
             dim_cols_to_be_used = Dim([variant]) * self.dim_cols
         else:
+            # print("Warning: variant caption will not be generated.")
             dim_cols_to_be_used = self.dim_cols
 
         props_variant = [p for p in props if variant(p)]
@@ -121,25 +138,15 @@ class TableGenerator:
             dim_rows_variant = Dim([c for c in self.dim_rows.configs if len(c.filter_props(props_variant)) > 0])
         else:
             dim_rows_variant = self.dim_rows
+        return self.generateTable(props_variant, dim_rows_variant, dim_cols_to_be_used)
 
-        # txt = printer.latex_table(props_variant, dim_rows_variant, dim_cols_to_be_used, self.f_cell,
-        #                           layered_headline=self.layered_headline, vertical_border=self.vertical_border,
-        #                           headerRowNames=self.headerRowNames, **self.init_kwargs)
-        cells = printer.generateTableCells(props_variant, dim_rows_variant, dim_cols_to_be_used, self.f_cell)
-        table = printer.Table(cells, dimRows=dim_rows_variant, dimCols=dim_cols_to_be_used,
-                              cellRenderers=self.cellRenderers,
-                              layeredHeadline=self.layered_headline,
-                              verticalBorder=self.vertical_border,
-                              headerRowNames=self.headerRowNames)
+
+    def getTableText(self, props, variant):
+        table = self.generateTableForVariant(props, variant)
         txt = table.render()
 
-        # ct = new_color_thresholds if new_color_thresholds is not None else self.default_color_thresholds
-        if self.default_color_thresholds is not None:
-            ct = self.default_color_thresholds
-        else:
-            ct = None
-        if self.color_scheme is not None and ct is not None:
-            cv0, cv1, cv2 = ct
+        if self.color_scheme is not None and self.default_color_thresholds is not None:
+            cv0, cv1, cv2 = self.default_color_thresholds
             txt = printer.table_color_map(txt, cv0, cv1, cv2, "colorLow", "colorMedium", "colorHigh",
                                           funValueExtractor=self.color_value_extractor)
 
