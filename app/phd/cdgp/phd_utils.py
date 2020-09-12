@@ -2,6 +2,7 @@ import re
 from src.dims import *
 from src.templates import *
 from src import printer
+from src import templates
 import numpy as np
 
 
