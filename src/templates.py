@@ -62,7 +62,8 @@ class TableGenerator:
     def __init__(self, f_cell, dim_rows, dim_cols, headerRowNames=None, title="", color_scheme=None,
                  table_postprocessor=None, cellRenderers=None, vertical_border=1, variants=None,
                  default_color_thresholds=None, layered_headline=True, color_value_extractor=None,
-                 only_nonempty_rows=True, outputFiles=None, **kwargs):
+                 only_nonempty_rows=True, outputFiles=None, addRowWithRanks=False,
+                 ranksHigherValuesBetter=True, **kwargs):
         assert outputFiles is None or isinstance(outputFiles, list), "outputFiles must be either None, or a list of configs"
         self.f_cell = f_cell
         self.dim_rows = dim_rows
@@ -85,6 +86,8 @@ class TableGenerator:
         self.only_nonempty_rows = only_nonempty_rows
         self.outputFiles = outputFiles
         self.init_kwargs = kwargs.copy()
+        self.addRowWithRanks = addRowWithRanks
+        self.ranksHigherValuesBetter = ranksHigherValuesBetter
 
     def __call__(self, props):
         return self.apply(props)
@@ -119,7 +122,9 @@ class TableGenerator:
                               cellRenderers=self.cellRenderers,
                               layeredHeadline=self.layered_headline,
                               verticalBorder=self.vertical_border,
-                              headerRowNames=self.headerRowNames)
+                              headerRowNames=self.headerRowNames,
+                              addRowWithRanks=self.addRowWithRanks,
+                              ranksHigherValuesBetter=self.ranksHigherValuesBetter)
         return table
 
 
@@ -484,6 +489,7 @@ def getSortedAveragedRanks(props, dim_ranks_trials, dim_ranking, value_getter, h
     :param higherValuesBetter: (bool) if True, then higher values are treated as better.
     :return: (list[(str,float)]) a list of tuples, containing config name and its average rank.
     """
+    import scipy.stats as ss
     assert isinstance(dim_ranking, Dim)
     assert isinstance(dim_ranks_trials, Dim)
     allRanks = {}  # for each config name contains a list of its ranks
@@ -503,7 +509,6 @@ def getSortedAveragedRanks(props, dim_ranks_trials, dim_ranking, value_getter, h
 
         # "If there are tied values, assign to each tied value the average of
         #  the ranks that would have been assigned without ties."
-        import scipy.stats as ss
         # In[19]: ss.rankdata([3, 1, 4, 15, 92])
         # Out[19]: array([2., 1., 3., 4., 5.])
         #

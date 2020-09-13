@@ -1,3 +1,4 @@
+import numpy as np
 from . import dims
 from . import utils
 
@@ -218,7 +219,7 @@ class Table(object):
     """
     def __init__(self, cells, dimCols=None, dimRows=None, cellRenderers=None, layeredHeadline=True,
                  verticalBorder=0, horizontalBorder=1, useBooktabs=False, headerRowNames=None,
-                 showColumnNames=True, showRowNames=True):
+                 showColumnNames=True, showRowNames=True, addRowWithRanks=False, ranksHigherValuesBetter=True):
         if cellRenderers is None:
             cellRenderers = []
         assert isinstance(cells, list) or isinstance(cells, TableContent) #"Table expects array of cells as an input" #
@@ -249,6 +250,8 @@ class Table(object):
         self.headerRowNames = headerRowNames
         self.showColumnNames = showColumnNames
         self.showRowNames = showRowNames  # results in an additional column being added at the beginning of the table with dim_rows names
+        self.addRowWithRanks = addRowWithRanks
+        self.ranksHigherValuesBetter = ranksHigherValuesBetter
 
     def removeColumn(self, index):
         self.content.removeColumn(index)
@@ -295,6 +298,30 @@ class Table(object):
             text = rend(value, text)
         return text
 
+    def getPairedRanksMatrix(self):
+        """Returns a dictionary from a config name to """
+        import scipy.stats as ss
+        ranksMatrix = []  # for each config name contains a list of its ranks
+        for row in self.content:
+            # "If there are tied values, assign to each tied value the average of
+            #  the ranks that would have been assigned without ties."
+            # In[19]: ss.rankdata([3, 1, 4, 15, 92])
+            # Out[19]: array([2., 1., 3., 4., 5.])
+            #
+            # In[20]: ss.rankdata([1, 2, 3, 3, 3, 4, 5])
+            # Out[20]: array([1., 2., 4., 4., 4., 6., 7.])
+            if self.ranksHigherValuesBetter:
+                ranks = ss.rankdata([-float(x) for x in row])
+            else:
+                ranks = ss.rankdata([float(x) for x in row])
+            ranksMatrix.append(ranks)
+        return ranksMatrix
+
+    def getAvgRanks(self):
+        ranksMatrix = np.array(self.getPairedRanksMatrix())
+        means = np.mean(ranksMatrix, axis=0)
+        return means
+
     def renderTableHeader(self):
         return self.getHeader().render()
 
@@ -307,11 +334,17 @@ class Table(object):
             rowRendered = [self.applyRenderers(cell) for cell in row]
             text += " & ".join(rowRendered) + r"\\"
             if self.horizontalBorder >= 2 and i < len(self.content) - 1:
-                if self.useBooktabs:
-                    text += r"\midrule"
-                else:
-                    text += r"\hline"
+                text += r"\midrule " if self.useBooktabs else r"\hline "
             text += "\n"
+
+        if self.addRowWithRanks:
+            if self.horizontalBorder >= 1:
+                text += r"\midrule " if self.useBooktabs else r"\hline "
+            if self.__canShowRowNames():
+                text += r" Rank & "
+            # get ranks here
+            ranks = ["%0.2f" % s for s in self.getAvgRanks()]
+            text += " & ".join(ranks) + r"\\"
         return text
 
     def render(self, latexizeUnderscores=True, firstColAlign="l", middle_col_align="c"):
