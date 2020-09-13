@@ -236,13 +236,14 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        title="Status (correctly finished runs)",
                        color_scheme=reversed(status_color_scheme),
                        cellRenderers=[cellShading(0.0, 0.8*numRuns, numRuns)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       vertical_border=vb, table_postprocessor=post, variants=variants
                        ),
-        TableGenerator(fun_successRate, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
+        TableGenerator(fun_successRate, Dim(dim_rows[:-1]), Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Success rates (properties met)",
                        color_scheme=reporting.color_scheme_darkgreen,
                        cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
+                       addRowWithRanks=True,
                        outputFiles=[results_dir + "/tables/cdgp_succRate_{0}.tex".format(utils.normalize_name(vid)) for vid in variants_ids]
                        ),
         TableGenerator(get_averageAlgorithmRanksCDGP(dim_cols[:-1], dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
