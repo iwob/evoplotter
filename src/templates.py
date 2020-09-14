@@ -62,7 +62,7 @@ class TableGenerator:
     def __init__(self, f_cell, dim_rows, dim_cols, headerRowNames=None, title="", color_scheme=None,
                  table_postprocessor=None, cellRenderers=None, vertical_border=1, variants=None,
                  default_color_thresholds=None, layered_headline=True, color_value_extractor=None,
-                 only_nonempty_rows=True, outputFiles=None, addRowWithRanks=False,
+                 only_nonempty_rows=True, outputFiles=None, addRowWithRanks=False, addRowWithMeans=False,
                  ranksHigherValuesBetter=True, **kwargs):
         assert outputFiles is None or isinstance(outputFiles, list), "outputFiles must be either None, or a list of configs"
         self.f_cell = f_cell
@@ -88,6 +88,7 @@ class TableGenerator:
         self.init_kwargs = kwargs.copy()
         self.addRowWithRanks = addRowWithRanks
         self.ranksHigherValuesBetter = ranksHigherValuesBetter
+        self.addRowWithMeans = addRowWithMeans
 
     def __call__(self, props):
         return self.apply(props)
@@ -123,6 +124,7 @@ class TableGenerator:
                               layeredHeadline=self.layered_headline,
                               verticalBorder=self.vertical_border,
                               headerRowNames=self.headerRowNames,
+                              addRowWithMeans=self.addRowWithMeans,
                               addRowWithRanks=self.addRowWithRanks,
                               ranksHigherValuesBetter=self.ranksHigherValuesBetter)
         return table

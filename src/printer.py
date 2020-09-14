@@ -219,7 +219,8 @@ class Table(object):
     """
     def __init__(self, cells, dimCols=None, dimRows=None, cellRenderers=None, layeredHeadline=True,
                  verticalBorder=0, horizontalBorder=1, useBooktabs=False, headerRowNames=None,
-                 showColumnNames=True, showRowNames=True, addRowWithRanks=False, ranksHigherValuesBetter=True):
+                 showColumnNames=True, showRowNames=True, addRowWithMeans=False,
+                 addRowWithRanks=False, ranksHigherValuesBetter=True):
         if cellRenderers is None:
             cellRenderers = []
         assert isinstance(cells, list) or isinstance(cells, TableContent) #"Table expects array of cells as an input" #
@@ -252,6 +253,7 @@ class Table(object):
         self.showRowNames = showRowNames  # results in an additional column being added at the beginning of the table with dim_rows names
         self.addRowWithRanks = addRowWithRanks
         self.ranksHigherValuesBetter = ranksHigherValuesBetter
+        self.addRowWithMeans = addRowWithMeans
 
     def removeColumn(self, index):
         self.content.removeColumn(index)
@@ -322,6 +324,13 @@ class Table(object):
         means = np.mean(ranksMatrix, axis=0)
         return means
 
+    def getMeans(self):
+        meansMatrix = []
+        for row in self.content.cells:
+            meansMatrix.append([float(r) for r in row])
+        means = np.mean(np.array(meansMatrix), axis=0)
+        return means
+
     def renderTableHeader(self):
         return self.getHeader().render()
 
@@ -337,14 +346,20 @@ class Table(object):
                 text += r"\midrule " if self.useBooktabs else r"\hline "
             text += "\n"
 
-        if self.addRowWithRanks:
+        if self.addRowWithMeans or self.addRowWithRanks:
             if self.horizontalBorder >= 1:
                 text += r"\midrule " if self.useBooktabs else r"\hline "
-            if self.__canShowRowNames():
-                text += r" Rank & "
-            # get ranks here
-            ranks = ["%0.2f" % s for s in self.getAvgRanks()]
-            text += " & ".join(ranks) + r"\\"
+
+
+            if self.addRowWithMeans:
+                text += r" Mean & " if self.__canShowRowNames() else ""
+                ranks = ["%0.2f" % s for s in self.getMeans()]
+                text += " & ".join(ranks) + r"\\"
+
+            if self.addRowWithRanks:
+                text += r" Rank & " if self.__canShowRowNames() else ""
+                ranks = ["%0.2f" % s for s in self.getAvgRanks()]
+                text += " & ".join(ranks) + r"\\"
         return text
 
     def render(self, latexizeUnderscores=True, firstColAlign="l", middle_col_align="c"):
