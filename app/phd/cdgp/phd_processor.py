@@ -236,7 +236,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        title="Status (correctly finished runs)",
                        color_scheme=reversed(status_color_scheme),
                        cellRenderers=[cellShading(0.0, 0.8*numRuns, numRuns)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants, addRowWithMeans=True
+                       vertical_border=vb, table_postprocessor=post, variants=variants
                        ),
         TableGenerator(fun_successRate, Dim(dim_rows[:-1]), Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Success rates (properties met)",
@@ -479,12 +479,12 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[results_dir + "/tables/custom/cdgp_runtime_rowsAsTestsRatio_successful.tex"]
                        ),
-        # FriedmannTestPython(dimensions_dict["benchmark"],
-        #                     dimensions_dict["method"] * dimensions_dict["evoMode"] * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
-        #                     get_successRate, p_treshold=0.05,
-        #                     title="Friedman test for success rates (all columns)",
-        #                     pathFriedmanViz="tables/custom/friedman_all.gv",
-        #                     workingDir=results_dir),
+        FriedmannTestPython(dimensions_dict["benchmark"],
+                            dimensions_dict["method"] * dimensions_dict["evoMode"] * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
+                            get_successRate, p_treshold=0.05,
+                            title="Friedman test for success rates (all variants)",
+                            pathFriedmanViz="tables/custom/friedman_all.gv",
+                            workingDir=results_dir),
         # FriedmannTestPython(dimensions_dict["benchmark"],
         #                     dimensions_dict["method"] * Dim(dimensions_dict["evoMode"][0]) * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
         #                     get_successRate, p_treshold=0.05,
@@ -497,18 +497,6 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
         #                     title="Friedman test for success rates (steadyState variants only)",
         #                     pathFriedmanViz="tables/custom/friedman_steadyState.gv",
         #                     workingDir=results_dir),
-        FriedmannTestPython(dimensions_dict["benchmark"],
-                            dimensions_dict["method_CDGP"] * dimensions_dict["evoMode"] * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
-                            get_successRate, p_treshold=0.05,
-                            title="Friedman test for success rates (CDGP variants)",
-                            pathFriedmanViz="tables/custom/friedman_cdgp.gv",
-                            workingDir=results_dir),
-        FriedmannTestPython(dimensions_dict["benchmark"],
-                            dimensions_dict["method_GPR"] * dimensions_dict["evoMode"] * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
-                            get_successRate, p_treshold=0.05,
-                            title="Friedman test for success rates (GPR variants)",
-                            pathFriedmanViz="tables/custom/friedman_gpr.gv",
-                            workingDir=results_dir),
         TableGenerator(fun_successRate,
                        dimensions_dict["benchmark"],
                        dimensions_dict["method"] * dimensions_dict["testsRatio"],
@@ -528,6 +516,21 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
 
     if EXP_TYPE == "LIA":  # LIA specific tables
         tables.extend([
+            FriedmannTestPython(dimensions_dict["benchmark"],
+                                dimensions_dict["method_CDGP"] * dimensions_dict["evoMode"] * dimensions_dict[
+                                    "selection"] *
+                                dimensions_dict["testsRatio"],
+                                get_successRate, p_treshold=0.05,
+                                title="Friedman test for success rates (CDGP variants)",
+                                pathFriedmanViz="tables/custom/friedman_cdgp.gv",
+                                workingDir=results_dir),
+            FriedmannTestPython(dimensions_dict["benchmark"],
+                                dimensions_dict["method_GPR"] * dimensions_dict["evoMode"] * dimensions_dict[
+                                    "selection"] * dimensions_dict["testsRatio"],
+                                get_successRate, p_treshold=0.05,
+                                title="Friedman test for success rates (GPR variants)",
+                                pathFriedmanViz="tables/custom/friedman_gpr.gv",
+                                workingDir=results_dir),
             TableGenerator(fun_successRate,
                            dimensions_dict["benchmark"],
                            dimensions_dict["method_CDGP"] * dimensions_dict["testsRatio"],
