@@ -420,17 +420,18 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
 
 
 
-def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, results_dir, variants=None):
+def create_subsection_custom_tables(props, title, EXP_TYPE, dimens, results_dir, variants=None):
+    assert isinstance(dimens, dict)
     assert EXP_TYPE == "SLIA" or EXP_TYPE == "LIA"
     vb = 1  # vertical border
 
-    dim_rows = reversed(dimensions_dict["testsRatio"])
-    dim_cols = dimensions_dict["method"] * dimensions_dict["evoMode"] * dimensions_dict["selection"]
+    dim_rows = reversed(dimens["testsRatio"])
+    dim_cols = dimens["method"] * dimens["evoMode"] * dimens["selection"]
     shTc = cellShading(0.0, 5000.0, 10000.0) if EXP_TYPE == "LIA" else cellShading(0.0, 250.0, 500.0)
     tables = [
         TableGenerator(fun_successRate,
                        dim_rows,
-                       dimensions_dict["method"] * dimensions_dict["evoMode"] * dimensions_dict["selection"],
+                       dimens["method"] * dimens["evoMode"] * dimens["selection"],
                        title="Success rates", headerRowNames=[],
                        color_scheme=reporting.color_scheme_darkgreen,
                        cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
@@ -439,7 +440,7 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                        ),
         TableGenerator(fun_successRate,
                        dim_rows,
-                       dimensions_dict["method"] * dimensions_dict["evoMode"],
+                       dimens["method"] * dimens["evoMode"],
                        title="Success rates", headerRowNames=[],
                        color_scheme=reporting.color_scheme_darkgreen,
                        cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
@@ -448,7 +449,7 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                        ),
         TableGenerator(fun_successRate,
                        dim_rows,
-                       dimensions_dict["method"] * dimensions_dict["selection"],
+                       dimens["method"] * dimens["selection"],
                        title="Success rates", headerRowNames=[],
                        color_scheme=reporting.color_scheme_darkgreen,
                        cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
@@ -479,8 +480,8 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[results_dir + "/tables/custom/cdgp_runtime_rowsAsTestsRatio_successful.tex"]
                        ),
-        FriedmannTestPython(dimensions_dict["benchmark"],
-                            dimensions_dict["method"] * dimensions_dict["evoMode"] * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
+        FriedmannTestPython(dimens["benchmark"],
+                            dimens["method"] * dimens["evoMode"] * dimens["selection"] * dimens["testsRatio"],
                             get_successRate, p_treshold=0.05,
                             title="Friedman test for success rates (all variants)",
                             pathFriedmanViz="tables/custom/friedman_all.gv",
@@ -498,16 +499,16 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
         #                     pathFriedmanViz="tables/custom/friedman_steadyState.gv",
         #                     workingDir=results_dir),
         TableGenerator(fun_successRate,
-                       dimensions_dict["benchmark"],
-                       dimensions_dict["method"] * dimensions_dict["testsRatio"],
+                       dimens["benchmark"],
+                       dimens["method"] * dimens["testsRatio"],
                        title="Success rates", headerRowNames=[],
                        color_scheme=reporting.color_scheme_darkgreen,
                        cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[results_dir + "/tables/custom/cdgp_succRate_colsAsTestsRatio.tex"]
                        ),
-        FriedmannTestPython(dimensions_dict["benchmark"],
-                            dimensions_dict["method"] * dimensions_dict["testsRatio"],
+        FriedmannTestPython(dimens["benchmark"],
+                            dimens["method"] * dimens["testsRatio"],
                             get_successRate, p_treshold=0.05,
                             title="Friedman test for success rates (testsRatio)",
                             pathFriedmanViz= "tables/custom/friedman_testsRatio.gv",
@@ -516,36 +517,50 @@ def create_subsection_custom_tables(props, title, EXP_TYPE,  dimensions_dict, re
 
     if EXP_TYPE == "LIA":  # LIA specific tables
         tables.extend([
-            FriedmannTestPython(dimensions_dict["benchmark"],
-                                dimensions_dict["method_CDGP"] * dimensions_dict["evoMode"] * dimensions_dict[
+            FriedmannTestPython(dimens["benchmark"],
+                                dimens["method_CDGP"] * dimens["evoMode"] * dimens[
                                     "selection"] *
-                                dimensions_dict["testsRatio"],
+                                dimens["testsRatio"],
                                 get_successRate, p_treshold=0.05,
                                 title="Friedman test for success rates (CDGP variants)",
                                 pathFriedmanViz="tables/custom/friedman_cdgp.gv",
                                 workingDir=results_dir),
-            FriedmannTestPython(dimensions_dict["benchmark"],
-                                dimensions_dict["method_GPR"] * dimensions_dict["evoMode"] * dimensions_dict[
-                                    "selection"] * dimensions_dict["testsRatio"],
+            FriedmannTestPython(dimens["benchmark"],
+                                dimens["method_GPR"] * dimens["evoMode"] * dimens[
+                                    "selection"] * dimens["testsRatio"],
                                 get_successRate, p_treshold=0.05,
                                 title="Friedman test for success rates (GPR variants)",
                                 pathFriedmanViz="tables/custom/friedman_gpr.gv",
                                 workingDir=results_dir),
             TableGenerator(fun_successRate,
-                           dimensions_dict["benchmark"],
-                           dimensions_dict["method_CDGP"] * dimensions_dict["testsRatio"],
+                           dimens["benchmark"],
+                           dimens["method_CDGP"] * dimens["testsRatio"],
                            title="Success rates", headerRowNames=[],
                            color_scheme=reporting.color_scheme_darkgreen,
                            cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
                            vertical_border=vb, table_postprocessor=post, variants=variants,
                            outputFiles=[results_dir + "/tables/custom/cdgp_succRate_colsAsTestsRatio2.tex"]
                            ),
-            FriedmannTestPython(dimensions_dict["benchmark"],
-                                dimensions_dict["method_CDGP"] * dimensions_dict["testsRatio"],
+            FriedmannTestPython(dimens["benchmark"],
+                                dimens["method_CDGP"] * dimens["testsRatio"],
                                 get_successRate, p_treshold=0.05,
                                 title="Friedman test for success rates (testsRatio)",
                                 pathFriedmanViz="tables/custom/friedman_testsRatio2.gv",
                                 workingDir=results_dir),
+            TableGenerator(fun_successRate,
+                           dimens["benchmark"],
+                           dimens["method_CDGP"] * dimens["evoMode_g"] * dimens["selection_lex"] * dimens["testsRatio_0.25"] +
+                           dimens["method_GPR"] * dimens["evoMode_g"] * dimens["selection_lex"] * dimens["testsRatio_0.25"],
+                           title="Success rates", headerRowNames=[],
+                           color_scheme=reporting.color_scheme_darkgreen,
+                           cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                           vertical_border=vb, table_postprocessor=post, variants=variants
+                           ),
+            WilcoxonSignedRankTest(dimens["benchmark"],
+                                   dimens["method_CDGP"] * dimens["evoMode_g"] * dimens["selection_lex"] * dimens["testsRatio_0.25"] +
+                                   dimens["method_GPR"] * dimens["evoMode_g"] * dimens["selection_lex"] * dimens["testsRatio_0.25"],
+                                   get_successRate, p_treshold = 0.05,
+                                   title="Wilcoxon signed-rank test for success rates",)
         ])
 
     return createSubsectionWithTables(title, tables, props)
@@ -722,8 +737,17 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
     dimensions_dict = {"benchmark": dim_benchmarks,
                        "testsRatio": dim_testsRatio,
+                       "testsRatio_0.0": Dim(dim_testsRatio[0]),
+                       "testsRatio_0.25": Dim(dim_testsRatio[1]),
+                       "testsRatio_0.5": Dim(dim_testsRatio[2]),
+                       "testsRatio_0.75": Dim(dim_testsRatio[3]),
+                       "testsRatio_1.0": Dim(dim_testsRatio[4]),
                        "evoMode": dim_evoMode,
+                       "evoMode_g": Dim(dim_evoMode[0]),
+                       "evoMode_s": Dim(dim_evoMode[1]),
                        "selection": dim_sel,
+                       "selection_tour": Dim(dim_sel[0]),
+                       "selection_lex": Dim(dim_sel[1]),
                        "method": dim_methodCDGP + dim_methodGPR,
                        "method_CDGP": dim_methodCDGP,
                        "method_GPR": dim_methodGPR,}
@@ -783,7 +807,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 def reports_e0_slia():
 
-    name = "e0_slia_hardTimeout"
+    name = "e0_slia"
     results_dir = "results/results_{0}".format(name)
     ensure_result_dir(results_dir)
     title = "Final CDGP experiment for the SLIA logic"
@@ -800,7 +824,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 """
 
     # folders = ["phd_cdgp_e0_paramTests_01", "phd_cdgp_e0_paramTests_02"]
-    folders = ["SLIA_hardTimeout"]
+    folders = ["SLIA"]
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders, results_dir)
     standardize_benchmark_names(props)
