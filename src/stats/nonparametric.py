@@ -142,3 +142,11 @@ def runFriedmanKK_csv(text):
     call(["rm", "-f", csvFile])
     os.chdir(cwd)
     return friedmanResult
+
+
+
+def runWilcoxonSignedRank(x, y):
+    """Runs a Wilcoxon signed-rank test. x and y are the data vectors to be compared."""
+    import scipy.stats as ss
+    w, p_value = ss.wilcoxon(x, y)
+    return p_value

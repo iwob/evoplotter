@@ -176,8 +176,8 @@ class FriedmannTestKK:
         """Runs R script to obtain FriedmanData."""
         tableContent = printer.generateTableContent(props, dimRows=self.dimRows, dimCols=self.dimCols, fun=self.fun)
         table = printer.Table(tableContent)
-        from src.stats import friedman
-        return friedman.runFriedmanKK(table)
+        from src.stats import nonparametric
+        return nonparametric.runFriedmanKK(table)
 
     def getSignificantPairsTable(self, friedmanData):
         text = r"\begin{tabular}{lcl}" + "\n"
@@ -220,32 +220,32 @@ class FriedmannTestKK:
 
 
 class FriedmannTestPython:
-    def __init__(self, dimRows, dimCols, fun, title="", p_treshold=0.05, color_scheme="", showRanks=True, variants=None,
+    def __init__(self, dimRows, dimCols, fun, title="", p_treshold=0.05, showRanks=True, variants=None,
                  higherValuesBetter=True, printOnlyOverDiagonal=True, pathFriedmanViz=None, workingDir=None):
         self.dimRows = dimRows
         self.dimCols = dimCols
         self.fun = fun
         self.title = title
         self.p_treshold = p_treshold
-        self.color_scheme = color_scheme
         self.showRanks = showRanks
         self.variants = variants
         self.variants_to_be_used = self.variants if self.variants is not None else [lambda p: True]
-        self.outputFiles = None
         self.higherValuesBetter = higherValuesBetter
         self.printOnlyOverDiagonal = printOnlyOverDiagonal
         self.pathFriedmanViz = pathFriedmanViz
         if workingDir is not None and workingDir.endswith("/"):
             workingDir = workingDir[:-1]
         self.workingDir = workingDir
+        self.outputFiles = None
+        self.color_scheme = ""
 
 
     def getFriedmanData(self, props):
         """Runs R script to obtain FriedmanData."""
         tableContent = printer.generateTableContent(props, dimRows=self.dimRows, dimCols=self.dimCols, fun=self.fun)
         table = printer.Table(tableContent)
-        from src.stats import friedman
-        return friedman.runFriedmanPython(table)
+        from src.stats import nonparametric
+        return nonparametric.runFriedmanPython(table)
 
     def getGraphvizFigure(self, pairs, collapse_nodes=True):
         """Returns a text of the Graphviz file illustrating the results of the test.
@@ -438,6 +438,46 @@ class FriedmannTestPython:
 
     def apply_listed(self, props, **kwargs):
         return [self.apply(props, **kwargs)]
+
+
+
+
+class WilcoxonSignedRankTest:
+    """Python implementation of the Wilcoxon signed-rank test."""
+    def __init__(self, dimRows, dimCols, fun, title="", p_treshold=0.05, variants=None):
+        assert len(dimCols) == 2, "Wilcoxon signed-rank test is a test between two independent variables; Provided independent variables: {0}.".format(len(dimCols))
+        self.dimRows = dimRows
+        self.dimCols = dimCols
+        self.fun = fun
+        self.title = title
+        self.p_treshold = p_treshold
+        self.variants = variants
+        self.variants_to_be_used = self.variants if self.variants is not None else [lambda p: True]
+        self.outputFiles = None
+        self.color_scheme = ""
+
+    def runTest(self, cells):
+        from src.stats import nonparametric
+        x = [c[0] for c in cells]
+        y = [c[1] for c in cells]
+        return nonparametric.runWilcoxonSignedRank(x, y)
+
+    def apply(self, props, **kwargs):
+        """Returns a content of the subsection as a LaTeX formatted string."""
+        tableContent = printer.generateTableContent(props, dimRows=self.dimRows, dimCols=self.dimCols, fun=self.fun)
+        p_value = self.runTest(tableContent.cells)
+        text = "Wilcoxon signed-rank test\\\\{0}~~vs.~~{1}\\\\".format(self.dimCols[0].get_caption(), self.dimCols[1].get_caption())
+        text += "p-value = {0}\\\\".format(p_value)
+        if p_value < self.p_treshold:
+            text += "Significant difference (for threshold {0})".format(self.p_treshold)
+        else:
+            text += "Null hypothesis cannot be rejected (for threshold {0})".format(self.p_treshold)
+        return text
+
+    def apply_listed(self, props, **kwargs):
+        return [self.apply(props, **kwargs)]
+
+
 
 
 

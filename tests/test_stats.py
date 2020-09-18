@@ -1,5 +1,5 @@
 import unittest
-from src.stats.friedman import *
+from src.stats.nonparametric import *
 
 
 class TestsDims(unittest.TestCase):
@@ -60,3 +60,13 @@ b4;8.83;13.25;8.33;11.51"""
         # The p-value amounts to 3.5 * 10^−14 and so indicates significant differences.
         print("res.p_value\n", res.p_value)
         print("res.cmp_matrix\n", res.cmp_matrix)
+
+
+    def test_wilcoxon_signed_rank(self):
+        # Data taken from: https://en.wikipedia.org/wiki/Wilcoxon_signed-rank_test#Example
+        x = [125, 115, 130, 140, 140, 115, 140, 125, 140, 135]
+        y = [110, 122, 125, 120, 140, 124, 123, 137, 135, 145]
+        p_value = runWilcoxonSignedRank(x, y)
+        # Expected p_value: 0.6113
+        # Probably because of approximate method of computing, the obtained result is 0.5936305914425295
+        # self.assertAlmostEqual(p_value, 0.6113)

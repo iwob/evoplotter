@@ -1,4 +1,4 @@
-from src.stats import friedman
+from src.stats import nonparametric
 
 sample = """;$GP$_$0.01$;$GP$_$0.1$;CDGP_$0.01$;CDGP_$0.1$;$CDGP_{props}$_$0.01$;$CDGP_{props}$_$0.1$
 gr_b_05;0.00;0.00;0.76;0.80;1.00;1.00
@@ -46,7 +46,7 @@ SortedAscending5;0.00;0.05;0.04;0.00;0.88;0.98;1.00;1.00;0.62;0.67;0.72;0.62;0.9
 fg_max4;0.96;0.96;0.84;0.74;1.00;1.00;1.00;1.00;1.00;1.00;1.00;0.92;1.00;1.00;1.00;0.93;1.00;1.00;1.00;0.33
 """
 
-fRes = friedman.runFriedmanKK_csv(sample4)
+fRes = nonparametric.runFriedmanKK_csv(sample4)
 
 print("\nRESULT:")
 # print("\n".join([str(x) for x in fRes.getSignificantPairs()]))
