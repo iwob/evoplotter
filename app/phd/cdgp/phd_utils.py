@@ -58,14 +58,15 @@ def create_errors_solver_listing(error_props, file_path, pred=None):
     f.close()
 
 
-def load_correct_props_simple(folders,  exts=None):
+def load_correct_props_simple(folders,  exts=None, dim_filter=None):
     def is_correct(p):
         return p["method"] not in {"CDGP", "CDGPprops", "GP", "GPR"} or "result.best.isOptimal" in p
 
-    props0 = utils.load_properties_dirs(folders, exts=exts, ignoreExts=[".txt", ".error"], add_file_path=True)
-
-    # Filtering props so only correct ones are left
-    props = [p for p in props0 if is_correct(p)]
+    if dim_filter is not None:
+        pred = lambda p: is_correct(p) and dim_filter.filter(p)
+    else:
+        pred = lambda p: is_correct(p)
+    props = utils.load_properties_dirs(folders, exts=exts, ignoreExts=[".txt", ".error"], add_file_path=True, predicate=pred)
     return props
 
 
@@ -298,6 +299,31 @@ def fun_size(props):
         return str(int(round(np.mean(vals)))) #, np.std(vals)
 def fun_sizeOnlySuccessful(props):
     vals = [float(p["result.best.size"]) for p in props if is_optimal_solution(p)]
+    if len(vals) == 0:
+        return "-"#-1.0, -1.0
+    else:
+        return str(int(round(np.mean(vals)))) #, np.std(vals)
+def fun_sizeOnlySuccessful_simplified(props):
+    vals = [float(p["result.best.size"]) for p in props if is_optimal_solution(p)]
+    if len(vals) == 0:
+        return "-"#-1.0, -1.0
+    else:
+        return str(int(round(np.mean(vals)))) #, np.std(vals)
+def fun_sizeOnlySuccessful_original(props):
+    vals = [float(p["result.bestOrig.size"]) for p in props if is_optimal_solution(p)]
+    if len(vals) == 0:
+        return "-"#-1.0, -1.0
+    else:
+        return str(int(round(np.mean(vals)))) #, np.std(vals)
+def fun_sizeOnlySuccessful_chooseBest(props):
+    vals_simp = [float(p["result.best.size"]) for p in props if is_optimal_solution(p)]
+    vals_orig = [float(p["result.bestOrig.size"]) for p in props if is_optimal_solution(p)]
+    vals = []
+    for vs, vo in zip(vals_simp, vals_orig):
+        if vs <= vo:
+            vals.append(vs)
+        else:
+            vals.append(vo)
     if len(vals) == 0:
         return "-"#-1.0, -1.0
     else:
@@ -691,7 +717,8 @@ def get_averageAlgorithmRanksCDGP(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SO
 
 
 
-def get_rankingOfBestSolutionsCDGP(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=65):
+def get_rankingOfBestSolutionsCDGP(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=65, key_solution="result.best",
+                                   key_size="result.best.size", key_isOptimal="result.best.isOptimal"):
 
     def shortenLongConstants(s):
         # cxs = re.findall("\(Map\((?:[^,]+ -> [^,]+(?:, )?)+\),None\)", s)
@@ -705,7 +732,7 @@ def get_rankingOfBestSolutionsCDGP(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN
         def str2bool(s):
             return True if s == "true" else False
         # solutions = [(p["result.bestOrig"], int(p["result.bestOrig.size"]), str2bool(p["result.best.isOptimal"])) for p in props]
-        solutions = [(p["result.best"], int(p["result.best.size"]), str2bool(p["result.best.isOptimal"])) for p in props]
+        solutions = [(p[key_solution], int(p[key_size]), str2bool(p[key_isOptimal])) for p in props if key_solution in p]
         solutions.sort(key=lambda x: (x[2], x[1]), reverse=True)
         return solutions
 

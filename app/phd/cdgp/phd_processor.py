@@ -550,6 +550,7 @@ def create_subsection_custom_tables(props, title, EXP_TYPE, dimens, results_dir,
             TableGenerator(fun_successRate,
                            dimens["benchmark"],
                            dimens["method_CDGP"] * dimens["evoMode_g"] * dimens["selection_lex"] * dimens["testsRatio_0.25"] +
+                           dimens["method_CDGP"] * dimens["evoMode_s"] * dimens["selection_tour"] * dimens["testsRatio_1.0"] +
                            dimens["method_GPR"] * dimens["evoMode_g"] * dimens["selection_lex"] * dimens["testsRatio_0.25"],
                            title="Success rates", headerRowNames=[],
                            color_scheme=reporting.color_scheme_darkgreen,
@@ -560,7 +561,12 @@ def create_subsection_custom_tables(props, title, EXP_TYPE, dimens, results_dir,
                                    dimens["method_CDGP"] * dimens["evoMode_g"] * dimens["selection_lex"] * dimens["testsRatio_0.25"] +
                                    dimens["method_GPR"] * dimens["evoMode_g"] * dimens["selection_lex"] * dimens["testsRatio_0.25"],
                                    get_successRate, p_treshold = 0.05,
-                                   title="Wilcoxon signed-rank test for success rates",)
+                                   title="Wilcoxon signed-rank test for success rates (best CDGP vs best GPR)",),
+            WilcoxonSignedRankTest(dimens["benchmark"],
+                                   dimens["method_CDGP"] * dimens["evoMode_s"] * dimens["selection_tour"] * dimens["testsRatio_1.0"] +
+                                   dimens["method_GPR"] * dimens["evoMode_g"] * dimens["selection_lex"] * dimens["testsRatio_0.25"],
+                                   get_successRate, p_treshold=0.05,
+                                   title="Wilcoxon signed-rank test for success rates (worst CDGP vs best GPR)", )
         ])
 
     return createSubsectionWithTables(title, tables, props)
@@ -568,7 +574,7 @@ def create_subsection_custom_tables(props, title, EXP_TYPE, dimens, results_dir,
 
 
 
-def create_subsection_formal(props_lia, props_slia, title, EXP_TYPE, dimensions, results_dir, variants=None):
+def create_subsection_formal(props_lia, props_slia, title, EXP_TYPE, dimens, results_dir, variants=None):
     assert EXP_TYPE == "SLIA" or EXP_TYPE == "LIA"
     vb = 1  # vertical border
 
@@ -576,30 +582,35 @@ def create_subsection_formal(props_lia, props_slia, title, EXP_TYPE, dimensions,
     props.extend(props_lia)
     props.extend(props_slia)
 
+    dim_cols = dimens["method"] +\
+               dimens["method_CDGP"] * dimens["evoMode_g"] * dimens["selection_lex"] * dimens["testsRatio_0.25"] +\
+               dimens["method_CDGP"] * dimens["evoMode_s"] * dimens["selection_tour"] * dimens["testsRatio_1.0"] +\
+               dimens["method_GPR"] * dimens["evoMode_g"] * dimens["selection_lex"] * dimens["testsRatio_0.25"]
+
     tables = [
         TableGenerator(get_num_computed,
-                       dimensions["benchmark"], dimensions["method"],
+                       dimens["benchmark"], dim_cols,
                        title="Status (correctly finished runs)",
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
+        # TableGenerator(fun_successRate,
+        #                dimens["benchmark_lia"], dim_cols,
+        #                title="Success rates", headerRowNames=[],
+        #                color_scheme=reporting.color_scheme_darkgreen,
+        #                cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                outputFiles=[results_dir + "/tables/formal/succRate_lia.tex"]
+        #                ),
+        # TableGenerator(fun_successRate,
+        #                dimens["benchmark_slia"], dim_cols,
+        #                title="Success rates",
+        #                color_scheme=reporting.color_scheme_darkgreen,
+        #                cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                outputFiles=[results_dir + "/tables/formal/succRate_slia.tex"]
+        #                ),
         TableGenerator(fun_successRate,
-                       dimensions["benchmark_lia"], dimensions["method"],
-                       title="Success rates", headerRowNames=[],
-                       color_scheme=reporting.color_scheme_darkgreen,
-                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       outputFiles=[results_dir + "/tables/formal/succRate_lia.tex"]
-                       ),
-        TableGenerator(fun_successRate,
-                       dimensions["benchmark_slia"], dimensions["method"],
-                       title="Success rates",
-                       color_scheme=reporting.color_scheme_darkgreen,
-                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       outputFiles=[results_dir + "/tables/formal/succRate_slia.tex"]
-                       ),
-        TableGenerator(fun_successRate,
-                       dimensions["benchmark"], dimensions["method"],
+                       dimens["benchmark"], dim_cols,
                        title="Success rates",
                        color_scheme=reporting.color_scheme_darkgreen,
                        cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
@@ -607,7 +618,7 @@ def create_subsection_formal(props_lia, props_slia, title, EXP_TYPE, dimensions,
                        outputFiles=[results_dir + "/tables/formal/succRate_all.tex"]
                        ),
         TableGenerator(get_avg_runtime,
-                       dimensions["benchmark"], dimensions["method"],
+                       dimens["benchmark"], dim_cols,
                        title="Average runtime [s]",
                        color_scheme=reporting.color_scheme_violet,
                        cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
@@ -615,25 +626,40 @@ def create_subsection_formal(props_lia, props_slia, title, EXP_TYPE, dimensions,
                        #outputFiles=[results_dir + "/tables/formal/runtime_all.tex"]
                        ),
         TableGenerator(get_avg_runtimeOnlySuccessful,
-                       dimensions["benchmark"], dimensions["method"],
+                       dimens["benchmark"], dim_cols,
                        title="Average runtime (only successful) [s]",
                        color_scheme=reporting.color_scheme_violet,
                        cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
-                       outputFiles=[results_dir + "/tables/formal/runtime_rowsAsTestsRatio_successful.tex"]
+                       outputFiles=[results_dir + "/tables/formal/runtime_successful.tex"]
                        ),
-        # TableGenerator(fun_size,
-        #                dimensions["benchmark"], dimensions["method"],
-        #                title="Average sizes of best of runs (number of nodes)",
-        #                color_scheme=reporting.color_scheme_yellow,
-        #                cellRenderers=[cellShading(0.0, 100.0, 200.0)],
-        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
-        #                ),
-        TableGenerator(fun_sizeOnlySuccessful,
-                       dimensions["benchmark"], dimensions["method"],
-                       title="Average sizes of best of runs (number of nodes) (only successful)",
+        TableGenerator(fun_sizeOnlySuccessful_original,
+                       dimens["benchmark"], dim_cols,
+                       title="Average sizes of best of runs (number of nodes) (only successful) (NOT SIMPLIFIED)",
                        color_scheme=reporting.color_scheme_yellow,
                        cellRenderers=[cellShading(0.0, 100.0, 200.0)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       ),
+        TableGenerator(fun_sizeOnlySuccessful_simplified,
+                       dimens["benchmark"], dim_cols,
+                       title="Average sizes of best of runs (number of nodes) (only successful) (SIMPLIFIED)",
+                       color_scheme=reporting.color_scheme_yellow,
+                       cellRenderers=[cellShading(0.0, 100.0, 200.0)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       ),
+        TableGenerator(fun_sizeOnlySuccessful_chooseBest,
+                       dimens["benchmark"], dim_cols,
+                       title="Average sizes of best of runs (number of nodes) (only successful) (CHOOSE BEST)",
+                       color_scheme=reporting.color_scheme_yellow,
+                       cellRenderers=[cellShading(0.0, 100.0, 200.0)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[results_dir + "/tables/formal/size_chooseBest.tex"]
+                       ),
+        TableGenerator(get_rankingOfBestSolutionsCDGP(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=75, key_solution="result.best.smtlib"),
+                       dimens["benchmark"], dim_cols,
+                       title="The best solutions (simplified) found for each benchmark and their sizes. Format: solution (isCorrect?) (size)",
+                       color_scheme=reporting.color_scheme_violet, middle_col_align="l",
+                       default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
     ]
@@ -833,8 +859,17 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
     dimensions_dict = {"benchmark": dim_benchmarks,
                        "testsRatio": dim_testsRatio,
+                       "testsRatio_0.0": Dim(dim_testsRatio[0]),
+                       "testsRatio_0.25": Dim(dim_testsRatio[1]),
+                       "testsRatio_0.5": Dim(dim_testsRatio[2]),
+                       "testsRatio_0.75": Dim(dim_testsRatio[3]),
+                       "testsRatio_1.0": Dim(dim_testsRatio[4]),
                        "evoMode": dim_evoMode,
+                       "evoMode_g": Dim(dim_evoMode[0]),
+                       "evoMode_s": Dim(dim_evoMode[1]),
                        "selection": dim_sel,
+                       "selection_tour": Dim(dim_sel[0]),
+                       "selection_lex": Dim(dim_sel[1]),
                        "method": dim_methodCDGP,
                        "method_CDGP": dim_methodCDGP}
 
@@ -899,11 +934,15 @@ Rerun of the CDGP experiments series for my PhD thesis.
 
     # dim_bestCDGP_lia = Dim()
 
-    folders_lia = ["FORMAL/data_formal_lia"]
-    folders_slia = ["FORMAL/data_formal_slia"]
+    folders_lia = ["FORMAL_SIMPLIFIED/data_formal_lia"]
+    folders_lia_mine = ["LIA"]
+    folders_slia = ["FORMAL_SIMPLIFIED/data_formal_slia"]
+    folders_slia_mine = ["SLIA"]
+
     desc += "\n\\bigskip\\noindent Folders with data:\\\\"
     desc += r"LIA: \lstinline{" + str(folders_lia) + "}\\\\\n"
     desc += r"SLIA: \lstinline{" + str(folders_slia) + "}\\\\\n"
+
     props_lia = load_correct_props(folders_lia, results_dir)
     standardize_benchmark_names(props_lia)
     dim_benchmarks_lia = get_benchmarks_from_props(props_lia)
@@ -916,12 +955,38 @@ Rerun of the CDGP experiments series for my PhD thesis.
                        "benchmark_lia": dim_benchmarks_lia,
                        "benchmark_slia": dim_benchmarks_slia,
                        "testsRatio": dim_testsRatio,
+                       "testsRatio_0.0": Dim(dim_testsRatio[0]),
+                       "testsRatio_0.25": Dim(dim_testsRatio[1]),
+                       "testsRatio_0.5": Dim(dim_testsRatio[2]),
+                       "testsRatio_0.75": Dim(dim_testsRatio[3]),
+                       "testsRatio_1.0": Dim(dim_testsRatio[4]),
                        "evoMode": dim_evoMode,
+                       "evoMode_g": Dim(dim_evoMode[0]),
+                       "evoMode_s": Dim(dim_evoMode[1]),
                        "selection": dim_sel,
+                       "selection_tour": Dim(dim_sel[0]),
+                       "selection_lex": Dim(dim_sel[1]),
                        "method": dim_methodEUSolver + dim_methodCVC4,
                        "method_eusolver": dim_methodEUSolver,
                        "method_cvc4_1.8": dim_methodCVC4,
-                       "method_CDGP": dim_methodCDGP}
+                       "method_CDGP": dim_methodCDGP,
+                       "method_GPR": dim_methodGPR}
+
+    dim_methodsMine = dimensions_dict["method_CDGP"] * dimensions_dict["evoMode_g"] * dimensions_dict["selection_lex"] * dimensions_dict["testsRatio_0.25"] + \
+                      dimensions_dict["method_CDGP"] * dimensions_dict["evoMode_s"] * dimensions_dict["selection_tour"] * dimensions_dict["testsRatio_1.0"] + \
+                      dimensions_dict["method_GPR"] * dimensions_dict["evoMode_g"] * dimensions_dict["selection_lex"] * dimensions_dict["testsRatio_0.25"]
+
+    props_lia_mine = load_correct_props_simple(folders_lia_mine, dim_filter=dim_methodsMine)
+    props_lia_mine = dim_methodsMine.filter_props(props_lia_mine)
+    standardize_benchmark_names(props_lia_mine)
+
+    props_slia_mine = load_correct_props_simple(folders_slia_mine, dim_filter=dim_methodsMine)
+    props_slia_mine = dim_methodsMine.filter_props(props_slia_mine)
+    standardize_benchmark_names(props_slia_mine)
+
+    props_lia.extend(props_lia_mine)
+    props_slia.extend(props_slia_mine)
+
     subs = [
         (create_subsection_formal, [props_lia, props_slia, "Custom tables", "SLIA", dimensions_dict, results_dir, None]),
     ]
@@ -934,6 +999,6 @@ Rerun of the CDGP experiments series for my PhD thesis.
 
 if __name__ == "__main__":
     # reports_e0_paramTests()
-    reports_e0_lia()
+    # reports_e0_lia()
     # reports_e0_slia()
-    # reports_e0_formal()
+    reports_e0_formal()
