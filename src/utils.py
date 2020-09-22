@@ -56,6 +56,19 @@ def load_properties(lines, sep="=", comment_marker="#"):
     return res
 
 
+def save_properties_file(p, path_file):
+    """Saves a dictionary in a given file using the Java properties format.
+
+    :param path_file: (str) path to a file.
+    :param p: (dict[str,any]) properties dictionary.
+    :return: (dict[str,str]) dictionary with property names as keys.
+    """
+    f = open(path_file, "w")
+    for k in sorted(p.keys()):
+        f.write("{0} = {1}\n".format(k, p[k]))
+    f.close()
+
+
 def load_properties_file(path_file, add_file_path=False):
     """Creates a dictionary for properties loaded from a given file.
 
@@ -71,7 +84,7 @@ def load_properties_file(path_file, add_file_path=False):
     return p
 
 
-def load_properties_dir(path_dir, exts=None, ignoreExts=None, add_file_path=False):
+def load_properties_dir(path_dir, exts=None, ignoreExts=None, add_file_path=False, predicate=None):
     """Creates a dictionary for properties loaded from files in the given directory. All subdirectories will be recursively traversed.
 
     :param path_dir: (str) path to a directory from which paths will be read.
@@ -79,6 +92,7 @@ def load_properties_dir(path_dir, exts=None, ignoreExts=None, add_file_path=Fals
     :param ignoreExts: (list[str]) list of ignored extensions. None means that no extensions are ignored.
     :param add_file_path: (bool) specifies if path to a file on disk should be stored in dictionary.
      The path will be stored under 'evoplotter.file' key.
+    :param predicate: (lambda[dict,bool]) a predicate determining, if a dictionary loaded from file will be added to the list.
     :return: (list(dict[str,str])) list of dictionaries created for each file in the folder.
     """
     res = []
@@ -87,11 +101,13 @@ def load_properties_dir(path_dir, exts=None, ignoreExts=None, add_file_path=Fals
             if (exts is None or file_ends_with_extension(f, exts)) and \
                (ignoreExts is None or not file_ends_with_extension(f, ignoreExts)):
                 full_name = os.path.join(root, f)
-                res.append(load_properties_file(full_name, add_file_path=add_file_path))
+                p = load_properties_file(full_name, add_file_path=add_file_path)
+                if predicate is None or predicate(p):
+                    res.append(p)
     return res
 
 
-def load_properties_dirs(dirs, exts=None, ignoreExts=None, add_file_path=False):
+def load_properties_dirs(dirs, exts=None, ignoreExts=None, add_file_path=False, predicate=None):
     """Loads properties files from the specified directories.  All subdirectories will be recursively traversed.
 
     :param dirs: (list[str]) list of paths to directories.
@@ -99,11 +115,12 @@ def load_properties_dirs(dirs, exts=None, ignoreExts=None, add_file_path=False):
     :param ignoreExts: (list[str]) list of ignored extensions. None means that no extensions are ignored.
     :param add_file_path: (bool) specifies if path to a file on disk should be stored in dictionary.
      The path will be stored under 'evoplotter.file' key.
+    :param predicate: (lambda[dict,bool]) a predicate determining, if a dictionary loaded from file will be added to the list.
     :return: (list[dict[str,str]]) list of dictionaries created for each file in the specified folders.
     """
     res = []
     for d in dirs:
-        res.extend(load_properties_dir(d, exts, ignoreExts, add_file_path=add_file_path))
+        res.extend(load_properties_dir(d, exts, ignoreExts, add_file_path=add_file_path, predicate=predicate))
     return res
 
 

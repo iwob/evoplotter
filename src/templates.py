@@ -514,7 +514,7 @@ def rankingFunctionGenerator(sorted_list_lambda, entry_formatter_lambda, ONLY_VI
             if i >= len(solutions):
                 break
             if i > 0:
-                res += "\\\\ \\ "
+                res += "\\\\ "
             res += entry_formatter_lambda(solutions, i)
         res += "}"
         return res

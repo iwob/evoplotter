@@ -121,6 +121,15 @@ class Dim(object):
         """
         return [p for p in props if any([c.filter(p) for c in self.configs])]
 
+    def filter_props(self, props):
+        """Returns all properties files satisfied by at least one config."""
+        assert isinstance(props, list), "filter_props expects a list of property files"
+        return [p for p in props if self.filter(p)]
+
+    def filter(self, p):
+        """Returns True, if a given property file is covered by at least one config."""
+        return any(c.filter(p) for c in self.configs)
+
     def sort(self):
         """Sorts this dimension alphabetically on the names of Configs within it."""
         self.configs.sort()
@@ -284,7 +293,7 @@ class ConfigList(object):
 
     def filter_props(self, props):
         """Returns all properties files satisfied by a conjunction of all filters in this Config."""
-        assert isinstance(props, list), "filter_props expects list of property files"
+        assert isinstance(props, list), "filter_props expects a list of property files"
         return [p for p in props if self.filter(p)]
 
     def filter(self, p):
