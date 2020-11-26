@@ -3,9 +3,9 @@ from app.phd.cdsr.utils import *
 from src import utils
 from src import plotter
 from src import printer
-from src import templates
 from src import reporting
 from src.dims import *
+from src import templates
 from src.templates import *
 
 
@@ -174,7 +174,6 @@ def create_section(title, desc, props, subsects, figures_list, exp_prefix):
     return section
 
 
-
 def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowNames, cv0, cv1, cv2, vb=1,
                                tableVariants=None, onlyNonemptyRows=True, tablePostprocessor=post,
                                printTextTable=False, middle_col_align="c"):
@@ -204,6 +203,28 @@ def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowN
 
     return text
 
+
+def getAndSaveTextForTableVariants(table, props, outputFiles=None):
+    """Produces a list of LaTeX codes for each table variant. If outputFiles are specified,
+    then the outputs will be saved there."""
+    tsv = table.apply_listed(props)
+    if outputFiles is not None:
+        assert len(tsv) == len(outputFiles), "Number of output files must be the same as the number of table variants."
+        for tsv_txt, path in zip(tsv, outputFiles):
+            os.makedirs(os.path.dirname(path), exist_ok=True)  # automatically create directories
+            f = open(path, "w")
+            f.write(tsv_txt)
+            f.close()
+    return tsv
+
+
+def createSubsectionWithTables(title, tables, props):
+    subsects_main = []
+    for t in tables:
+        tsv = getAndSaveTextForTableVariants(t, props, t.outputFiles)
+        tup = (t.title, r"\noindent " + " ".join(tsv), t.color_scheme)
+        subsects_main.append(tup)
+    return reporting.Subsection(title, get_content_of_subsections(subsects_main))
 
 
 def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowNames):
@@ -345,6 +366,35 @@ def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix):
     section.add(reporting.FloatFigure(savepath.replace("results/", "")))
     return section
 
+
+
+def create_subsection_scikit(props, title, dim_rows, dim_cols, numRuns, headerRowNames):
+    vb = 1  # vertical border
+    variants = None  # variants_benchmarkNumTests
+
+    tables = [
+        TableGenerator(getAvgSatisfiedPropsForScikit1,
+                       dim_rows, dim_cols,
+                       title="Average ratio of satisfied properties",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       ),
+        TableGenerator(getAvgSatisfiedPropsForScikit2,
+                       dim_rows, dim_cols,
+                       title="Average number of satisfied properties",
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       ),
+        TableGenerator(getAvgSatisfiedRatiosForScikit,
+                       dim_rows, dim_cols,
+                       color_scheme=reporting.color_scheme_violet,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       title="Average ratio of satisfied properties (how close approximation was to meeting all properties)",
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       ),
+    ]
+
+    return createSubsectionWithTables(title, tables, props)
 
 
 def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, headerRowNames):
@@ -642,6 +692,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
     dim_rows = get_benchmarks_from_props(props)
     dim_rows += dim_rows.dim_true_within("ALL")
 
+    dim_cols_scikit = dim_methodScikit
 
     dim_cols = dim_methodScikit + dim_methodGP + dim_methodCDGP + dim_methodCDGPprops*dim_weight
     dim_cols += dim_cols.dim_true_within()
@@ -655,6 +706,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
     headerRowNames = ["method", "weight"]
     subs = [
         (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
+        (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows, dim_cols_scikit, 25, headerRowNames]),
         (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
         (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
@@ -676,7 +728,7 @@ columns=flexible,
 breaklines=true
 }
 """
-    templates.prepare_report(sects, "cdgp_expA01_withNoise.tex", paperwidth=190, user_declarations=user_declarations)
+    templates.prepare_report(sects, "cdsr_withNoise.tex", paperwidth=190, user_declarations=user_declarations)
 
 
 
@@ -714,6 +766,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
     dim_rows = get_benchmarks_from_props(props)
     dim_rows += dim_rows.dim_true_within("ALL")
 
+    dim_cols_scikit = dim_methodScikit
 
     dim_cols = dim_methodScikit + dim_methodGP + dim_methodCDGP + dim_methodCDGPprops*dim_weight
     dim_cols += dim_cols.dim_true_within()
@@ -727,6 +780,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
     headerRowNames = ["method", "weight"]
     subs = [
         (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
+        (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows, dim_cols_scikit, 25, headerRowNames]),
         (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
         (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
@@ -748,7 +802,7 @@ columns=flexible,
 breaklines=true
 }
 """
-    templates.prepare_report(sects, "cdgp_expA02_noNoise.tex", paperwidth=190, user_declarations=user_declarations)
+    templates.prepare_report(sects, "cdsr_noNoise.tex", paperwidth=190, user_declarations=user_declarations)
 
 
 

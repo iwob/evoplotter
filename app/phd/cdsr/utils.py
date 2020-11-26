@@ -510,6 +510,44 @@ def get_sum_solverRestarts(props):
         return "0"
     else:
         return str(np.sum(vals))
+def getAvgSat(props):
+    assert len(props) > 0
+    # it is assumed that props contain only props with scikit runs
+    sumSat = 0
+    numProps = None
+    for p in props:
+        satVector = p["result.best.verificator.decisions"].split(",")
+        satVector = [int(s) for s in satVector]
+        sumSat += sum(satVector)
+        numProps = len(satVector)
+    avgSat = float(sumSat) / len(props)
+    return avgSat, numProps
+def getAvgSatisfiedPropsForScikit1(props):
+    if len(props) == 0:
+        return "-"
+    avgSat, numProps = getAvgSat(props)
+    avgSat = avgSat / numProps
+    return "{0}".format("%0.2f" % avgSat)
+def getAvgSatisfiedPropsForScikit2(props):
+    if len(props) == 0:
+        return "-"
+    avgSat, numProps = getAvgSat(props)
+    avgSat = int(avgSat) if int(avgSat) == avgSat else round(avgSat, 2)
+    return "{0}/{1}".format(avgSat, numProps)
+def getAvgSatisfiedRatiosForScikit(props):
+    if len(props) == 0:
+        return "-"
+    # it is assumed that props contain only props with scikit runs
+    sumSat = 0
+    numProps = None
+    for p in props:
+        satVector = p["result.best.verificator.ratios"].split(",")
+        satVector = [float(s) for s in satVector]
+        sumSat += sum(satVector)
+        numProps = len(satVector)
+    avgSat = float(sumSat) / len(props)
+    avgSat = avgSat / numProps
+    return "{0}".format("%0.2f" % avgSat)
 def get_freqCounterexamples(props):
     if len(props) == 0:
         return "-"
