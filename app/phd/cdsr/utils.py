@@ -223,8 +223,17 @@ def scientificNotationLatex(x):
     return s
 
 def get_num_allPropertiesMet(props):
-    props2 = [p for p in props if "result.best.correctVerification" in p and p["result.best.correctVerification"] == "true"]
-    return len(props2)
+    sumCorrect = 0
+    for p in props:
+        if p["method"] in {"CDGP", "GP", "CDGPprops", "CDSR", "CDSRprops"}:
+            # props2 = [p for p in props if "result.best.correctVerification" in p and p["result.best.correctVerification"] == "true"]
+            if "result.best.correctVerification" in p and p["result.best.correctVerification"] == "true":
+                sumCorrect += 1
+        elif "result.best.verificator.decisions" in p:  # scikit regressors hopefully
+            props = p["result.best.verificator.decisions"].split(",")
+            if all(pr == "1" for pr in props):
+                sumCorrect += 1
+    return sumCorrect
 def get_num_trainMseBelowThresh(props):
     # "result.best.correctTests" cannot be trusted, results were wrong
     # props2 = [p for p in props if p["result.best.correctTests"] == "true"]
@@ -260,7 +269,7 @@ def fun_successRate(filtered):
     sr = get_successRate(filtered)
     return "{0}".format("%0.2f" % round(sr, 2))
 def fun_allPropertiesMet(filtered):
-    if len(filtered) == 0 or "result.best.correctVerification" not in filtered[0]:
+    if len(filtered) == 0: # or "result.best.correctVerification" not in filtered[0]:
         return "-"
     num_opt = get_num_allPropertiesMet(filtered)
     sr = float(num_opt) / float(len(filtered))
