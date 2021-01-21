@@ -7,7 +7,7 @@ import numpy as np
 
 
 CHECK_CORRECTNESS_OF_FILES = 1
-STATUS_FILE_NAME = "results/status.txt"
+STATUS_FILE_NAME = "reports/status.txt"
 
 
 def sanitizeLatex(s):
@@ -145,7 +145,7 @@ def produce_status_matrix(dim, props):
 
 
 
-def save_listings(props, dim_rows, dim_cols, results_dir="results"):
+def save_listings(props, dim_rows, dim_cols, results_dir="reports"):
     """Saves listings of various useful info to separate text files."""
     assert isinstance(dim_rows, Dim)
     assert isinstance(dim_cols, Dim)

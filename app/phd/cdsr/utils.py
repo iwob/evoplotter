@@ -6,7 +6,7 @@ import numpy as np
 
 
 CHECK_CORRECTNESS_OF_FILES = 1
-STATUS_FILE_NAME = "results/status.txt"
+STATUS_FILE_NAME = "reports/status.txt"
 
 
 
@@ -22,7 +22,7 @@ def print_props_filenames(props):
 
 
 def create_errors_listing(error_props, filename):
-    f = open("results/listings/{0}".format(filename), "w")
+    f = open("reports/listings/{0}".format(filename), "w")
     print("Creating log of errors ({0})...".format(filename))
     for i, p in enumerate(error_props):
         if i > 0:
@@ -36,7 +36,7 @@ def create_errors_listing(error_props, filename):
 def create_errors_solver_listing(error_props, filename, pred=None):
     if pred is None:
         pred = lambda x: True
-    f = open("results/listings/{0}".format(filename), "w")
+    f = open("reports/listings/{0}".format(filename), "w")
     print("Creating log of errors ({0})...".format(filename))
     for i, p in enumerate(error_props):
         if not pred(p):  # ignore properties with certain features, e.g., types of errors
@@ -127,14 +127,14 @@ def save_listings(props, dim_rows, dim_cols):
     """Saves listings of various useful info to separate text files."""
     assert isinstance(dim_rows, Dim)
     assert isinstance(dim_cols, Dim)
-    utils.ensure_dir("results/listings/errors/")
+    utils.ensure_dir("reports/listings/errors/")
 
     # Saving optimal verified solutions
     for dr in dim_rows:
         bench = dr.get_caption()
         bench = bench[:bench.rfind(".")] if "." in bench else bench
-        f = open("results/listings/verified_{0}.txt".format(bench), "w")
-        f_errors = open("results/listings/errors/verified_{0}.txt".format(bench), "w")
+        f = open("reports/listings/verified_{0}.txt".format(bench), "w")
+        f_errors = open("reports/listings/errors/verified_{0}.txt".format(bench), "w")
 
         props_bench = dr.filter_props(props)
         for dc in dim_cols:
@@ -525,10 +525,19 @@ def getAvgSat(props):
     sumSat = 0
     numProps = None
     for p in props:
-        satVector = p["result.best.verificator.decisions"].split(",")
-        satVector = [int(s) for s in satVector]
-        sumSat += sum(satVector)
-        numProps = len(satVector)
+        if "result.best.verificator.decisions" in p:
+            satVector = p["result.best.verificator.decisions"].split(",")
+            satVector = [int(s) for s in satVector]
+            sumSat += sum(satVector)
+            numProps = len(satVector)
+        elif "result.best.passedConstraints" in p:
+            # result.best.passedConstraints = List(1, 1, 1, 1)
+            satVector = p["result.best.passedConstraints"][5:-1].split(", ")
+            satVector = [int(s) for s in satVector]
+            sumSat += sum(satVector)
+            numProps = len(satVector)
+        else:
+            raise Exception("No information about satisfied constraints")
     avgSat = float(sumSat) / len(props)
     return avgSat, numProps
 def getAvgSatisfiedPropsForScikit1(props):

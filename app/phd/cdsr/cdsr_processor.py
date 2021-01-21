@@ -344,7 +344,7 @@ def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix):
     r = (0.0, 1e0)
     xs = np.linspace(r[0], r[1], N)
     xticks = np.arange(r[0], r[1], r[1] / 10)
-    savepath = "results/figures/ratioMSE.pdf"
+    savepath = "reports/figures/ratioMSE.pdf"
     plotter.plot_ratio_meeting_predicate(props, getter_mse, predicate, xs=xs, xticks=xticks,
                                          show_plot=False,
                                          title="Ratio of solutions with MSE under the certain level",
@@ -352,18 +352,18 @@ def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix):
                                          series_dim=dim_method,
                                          xlogscale=False,
                                          savepath=savepath)
-    section.add(reporting.FloatFigure(savepath.replace("results/", "")))
+    section.add(reporting.FloatFigure(savepath.replace("reports/", "")))
 
 
     # Illustration of individual runs and their errors on training and validation sets
-    savepath = "results/figures/progressionGrid.pdf"
+    savepath = "reports/figures/progressionGrid.pdf"
     dim_rows = get_benchmarks_from_props(props, ignoreNumTests=True)
     dim_cols = (dim_methodGP * dim_all + dim_methodCDGP * dim_all + dim_methodCDGPprops * dim_weight) * \
                dim_benchmarkNumTests  # * dim_optThreshold
     plotter.plot_value_progression_grid_simple(props, dim_rows, dim_cols, ["cdgp.logTrainSet", "cdgp.logValidSet"], ["train", "valid"],
                                                plot_individual_runs=True,
                                                savepath=savepath)
-    section.add(reporting.FloatFigure(savepath.replace("results/", "")))
+    section.add(reporting.FloatFigure(savepath.replace("reports/", "")))
     return section
 
 
@@ -505,6 +505,12 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         #                ),
         TableGenerator(fun_allPropertiesMet, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Success rates (properties met)",
+                       color_scheme=reporting.color_scheme_green,
+                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       ),
+        TableGenerator(getAvgSatisfiedPropsForScikit1, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Average ratio of satisfied properties",
                        color_scheme=reporting.color_scheme_green,
                        default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
@@ -734,7 +740,7 @@ columns=flexible,
 breaklines=true
 }
 """
-    templates.prepare_report(sects, "cdsr_withNoise.tex", paperwidth=190, user_declarations=user_declarations)
+    templates.prepare_report(sects, "cdsr_withNoise.tex", dir_path="reports/", paperwidth=190, user_declarations=user_declarations)
 
 
 
@@ -808,17 +814,17 @@ columns=flexible,
 breaklines=true
 }
 """
-    templates.prepare_report(sects, "cdsr_noNoise.tex", paperwidth=190, user_declarations=user_declarations)
+    templates.prepare_report(sects, "cdsr_noNoise.tex", dir_path="reports/", paperwidth=190, user_declarations=user_declarations)
 
 
 
 
 if __name__ == "__main__":
-    utils.ensure_clear_dir("results/")
-    utils.ensure_dir("results/figures/")
-    utils.ensure_dir("results/listings/")
-    # utils.ensure_dir("results/tables/")
-    utils.ensure_dir("results/listings/errors/")
+    utils.ensure_clear_dir("reports/")
+    utils.ensure_dir("reports/figures/")
+    utils.ensure_dir("reports/listings/")
+    # utils.ensure_dir("reports/tables/")
+    utils.ensure_dir("reports/listings/errors/")
 
     reports_withNoise()
     reports_noNoise()

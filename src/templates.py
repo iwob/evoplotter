@@ -23,7 +23,7 @@ def create_section(title, desc, subsects, figures_list):
     return section
 
 
-def prepare_report(sects, filename, dir_path="results/", paperwidth=75, user_declarations=""):
+def prepare_report(sects, filename, dir_path="reports/", paperwidth=75, user_declarations=""):
     """Creates a LaTeX report of the results, where properties are shared for all subsections and
     dimension for rows (e.g. benchmarks) is also the same for each subsection.
 

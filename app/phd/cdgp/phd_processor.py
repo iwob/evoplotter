@@ -738,7 +738,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 def reports_e0_lia():
 
     name = "e0_lia"
-    results_dir = "results/results_{0}".format(name)
+    results_dir = "reports/results_{0}".format(name)
     ensure_result_dir(results_dir)
     title = "Final CDGP experiment for the LIA logic"
     desc = r"""
@@ -834,7 +834,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 def reports_e0_slia():
 
     name = "e0_slia"
-    results_dir = "results/results_{0}".format(name)
+    results_dir = "reports/results_{0}".format(name)
     ensure_result_dir(results_dir)
     title = "Final CDGP experiment for the SLIA logic"
     desc = r"""
@@ -917,7 +917,7 @@ NOTE: for steady state, maxGenerations is multiplied by populationSize.
 
 def reports_e0_formal():
     name = "e0_formal"
-    results_dir = "results/results_{0}".format(name)
+    results_dir = "reports/results_{0}".format(name)
     ensure_result_dir(results_dir)
     title = "Comparison of CDGP with formal approaches to formal synthesis"
     desc = r"""
