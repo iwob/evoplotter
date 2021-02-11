@@ -72,7 +72,8 @@ friedman.test.with.post.hoc <- function(formu, data, to.print.friedman = T, to.p
     {
       # the post hoc test
       The.post.hoc.P.values <- pvalue(the.sym.test, method = "single-step")	# this is the post hoc of the friedman test
-
+      print("asdasd")
+      print(The.post.hoc.P.values)
 
       # plotting
       if(to.plot.parallel & to.plot.boxplot)	par(mfrow = c(1,2)) # if we are plotting two plots, let's make sure we'll be able to see both
@@ -307,8 +308,8 @@ friedman.test.with.post.hoc.example2 <- function()
   
   #	fo <- Taste ~ Wine | Taster
   
-  friedman.test.with.post.hoc(Taste ~ Wine | Taster ,WineTasting)	# the same with our function. With post hoc, and cool plots
-  friedman.test.with.post.hoc(Taste ~ Wine | Taster ,WineTasting[1:15,])	# showing what happens when results are not signif
+  friedman.test.with.post.hoc(Taste ~ Wine | Taster ,WineTasting, to.plot.parallel=F, to.plot.boxplot=F)	# the same with our function. With post hoc, and cool plots
+  friedman.test.with.post.hoc(Taste ~ Wine | Taster ,WineTasting[1:15,], to.plot.parallel=F, to.plot.boxplot=F)	# showing what happens when results are not signif
   
   #  mtrace(temp)
   # mtrace.off()
@@ -317,17 +318,55 @@ friedman.test.with.post.hoc.example2 <- function()
   # what happens in the case of only two levels in X
   WineTasting2 <- WineTasting[WineTasting[,2] %in% levels(WineTasting[,2])[2:3],]
   WineTasting2[,2] <- factor(WineTasting2[,2] )
-  friedman.test.with.post.hoc(Taste ~ Wine | Taster ,WineTasting2)
+  friedman.test.with.post.hoc(Taste ~ Wine | Taster ,WineTasting2, to.plot.parallel=F, to.plot.boxplot=F)
   
   # what happens in case of an NA
-  WineTasting2 <- WineTasting
-  WineTasting2[1,1] <- NA
-  friedman.test.with.post.hoc(Taste ~ Wine | Taster ,WineTasting2)
-}							 
+  #WineTasting2 <- WineTasting
+  #WineTasting2[1,1] <- NA
+  #friedman.test.with.post.hoc(Taste ~ Wine | Taster ,WineTasting2, to.plot.parallel=F, to.plot.boxplot=F)
+}
 
 #friedman.test.with.post.hoc.example2()
 
 
+
+## Does Friedman from dataframe
+friedman.post.hoc.simple <- function(df, minFlag=T,...)  {
+  res <- data.frame(var=rep(NA, 0), alg=rep("", 0),  
+                    block=rep("", 0), stringsAsFactors=FALSE, check.names=FALSE)
+  i = 1
+  print(df)
+  for(r in 1:nrow(df))
+    for(c in 1:ncol(df))
+    {
+      res[i,1] = df[r,c]
+      res[i,2] = row.names(df)[r]
+      res[i,3] = colnames(df)[c]
+      i=i+1			
+    }
+  friedman.post.hoc (var ~ alg | block, data=res,minimize=minFlag, ...)
+}
+
+friedman.post.hoc.meth.bench <- function(fname, minFlag=TRUE)
+{
+  # KK
+  # reads a csv file of the form: methods x benchmarks
+  # transforms a table into format expected by friedman.post and calls friedman.post
+  # set minFlag to true if the variable is minimized, otherwise to false
+  
+  options(width=10000) # prevent the wrapping of output
+  #options(width=300)
+  
+  options(digits=2)
+  b <- read.csv(file=fname, header=TRUE, sep=";", row.names=1, check.names=FALSE)
+  b <- b[rownames(b) != "All", ]
+  b <- t(b)
+  print(summary(b))
+  r <- friedman.post.hoc.simple(b,minFlag)
+  print(sort(r$ranks))
+  r #sort(r.ranks)
+}
+
 args <- commandArgs(trailingOnly = TRUE)
-friedman.post.hoc.meth.bench(args[1], minFlag=args[2])
+friedman.post.hoc.simple(args[1], minFlag=args[2])
 #to.plot.parallel=F, to.plot.boxplot=F

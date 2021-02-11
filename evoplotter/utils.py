@@ -85,7 +85,7 @@ def load_properties_file(path_file, add_file_path=False):
 
 
 def load_properties_dir(path_dir, exts=None, ignoreExts=None, add_file_path=False, predicate=None):
-    """Creates a dictionary for properties loaded from files in the given directory. All subdirectories will be recursively traversed.
+    """Loads properties files from the specified directory. All subdirectories will be recursively traversed.
 
     :param path_dir: (str) path to a directory from which paths will be read.
     :param exts: (list[str]) list of accepted extensions. None means that all extensions are to be accepted.
