@@ -1,5 +1,5 @@
-from src import plotter
-from src.dims import *
+from evoplotter import plotter
+from evoplotter.dims import *
 
 
 # Data

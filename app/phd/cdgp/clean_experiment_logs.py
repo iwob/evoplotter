@@ -1,5 +1,5 @@
-from src.templates import *
-from src.utils import *
+from evoplotter.templates import *
+from evoplotter.utils import *
 import app.phd.cdgp.phd_processor as phd_processor
 import app.phd.cdgp.phd_utils as phd_utils
 

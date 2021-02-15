@@ -1,6 +1,6 @@
 import unittest
-from src.dims import *
-from src import printer
+from evoplotter.dims import *
+from evoplotter import printer
 
 class TestsPrinter(unittest.TestCase):
     x = "x"

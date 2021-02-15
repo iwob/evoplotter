@@ -1,4 +1,4 @@
-from src import printer
+from evoplotter import printer
 
 
 

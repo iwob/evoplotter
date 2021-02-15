@@ -1,5 +1,5 @@
 import unittest
-from src.dims import *
+from evoplotter.dims import *
 
 class TestsDims(unittest.TestCase):
 

@@ -1,7 +1,7 @@
 import re
-from src.dims import *
-from src.templates import *
-from src import printer
+from evoplotter.dims import *
+from evoplotter.templates import *
+from evoplotter import printer
 import numpy as np
 
 

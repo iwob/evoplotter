@@ -1,5 +1,5 @@
 import unittest
-from src.reporting import *
+from evoplotter.reporting import *
 
 class TestsPrinter(unittest.TestCase):
 

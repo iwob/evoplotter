@@ -1,4 +1,4 @@
-from src.stats import nonparametric
+from evoplotter.stats import nonparametric
 
 sample = """;$GP$_$0.01$;$GP$_$0.1$;CDGP_$0.01$;CDGP_$0.1$;$CDGP_{props}$_$0.01$;$CDGP_{props}$_$0.1$
 gr_b_05;0.00;0.00;0.76;0.80;1.00;1.00

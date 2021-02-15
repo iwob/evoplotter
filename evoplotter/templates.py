@@ -176,7 +176,7 @@ class FriedmannTestKK:
         """Runs R script to obtain FriedmanData."""
         tableContent = printer.generateTableContent(props, dimRows=self.dimRows, dimCols=self.dimCols, fun=self.fun)
         table = printer.Table(tableContent)
-        from src.stats import nonparametric
+        from evoplotter.stats import nonparametric
         return nonparametric.runFriedmanKK(table)
 
     def getSignificantPairsTable(self, friedmanData):
@@ -244,7 +244,7 @@ class FriedmannTestPython:
         """Runs R script to obtain FriedmanData."""
         tableContent = printer.generateTableContent(props, dimRows=self.dimRows, dimCols=self.dimCols, fun=self.fun)
         table = printer.Table(tableContent)
-        from src.stats import nonparametric
+        from evoplotter.stats import nonparametric
         return nonparametric.runFriedmanPython(table)
 
     def getGraphvizFigure(self, pairs, collapse_nodes=True):
@@ -457,7 +457,7 @@ class WilcoxonSignedRankTest:
         self.color_scheme = ""
 
     def runTest(self, cells):
-        from src.stats import nonparametric
+        from evoplotter.stats import nonparametric
         x = [c[0] for c in cells]
         y = [c[1] for c in cells]
         return nonparametric.runWilcoxonSignedRank(x, y)

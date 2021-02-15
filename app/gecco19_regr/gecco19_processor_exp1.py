@@ -1,10 +1,10 @@
 import os
 import shutil
-from src import utils
-from src import plotter
-from src import printer
-from src import reporting
-from src.dims import *
+from evoplotter import utils
+from evoplotter import plotter
+from evoplotter import printer
+from evoplotter import reporting
+from evoplotter.dims import *
 from gecco19_utils import *
 
 

@@ -2,7 +2,7 @@ import os
 import re
 import subprocess
 from subprocess import PIPE, STDOUT
-from src import utils
+from evoplotter import utils
 
 
 

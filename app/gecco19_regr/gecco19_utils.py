@@ -1,9 +1,9 @@
 import os
 import math
 import shutil
-from src import utils
-from src.dims import *
-from src import printer
+from evoplotter import utils
+from evoplotter.dims import *
+from evoplotter import printer
 import numpy as np
 
 

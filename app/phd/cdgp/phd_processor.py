@@ -1,10 +1,10 @@
 import os
 from app.phd.cdgp.phd_utils import *
-from src import utils
-from src import plotter
-from src import printer
-from src import templates
-from src.templates import *
+from evoplotter import utils
+from evoplotter import plotter
+from evoplotter import printer
+from evoplotter import templates
+from evoplotter.templates import *
 
 
 

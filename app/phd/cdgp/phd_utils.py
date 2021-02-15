@@ -1,8 +1,8 @@
 import re
-from src.dims import *
-from src.templates import *
-from src import printer
-from src import templates
+from evoplotter.dims import *
+from evoplotter.templates import *
+from evoplotter import printer
+from evoplotter import templates
 import numpy as np
 
 

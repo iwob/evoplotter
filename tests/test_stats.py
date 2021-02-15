@@ -1,5 +1,5 @@
 import unittest
-from src.stats.nonparametric import *
+from evoplotter.stats.nonparametric import *
 
 
 class TestsDims(unittest.TestCase):
