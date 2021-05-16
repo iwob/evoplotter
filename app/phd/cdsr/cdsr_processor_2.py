@@ -775,22 +775,11 @@ Validation set (GP/CDGP only): 75\\
 Test set: 125\\
 
 Sets were shuffled randomly from the 500 cases present in each generated benchmark.
-In this experiment, A02, there is no noise.
 }
 
-\begin{lstlisting}[breaklines]
-# shared_dims={'benchmark': ['benchmarks/gpem/noNoise/keijzer5_500.sl', 'benchmarks/gpem/noNoise/nguyen4_500.sl', 'benchmarks/gpem/noNoise/resistance_par2_500.sl', 'benchmarks/gpem/noNoise/pagie1_500.sl', 'benchmarks/gpem/noNoise/keijzer15_500.sl', 'benchmarks/gpem/noNoise/nguyen3_500.sl', 'benchmarks/gpem/noNoise/gravity_500.sl', 'benchmarks/gpem/noNoise/keijzer12_500.sl', 'benchmarks/gpem/noNoise/nguyen1_500.sl', 'benchmarks/gpem/noNoise/keijzer14_500.sl', 'benchmarks/gpem/noNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
-# dims_cdgp = {'method': ['CDGP'], 'testsRatio': [1.0], 'testsTypesForRatio': ['i'], 'benchmark': ['benchmarks/gpem/noNoise/keijzer5_500.sl', 'benchmarks/gpem/noNoise/nguyen4_500.sl', 'benchmarks/gpem/noNoise/resistance_par2_500.sl', 'benchmarks/gpem/noNoise/pagie1_500.sl', 'benchmarks/gpem/noNoise/keijzer15_500.sl', 'benchmarks/gpem/noNoise/nguyen3_500.sl', 'benchmarks/gpem/noNoise/gravity_500.sl', 'benchmarks/gpem/noNoise/keijzer12_500.sl', 'benchmarks/gpem/noNoise/nguyen1_500.sl', 'benchmarks/gpem/noNoise/keijzer14_500.sl', 'benchmarks/gpem/noNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
-# dims_cdgp = {'method': ['CDGPprops'], 'testsRatio': [1.0], 'testsTypesForRatio': ['i'], 'partialConstraintsWeight': [1, 5], 'benchmark': ['benchmarks/gpem/noNoise/keijzer5_500.sl', 'benchmarks/gpem/noNoise/nguyen4_500.sl', 'benchmarks/gpem/noNoise/resistance_par2_500.sl', 'benchmarks/gpem/noNoise/pagie1_500.sl', 'benchmarks/gpem/noNoise/keijzer15_500.sl', 'benchmarks/gpem/noNoise/nguyen3_500.sl', 'benchmarks/gpem/noNoise/gravity_500.sl', 'benchmarks/gpem/noNoise/keijzer12_500.sl', 'benchmarks/gpem/noNoise/nguyen1_500.sl', 'benchmarks/gpem/noNoise/keijzer14_500.sl', 'benchmarks/gpem/noNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
-# dims_gp = {'method': ['GP'], 'benchmark': ['benchmarks/gpem/noNoise/keijzer5_500.sl', 'benchmarks/gpem/noNoise/nguyen4_500.sl', 'benchmarks/gpem/noNoise/resistance_par2_500.sl', 'benchmarks/gpem/noNoise/pagie1_500.sl', 'benchmarks/gpem/noNoise/keijzer15_500.sl', 'benchmarks/gpem/noNoise/nguyen3_500.sl', 'benchmarks/gpem/noNoise/gravity_500.sl', 'benchmarks/gpem/noNoise/keijzer12_500.sl', 'benchmarks/gpem/noNoise/nguyen1_500.sl', 'benchmarks/gpem/noNoise/keijzer14_500.sl', 'benchmarks/gpem/noNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
-#
-# opt={'seed': '$RANDOM', 'maxTime': 1800000, 'tournamentSize': 7, 'tournamentDeselectSize': 7, 'populationSize': 500, 'initMaxTreeDepth': 4, 'maxSubtreeDepth': 4, 'maxTreeDepth': 12, 'stoppingDepthRatio': 0.8, 'operatorProbs': '0.5,0.5', 'deleteOutputFile': 'true', 'parEval': 'false', 'maxNewTestsPerIter': 10, 'silent': 'true', 'solverPath': "'solver/z3'", 'solverType': 'z3', 'maxSolverRestarts': 2, 'regression': 'true', 'saveTests': 'true', 'outDir': 'phd_A02', 'solverTimeout': 3000, 'notes': "'phd_A02'", 'noiseDeltaX': 0.0, 'noiseDeltaY': 0.0, 'sizeValidationSet': 75, 'sizeTestSet': 125, 'notImprovedWindow': 1000, 'reportFreq': 200}
-\end{lstlisting}
-
-NOTE: for steady state, maxGenerations is multiplied by populationSize.
 """
 
-    folders = ["CDSR_logs/phd_A02", "CDSR_logs/phd_A02_nguyen4", "results_scikit_noNoise"]
+    folders = ["results_thesis/noNoise/"]
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders)
     standardize_benchmark_names(props)

@@ -222,6 +222,32 @@ def scientificNotationLatex(x):
     s = s.replace("E", "\cdot 10^{") + "}$"
     return s
 
+def p_allPropertiesMet_smt(p):
+    if "result.best.correctVerification" in p:
+        if p["result.best.correctVerification"] == "true":
+            return True
+        else:
+            return False
+    else:
+        return None
+
+def p_allPropertiesMet_verificator(p):
+    if "result.best.verificator.decisions" in p:
+        properties = p["result.best.verificator.decisions"].split(",")
+        if all(pr == "1" for pr in properties):
+            return True
+        else:
+            return False
+    else:
+        return None
+
+def get_num_allPropertiesMet_verificator(props):
+    sumCorrect = 0
+    for p in props:
+        if p_allPropertiesMet_verificator(p):
+            sumCorrect += 1
+    return sumCorrect
+
 def get_num_allPropertiesMet(props):
     sumCorrect = 0
     for p in props:
@@ -229,10 +255,10 @@ def get_num_allPropertiesMet(props):
             # props2 = [p for p in props if "result.best.correctVerification" in p and p["result.best.correctVerification"] == "true"]
             if "result.best.correctVerification" in p and p["result.best.correctVerification"] == "true":
                 sumCorrect += 1
-        elif "result.best.verificator.decisions" in p:  # scikit regressors hopefully
-            props = p["result.best.verificator.decisions"].split(",")
-            if all(pr == "1" for pr in props):
-                sumCorrect += 1
+        # elif "result.best.verificator.decisions" in p:  # scikit regressors hopefully
+        #     props = p["result.best.verificator.decisions"].split(",")
+        #     if all(pr == "1" for pr in props):
+        #         sumCorrect += 1
     return sumCorrect
 def get_num_trainMseBelowThresh(props):
     # "result.best.correctTests" cannot be trusted, results were wrong
@@ -269,9 +295,15 @@ def fun_successRate(filtered):
     sr = get_successRate(filtered)
     return "{0}".format("%0.2f" % round(sr, 2))
 def fun_allPropertiesMet(filtered):
-    if len(filtered) == 0: # or "result.best.correctVerification" not in filtered[0]:
+    if len(filtered) == 0 or len([p for p in filtered if "result.best.correctVerification" in p]) == 0: # or "result.best.correctVerification" not in filtered[0]:
         return "-"
     num_opt = get_num_allPropertiesMet(filtered)
+    sr = float(num_opt) / float(len(filtered))
+    return "{0}".format("%0.2f" % round(sr, 2))
+def fun_allPropertiesMet_verificator(filtered):
+    if len(filtered) == 0: # or "result.best.correctVerification" not in filtered[0]:
+        return "-"
+    num_opt = get_num_allPropertiesMet_verificator(filtered)
     sr = float(num_opt) / float(len(filtered))
     return "{0}".format("%0.2f" % round(sr, 2))
 def fun_trainMseBelowThresh(filtered):
@@ -534,6 +566,11 @@ def getAvgSat(props):
             # result.best.passedConstraints = List(1, 1, 1, 1)
             satVector = p["result.best.passedConstraints"][5:-1].split(", ")
             satVector = [int(s) for s in satVector]
+            for i, s in enumerate(satVector):  # reversing, because 0 in CDSR logs means that constraint was passed
+                if satVector[i] == 1:
+                    satVector[i] = 0
+                elif satVector[i] == 0:
+                    satVector[i] = 1
             sumSat += sum(satVector)
             numProps = len(satVector)
         else:
