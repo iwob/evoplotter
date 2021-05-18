@@ -1,4 +1,5 @@
 import re
+import math
 from evoplotter.dims import *
 from evoplotter.templates import *
 from evoplotter import printer
@@ -62,10 +63,15 @@ def load_correct_props(folders, exts=None):
     # utils.deleteFilesByPredicate(props_cdgpError, lambda p: len(p["maxGenerations"]) > 7, simulate=False)
 
     def is_correct(p):
-        return p["method"] not in {"CDGP", "CDGPprops", "GP"} or "result.best.verificationDecision" in p
+        return "method" in p and (p["method"] not in {"CDGP", "CDGPprops", "GP"} or
+                                  ("result.best.verificationDecision" in p and "result.validation.best.testMSE" in p))
+
+    for p in props0:
+        if "method" not in p:
+            print("No method for: {0}".format(p["evoplotter.file"]))
 
     # Filtering props so only correct ones are left
-    props = [p for p in props0 if is_correct(p)]
+    props = [p for p in props0 if "method" in p and is_correct(p)]
 
     # print("Filtered (props):")
     # for p in props:
@@ -424,6 +430,21 @@ def get_median_testMSE(props):
     else:
         median = np.median([float(p["result.best.testMSE"]) for p in props])
         return scientificNotationLatex(median)  # , np.std(vals)
+def get_median_testMSE_bestOnValiCDGP(props):
+    if len(props) == 0:
+        return "-"
+    else:
+        res = []
+        for p in props:
+            if p["method"] in ["CDGP", "CDGPprops"]:
+                if "result.validation.best.testMSE" not in p:
+                    print("No validation set logging!!!")
+                else:
+                    res.append(float(p["result.validation.best.testMSE"]))
+            else:
+                res.append(float(p["result.best.testMSE"]))
+        median = np.median(res)
+        return scientificNotationLatex(median)  # , np.std(vals)
 def get_median_testMSE_noScNot(props):
     vals = [float(p["result.best.testMSE"]) for p in props]
     if len(vals) == 0:
@@ -603,6 +624,25 @@ def getAvgSatisfiedRatiosForScikit(props):
     avgSat = float(sumSat) / len(props)
     avgSat = avgSat / numProps
     return "{0}".format("%0.2f" % avgSat)
+def get_validation_testSet_ratio(props):
+    mse_ratios = []
+    for p in props:
+        b_mse = float(p["result.best.testMSE"])
+        if "result.validation.best.testMSE" not in p:
+            print("'result.validation.best.testMSE' not present for {0}".format(p["evoplotter.file"]))
+        else:
+            v_mse = float(p["result.validation.best.testMSE"])
+            if math.isclose(v_mse, 0.0):
+                if math.isclose(b_mse, 0.0):
+                    mse_ratios.append(1.0)
+                else:
+                    raise Exception("This shouldn't happen!")
+            else:
+                mse_ratios.append(b_mse / v_mse)
+    if len(mse_ratios) == 0:
+        return "-"
+    else:
+        return "{0}".format("%0.2f" % np.mean(mse_ratios))
 def get_freqCounterexamples(props):
     if len(props) == 0:
         return "-"

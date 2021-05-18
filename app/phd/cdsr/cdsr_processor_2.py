@@ -107,7 +107,7 @@ scikit_algs = ["AdaBoostRegressor", "XGBoost", "SGDRegressor", "RandomForestRegr
         "LinearSVR", "LinearRegression", "LassoLars", "KernelRidge", "GradientBoostingRegressor"] # , "GSGP"  - not used due to issues
 dim_methodScikit = Dim([Config(sa.replace("Regressor","").replace("Regression",""), p_dict_matcher({"method": sa}), method=sa) for sa in scikit_algs])
 dim_method = dim_methodScikit + dim_methodCDGP + dim_methodCDGPprops + dim_methodGP
-dim_sel = Dim([#Config("$Tour$", p_sel_tourn, selection="tournament"),
+dim_sel = Dim([Config("$Tour$", p_sel_tourn, selection="tournament"),
                Config("$Lex$", p_sel_lexicase, selection="lexicase")])
 # dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
 #                    Config("$generational$", p_generational, evolutionMode="generational")])
@@ -482,7 +482,14 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
         #                ),
         TableGenerator(get_median_testMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Test set: MSE  (median)",
+                       title="Test set: MSE  (median); bestOfRun CDGP",
+                       color_scheme=reporting.color_scheme_gray_dark,
+                       default_color_thresholds=(-10.0, 0.0, 10.0),
+                       color_value_extractor=scNotColorValueExtractor,
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       ),
+        TableGenerator(get_median_testMSE_bestOnValiCDGP, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Test set: MSE  (median); bestOnValidSet CDGP",
                        color_scheme=reporting.color_scheme_gray_dark,
                        default_color_thresholds=(-10.0, 0.0, 10.0),
                        color_value_extractor=scNotColorValueExtractor,
@@ -575,6 +582,12 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames)
         TableGenerator(get_stats_size, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average sizes of best of runs (number of nodes)",
                        color_scheme=reporting.color_scheme_yellow,
+                       default_color_thresholds=(0.0, 100.0, 200.0),
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       ),
+        TableGenerator(get_validation_testSet_ratio, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="A ratio of bestOfRun / bestOfValidation for MSE on test set.",
+                       color_scheme=reporting.color_scheme_green,
                        default_color_thresholds=(0.0, 100.0, 200.0),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
@@ -767,7 +780,7 @@ breaklines=true
 
 
 def reports_noNoise():
-    title = "Experiments for regression CDGP and  baseline regressors from Scikit. A02 - no noise."
+    title = "Experiments for regression CDGP and  baseline regressors from Scikit."
     desc = r"""
 \parbox{30cm}{
 Training set: 300\\
@@ -779,7 +792,7 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
 
 """
 
-    folders = ["results_thesis/noNoise/"]
+    folders = ["results_thesis/noNoise/", "results_scikit_noNoise"]
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders)
     standardize_benchmark_names(props)
@@ -788,13 +801,13 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
 
     dim_cols_scikit = dim_methodScikit
 
-    dim_cols = dim_methodScikit + dim_methodGP + dim_methodCDGP + dim_methodCDGPprops*dim_weight
+    dim_cols_cdgp = dim_methodCDGP * dim_sel + dim_methodCDGPprops * dim_sel * dim_weight
+    dim_cols_ea = dim_methodGP + dim_cols_cdgp
+    dim_cols = dim_methodScikit + dim_cols_ea
+
+
     dim_cols += dim_cols.dim_true_within()
-
-    dim_cols_ea = dim_methodGP + dim_methodCDGP + dim_methodCDGPprops * dim_weight
     dim_cols_ea += dim_cols_ea.dim_true_within()
-
-    dim_cols_cdgp = dim_methodCDGP + dim_methodCDGPprops*dim_weight
     dim_cols_cdgp += dim_cols_cdgp.dim_true_within()
 
     headerRowNames = ["method", "weight"]
