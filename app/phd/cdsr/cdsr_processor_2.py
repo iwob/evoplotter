@@ -1,4 +1,6 @@
 import os
+import numpy as np
+import matplotlib.pyplot as plt
 from app.phd.cdsr.utils import *
 from evoplotter import utils
 from evoplotter import plotter
@@ -113,7 +115,7 @@ dim_sel = Dim([Config("$Tour$", p_sel_tourn, selection="tournament"),
 #                    Config("$generational$", p_generational, evolutionMode="generational")])
 dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState")])
 dim_testsRatio = Dim([
-    # Config("$0.8$", p_testsRatio_equalTo("0.8"), testsRatio="0.8"),
+    Config("$0.75$", p_testsRatio_equalTo("0.75"), testsRatio="0.75"),
     Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0"),
 ])
 dim_optThreshold = Dim([
@@ -338,6 +340,80 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
 
 
 
+def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
+    """Creates a section filled with figures placed under appropriate paths."""
+    if path[-1] != "/":
+        path += "/"
+
+    section = reporting.Section("Figures", [])
+
+    def _get_median_testMSE(props):
+        if len(props) == 0:
+            return None
+        else:
+            return np.median([float(p["result.best.testMSE"]) for p in props])
+    def _getAvgSatisfiedRatios(props):
+        if len(props) == 0:
+            return None
+        sumSat = 0
+        numProps = None
+        for p in props:
+            satVector = p["result.best.verificator.ratios"].split(",")
+            satVector = [float(s) for s in satVector]
+            sumSat += sum(satVector)
+            numProps = len(satVector)
+        avgSat = float(sumSat) / len(props)
+        avgSat = avgSat / numProps
+        return avgSat
+
+
+    # 2-dimensional scatter plot, a different one per bechmark: percent of satisfied properties vs error on test set
+    for b_config in dim_benchmarks:
+        props_bench = b_config.filter_props(props)
+        b = b_config.get_caption(sep="_")
+        fig_path = path + b + ".pdf"
+
+        names, xs, ys = [], [], []
+        for conf in dim_cols:
+            props_method = conf.filter_props(props_bench)
+            if len(props_method) == 0:
+                continue
+
+            name = conf.get_caption(sep="_")
+
+            y = math.log10(_get_median_testMSE(props_method))
+            x = _getAvgSatisfiedRatios(props_method)  #use 'getAvgSatStochasticVerificator' for number of satisfied properties
+            if x is None or y is None:
+                print("Data could not be plotted: {0}".format(name))
+            else:
+                names.append(name)
+                xs.append(x)
+                ys.append(y)
+
+
+        # Idea: draw a cloud of all CDGP configs and where they landed
+
+
+        plt.clf()
+        fig, ax = plt.subplots()  #figsize=(12, 7)
+        plt.title(str(b))
+        plt.margins(0.01)  # Pad margins so that markers don't get clipped by the axes
+        plt.ylabel('Median MSE on test set')
+        plt.xlabel('Average ratio of satisfied properties')
+        plt.grid('on')
+        plt.scatter(xs, ys)
+        for i, txt in enumerate(names):
+            ax.annotate(txt, (xs[i], ys[i]))
+        plt.savefig("reports/" + fig_path)
+        # plt.show()
+        plt.clf()
+
+        section.add(reporting.BlockLatex(r"\includegraphics{"  + fig_path + r"}\\"))
+
+    return section
+
+
+
 def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix):
     if len(props) == 0:
         print("No props: plots were not generated.")
@@ -398,7 +474,7 @@ def create_subsection_scikit(props, title, dim_rows, dim_cols, numRuns, headerRo
                        default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
-        TableGenerator(getAvgSatisfiedRatiosForScikit,
+        TableGenerator(getAvgSatisfiedRatios,
                        dim_rows, dim_cols,
                        color_scheme=reporting.color_scheme_violet,
                        default_color_thresholds=(0.0, 0.5, 1.0),
@@ -801,7 +877,7 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
 
     dim_cols_scikit = dim_methodScikit
 
-    dim_cols_cdgp = dim_methodCDGP * dim_sel + dim_methodCDGPprops * dim_sel * dim_weight
+    dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio + dim_methodCDGPprops * dim_sel  * dim_testsRatio * dim_weight
     dim_cols_ea = dim_methodGP + dim_cols_cdgp
     dim_cols = dim_methodScikit + dim_cols_ea
 
@@ -812,10 +888,11 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
 
     headerRowNames = ["method", "weight"]
     subs = [
-        (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
-        (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows, dim_cols_scikit, 25, headerRowNames]),
-        (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
-        (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
+        #(create_subsection_shared_stats, [props, "Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
+        #(create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows, dim_cols_scikit, 25, headerRowNames]),
+        #(create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
+        #(create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
+        (create_subsection_figures_analysis, [props, dim_cols, dim_rows, "figures/"])
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]

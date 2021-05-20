@@ -398,7 +398,7 @@ def create_subsection_scikit(props, title, dim_rows, dim_cols, numRuns, headerRo
                        default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
-        TableGenerator(getAvgSatisfiedRatiosForScikit,
+        TableGenerator(getAvgSatisfiedRatios,
                        dim_rows, dim_cols,
                        color_scheme=reporting.color_scheme_violet,
                        default_color_thresholds=(0.0, 0.5, 1.0),
