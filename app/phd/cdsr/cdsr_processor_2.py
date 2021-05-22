@@ -351,7 +351,7 @@ def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
         if len(props) == 0:
             return None
         else:
-            return np.median([float(p["result.best.testMSE"]) for p in props])
+            return np.median([get_testMSE_bestOnValidSet_p(p) for p in props])
     def _getAvgSatisfiedRatios(props):
         if len(props) == 0:
             return None
@@ -374,6 +374,7 @@ def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
         fig_path = path + b + ".pdf"
 
         names, xs, ys = [], [], []
+        min_sat_ratio = None
         for conf in dim_cols:
             props_method = conf.filter_props(props_bench)
             if len(props_method) == 0:
@@ -383,6 +384,9 @@ def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
 
             y = math.log10(_get_median_testMSE(props_method))
             x = _getAvgSatisfiedRatios(props_method)  #use 'getAvgSatStochasticVerificator' for number of satisfied properties
+            if min_sat_ratio is None or x < min_sat_ratio:
+                min_sat_ratio = x  # for the x axis
+
             if x is None or y is None:
                 print("Data could not be plotted: {0}".format(name))
             else:
@@ -395,11 +399,14 @@ def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
 
 
         plt.clf()
-        fig, ax = plt.subplots()  #figsize=(12, 7)
+        fig, ax = plt.subplots(figsize=(12, 7))  #figsize=(12, 7)
         plt.title(str(b))
         plt.margins(0.01)  # Pad margins so that markers don't get clipped by the axes
-        plt.ylabel('Median MSE on test set')
+        plt.ylabel('Median MSE on test set (log10 scale)')
         plt.xlabel('Average ratio of satisfied properties')
+        min_sat_ratio_norm = round_decimals_down(min_sat_ratio, 1)
+        plt.xticks(np.arange(min_sat_ratio_norm, 1.01, 0.1))
+        plt.xlim((min_sat_ratio_norm, 1.0))
         plt.grid('on')
         plt.scatter(xs, ys)
         for i, txt in enumerate(names):
@@ -564,7 +571,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        color_value_extractor=scNotColorValueExtractor,
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
-        TableGenerator(get_median_testMSE_bestOnValiCDGP, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        TableGenerator(get_median_testMSE_bestOnValidCDGP, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Test set: MSE  (median); bestOnValidSet CDGP",
                        color_scheme=reporting.color_scheme_gray_dark,
                        default_color_thresholds=(-10.0, 0.0, 10.0),
@@ -873,7 +880,8 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     props = load_correct_props(folders)
     standardize_benchmark_names(props)
     dim_rows = get_benchmarks_from_props(props)
-    dim_rows += dim_rows.dim_true_within("ALL")
+    dim_rows_all = dim_rows.copy()
+    dim_rows_all += dim_rows.dim_true_within("ALL")
 
     dim_cols_scikit = dim_methodScikit
 
@@ -881,17 +889,17 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     dim_cols_ea = dim_methodGP + dim_cols_cdgp
     dim_cols = dim_methodScikit + dim_cols_ea
 
-
-    dim_cols += dim_cols.dim_true_within()
+    dim_cols_all = dim_cols.copy()
+    dim_cols_all += dim_cols.dim_true_within()
     dim_cols_ea += dim_cols_ea.dim_true_within()
     dim_cols_cdgp += dim_cols_cdgp.dim_true_within()
 
     headerRowNames = ["method", "weight"]
     subs = [
-        #(create_subsection_shared_stats, [props, "Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
-        #(create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows, dim_cols_scikit, 25, headerRowNames]),
-        #(create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
-        #(create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
+        (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 25, headerRowNames]),
+        (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows_all, dim_cols_scikit, 25, headerRowNames]),
+        (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
+        (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
         (create_subsection_figures_analysis, [props, dim_cols, dim_rows, "figures/"])
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),

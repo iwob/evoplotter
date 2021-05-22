@@ -430,19 +430,30 @@ def get_median_testMSE(props):
     else:
         median = np.median([float(p["result.best.testMSE"]) for p in props])
         return scientificNotationLatex(median)  # , np.std(vals)
-def get_median_testMSE_bestOnValiCDGP(props):
+def get_testMSE_bestOnValidSet_p(p):
+    """For a single dict p, returns a test MSE of the best solution on the valid set.
+     Checks, if best of run was better on valid set, since in some cases it terminates search in CDGP before best of valid is updated."""
+    if p["method"] in ["CDGP", "CDGPprops"]:
+        if "result.validation.best.testMSE" not in p:
+            print("No validation set logging!!!")
+            raise Exception("No validation set logging for file {0}".format(p["evoplotter.file"]))
+        else:
+            best_run = float(p["result.best.testMSE"])
+            best_valid = float(p["result.validation.best.testMSE"])
+            if best_run < best_valid:
+                return best_run  # it would update the best valid anyway, but was deemed to be a solution
+            else:
+                return best_valid
+    else:
+        return float(p["result.best.testMSE"])  # scikit algorithms
+
+def get_median_testMSE_bestOnValidCDGP(props):
     if len(props) == 0:
         return "-"
     else:
         res = []
         for p in props:
-            if p["method"] in ["CDGP", "CDGPprops"]:
-                if "result.validation.best.testMSE" not in p:
-                    print("No validation set logging!!!")
-                else:
-                    res.append(float(p["result.validation.best.testMSE"]))
-            else:
-                res.append(float(p["result.best.testMSE"]))
+            res.append(get_testMSE_bestOnValidSet_p(p))
         median = np.median(res)
         return scientificNotationLatex(median)  # , np.std(vals)
 def get_median_testMSE_noScNot(props):
@@ -868,3 +879,18 @@ def print_status_matrix(props, dim_rows, dim_cols):
     print(matrix + "\n")
     print("Saving status matrix to file: {0}".format(STATUS_FILE_NAME))
     utils.save_to_file(STATUS_FILE_NAME, matrix)
+
+
+def round_decimals_down(number:float, decimals:int=2):
+    """
+    Returns a value rounded down to a specific number of decimal places. Source: https://kodify.net/python/math/round-decimals/#round-decimal-places-down-in-python
+    """
+    if not isinstance(decimals, int):
+        raise TypeError("decimal places must be an integer")
+    elif decimals < 0:
+        raise ValueError("decimal places has to be 0 or more")
+    elif decimals == 0:
+        return math.floor(number)
+
+    factor = 10 ** decimals
+    return math.floor(number * factor) / factor
