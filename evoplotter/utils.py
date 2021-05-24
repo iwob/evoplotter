@@ -2,7 +2,23 @@ import os
 import shutil
 import subprocess
 from . import dims
+import pandas as pd
 
+
+def props_to_DataFrame(props, lambdas, pd_keys_names):
+    """Converts props to a pd.DataFrame by provided extractors (strings or lambdas taking a property and returning a value)."""
+    assert len(lambdas) == len(pd_keys_names), "Number of lambdas (extraction functions) must be the same as column names for pd.DataFrame"
+    # d = {key_name: [L(p) for p in props] for L, key_name in zip(lambdas, pd_keys_names)}
+    d = {}
+    for L, key_name in zip(lambdas, pd_keys_names):
+        if isinstance(L, str):
+            d[key_name] = [p[L] for p in props]
+        else:
+            d[key_name] = [L(p) for p in props]
+    return pd.DataFrame(d, columns=pd_keys_names)
+
+def DataFrame_to_props(df):
+    return df.to_dict('records')
 
 
 def get_unique_values(data, extr):

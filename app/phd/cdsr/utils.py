@@ -430,22 +430,33 @@ def get_median_testMSE(props):
     else:
         median = np.median([float(p["result.best.testMSE"]) for p in props])
         return scientificNotationLatex(median)  # , np.std(vals)
-def get_testMSE_bestOnValidSet_p(p):
-    """For a single dict p, returns a test MSE of the best solution on the valid set.
+def get_MSE_bestOnValidSet_p(p, outputKey):
+    """For a single dict p, returns a $outputKey (train | valid | test) MSE of the best solution on the valid set.
      Checks, if best of run was better on valid set, since in some cases it terminates search in CDGP before best of valid is updated."""
     if p["method"] in ["CDGP", "CDGPprops"]:
         if "result.validation.best.testMSE" not in p:
             print("No validation set logging!!!")
             raise Exception("No validation set logging for file {0}".format(p["evoplotter.file"]))
         else:
-            best_run = float(p["result.best.testMSE"])
-            best_valid = float(p["result.validation.best.testMSE"])
+            best_run = float(p["result.best.validMSE"])
+            best_valid = float(p["result.validation.best.validMSE"])
             if best_run < best_valid:
-                return best_run  # it would update the best valid anyway, but was deemed to be a solution
+                return float(p["result.best.{}".format(outputKey)])  # the best valid would be updated anyway, but was deemed to be a solution and search terminated
             else:
-                return best_valid
+                return float(p["result.validation.best.{}".format(outputKey)])
     else:
-        return float(p["result.best.testMSE"])  # scikit algorithms
+        k = "result.best.{}".format(outputKey)
+        if k in p:
+            return float(p[k])  # scikit algorithms
+        else:
+            return None
+
+def get_testMSE_bestOnValidSet_p(p):
+    return get_MSE_bestOnValidSet_p(p, "testMSE")
+def get_validMSE_bestOnValidSet_p(p):
+    return get_MSE_bestOnValidSet_p(p, "validMSE")
+def get_trainMSE_bestOnValidSet_p(p):
+    return get_MSE_bestOnValidSet_p(p, "trainMSE")
 
 def get_median_testMSE_bestOnValidCDGP(props):
     if len(props) == 0:

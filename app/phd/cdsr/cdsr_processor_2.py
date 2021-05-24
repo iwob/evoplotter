@@ -1,7 +1,9 @@
 import os
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from app.phd.cdsr.utils import *
+import evoplotter
 from evoplotter import utils
 from evoplotter import plotter
 from evoplotter import printer
@@ -398,6 +400,7 @@ def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
         # Idea: draw a cloud of all CDGP configs and where they landed
 
 
+        # Plotting in matplotlib
         plt.clf()
         fig, ax = plt.subplots(figsize=(12, 7))  #figsize=(12, 7)
         plt.title(str(b))
@@ -414,6 +417,11 @@ def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
         plt.savefig("reports/" + fig_path)
         # plt.show()
         plt.clf()
+
+        # Plotting in seaborn
+        import seaborn as sns
+        # sns.set_theme(style="darkgrid")
+        # sns.relplot(data=)
 
         section.add(reporting.BlockLatex(r"\includegraphics{"  + fig_path + r"}\\"))
 
@@ -786,6 +794,55 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
 
 
 
+def saveLogsAsCsv(props, dim_rows, dim_cols, path="data.csv"):
+    attributes = [
+        "evoplotter.file",
+        "benchmark",
+        "method",
+        "selection",
+        "testsRatio",
+        "partialConstraintsWeight",
+        "result.best",
+        "result.best.smtlib",
+        "result.best.size",
+        "result.best.correctVerification",
+        "result.best.passedConstraints",
+        "result.validation.best.passedConstraints",
+        "result.best.verificator.decisions",
+        "result.best.verificator.ratios",
+        "result.best.trainMSE",
+        "result.best.validMSE",
+        "result.best.testMSE",
+        (get_trainMSE_bestOnValidSet_p, "result.validation.best.trainMSE"),
+        (get_validMSE_bestOnValidSet_p, "result.validation.best.validMSE"),
+        (get_testMSE_bestOnValidSet_p, "result.validation.best.testMSE"),
+    ]
+    lambdas, key_names = [], []
+    for a in attributes:
+        if isinstance(a, tuple):
+            lambdas.append(a[0])
+            key_names.append(a[1])
+        else:  # vanilla dictionary key, create lambda for it
+            lambdas.append(lambda p, k=a: p[k] if k in p else None)
+            key_names.append(a)
+
+    frame = evoplotter.utils.props_to_DataFrame(props, lambdas, key_names)
+    frame.to_csv("reports/csv_data/{}".format(path), sep=";")
+
+
+    utils.ensure_dir("reports/csv_data/by_benchmarks/")
+    for config_b in dim_rows:
+        csv_path = "reports/csv_data/by_benchmarks/{}.csv".format(config_b.get_caption())
+        props_b = config_b.filter_props(props)
+        frame_b = evoplotter.utils.props_to_DataFrame(props_b, lambdas, key_names)
+        frame_b.to_csv(csv_path, sep=";")
+
+    return frame
+
+
+
+
+
 def reports_withNoise():
     title = "Experiments for regression CDGP and  baseline regressors from Scikit. A01 - with noise."
     desc = r"""
@@ -894,12 +951,14 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     dim_cols_ea += dim_cols_ea.dim_true_within()
     dim_cols_cdgp += dim_cols_cdgp.dim_true_within()
 
+    saveLogsAsCsv(props, dim_rows, dim_cols)
+
     headerRowNames = ["method", "weight"]
     subs = [
-        (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 25, headerRowNames]),
-        (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows_all, dim_cols_scikit, 25, headerRowNames]),
-        (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
-        (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
+        # (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 25, headerRowNames]),
+        # (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows_all, dim_cols_scikit, 25, headerRowNames]),
+        # (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
+        # (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
         (create_subsection_figures_analysis, [props, dim_cols, dim_rows, "figures/"])
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
@@ -928,6 +987,7 @@ breaklines=true
 if __name__ == "__main__":
     utils.ensure_clear_dir("reports/")
     utils.ensure_dir("reports/figures/")
+    utils.ensure_dir("reports/csv_data/")
     utils.ensure_dir("reports/listings/")
     # utils.ensure_dir("reports/tables/")
     utils.ensure_dir("reports/listings/errors/")
