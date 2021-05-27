@@ -609,6 +609,15 @@ def getAvgSatStochasticVerificator(props):
             raise Exception("No information about satisfied constraints")
     avgSat = float(sumSat) / len(props)
     return avgSat, numProps
+
+def getAvgSatRatioStochasticVerifier_p(p):
+    if "result.best.verificator.decisions" in p:
+        satVector = p["result.best.verificator.decisions"].split(",")
+        satVector = [float(s) for s in satVector]
+        return sum(satVector) / len(satVector)
+    else:
+        return None
+
 def getAvgSat(props):
     assert len(props) > 0
     # it is assumed that props contain only props with scikit runs

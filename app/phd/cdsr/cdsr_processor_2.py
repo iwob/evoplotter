@@ -342,32 +342,32 @@ def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowName
 
 
 
+def _get_median_testMSE(props):
+    if len(props) == 0:
+        return None
+    else:
+        return np.median([get_testMSE_bestOnValidSet_p(p) for p in props])
+def _getAvgSatisfiedRatios(props):
+    if len(props) == 0:
+        return None
+    sumSat = 0
+    numProps = None
+    for p in props:
+        satVector = p["result.best.verificator.ratios"].split(",")
+        satVector = [float(s) for s in satVector]
+        sumSat += sum(satVector)
+        numProps = len(satVector)
+    avgSat = float(sumSat) / len(props)
+    avgSat = avgSat / numProps
+    return avgSat
+
+
 def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
     """Creates a section filled with figures placed under appropriate paths."""
     if path[-1] != "/":
         path += "/"
 
     section = reporting.Section("Figures", [])
-
-    def _get_median_testMSE(props):
-        if len(props) == 0:
-            return None
-        else:
-            return np.median([get_testMSE_bestOnValidSet_p(p) for p in props])
-    def _getAvgSatisfiedRatios(props):
-        if len(props) == 0:
-            return None
-        sumSat = 0
-        numProps = None
-        for p in props:
-            satVector = p["result.best.verificator.ratios"].split(",")
-            satVector = [float(s) for s in satVector]
-            sumSat += sum(satVector)
-            numProps = len(satVector)
-        avgSat = float(sumSat) / len(props)
-        avgSat = avgSat / numProps
-        return avgSat
-
 
     # 2-dimensional scatter plot, a different one per bechmark: percent of satisfied properties vs error on test set
     for b_config in dim_benchmarks:
@@ -384,10 +384,10 @@ def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
 
             name = conf.get_caption(sep="_")
 
-            y = math.log10(_get_median_testMSE(props_method))
-            x = _getAvgSatisfiedRatios(props_method)  #use 'getAvgSatStochasticVerificator' for number of satisfied properties
-            if min_sat_ratio is None or x < min_sat_ratio:
-                min_sat_ratio = x  # for the x axis
+            x = math.log10(_get_median_testMSE(props_method))
+            y = _getAvgSatisfiedRatios(props_method)  #use 'getAvgSatStochasticVerificator' for number of satisfied properties
+            if min_sat_ratio is None or y < min_sat_ratio:
+                min_sat_ratio = y  # for the x axis
 
             if x is None or y is None:
                 print("Data could not be plotted: {0}".format(name))
@@ -405,15 +405,20 @@ def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
         fig, ax = plt.subplots(figsize=(12, 7))  #figsize=(12, 7)
         plt.title(str(b))
         plt.margins(0.01)  # Pad margins so that markers don't get clipped by the axes
-        plt.ylabel('Median MSE on test set (log10 scale)')
-        plt.xlabel('Average ratio of satisfied properties')
+        plt.xlabel('Median MSE on test set (log10 scale)')
+        plt.ylabel('Average ratio of satisfied properties')
         min_sat_ratio_norm = round_decimals_down(min_sat_ratio, 1)
-        plt.xticks(np.arange(min_sat_ratio_norm, 1.01, 0.1))
-        plt.xlim((min_sat_ratio_norm, 1.0))
+        plt.yticks(np.arange(min_sat_ratio_norm, 1.01, 0.1))
+        plt.ylim((min_sat_ratio_norm, 1.0))
         plt.grid('on')
         plt.scatter(xs, ys)
         for i, txt in enumerate(names):
             ax.annotate(txt, (xs[i], ys[i]))
+
+
+        # Drawing small points for CDGP configs
+        # TODO
+
         plt.savefig("reports/" + fig_path)
         # plt.show()
         plt.clf()
@@ -426,6 +431,111 @@ def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
         section.add(reporting.BlockLatex(r"\includegraphics{"  + fig_path + r"}\\"))
 
     return section
+
+
+
+
+def create_subsection_figures_analysis_seaborn(dataFrame, path):
+    """Creates a section filled with figures placed under appropriate paths."""
+    if path[-1] != "/":
+        path += "/"
+
+    section = reporting.Section("Figures", [])
+
+    # "evoplotter.file",
+    # "benchmark",
+    # "method",
+    # "selection",
+    # "testsRatio",
+    # "partialConstraintsWeight",
+    # "result.best",
+    # "result.best.smtlib",
+    # "result.best.size",
+    # "result.best.correctVerification",
+    # "result.best.passedConstraints",
+    # "result.validation.best.passedConstraints",
+    # "result.best.verificator.decisions",
+    # "result.best.verificator.ratios",
+    # (getAvgSatRatioStochasticVerifier_p, "result.best.verificator.satRatio"),
+    # "result.best.trainMSE",
+    # "result.best.validMSE",
+    # "result.best.testMSE",
+    # (get_trainMSE_bestOnValidSet_p, "result.validation.best.trainMSE"),
+    # (get_validMSE_bestOnValidSet_p, "result.validation.best.validMSE"),
+    # (get_testMSE_bestOnValidSet_p, "result.validation.best.testMSE"),
+    import seaborn as sns
+    # g = sns.FacetGrid(dataFrame, row="benchmark")
+    # g.map(sns.scatterplot, x="result.best.testMSE", y="result.best.verificator.satRatio", hue="method")
+    x = math.log10(dataFrame["result.best.testMSE"])
+    sns_plot = sns.relplot(data=dataFrame, x=x, y="result.best.verificator.satRatio", hue=dataFrame["method"].tolist())
+    fig_path = path + "scatterplot" + ".pdf"
+    sns_plot.savefig(fig_path)
+    section.add(reporting.BlockLatex(r"\includegraphics{" + fig_path + r"}\\"))
+
+
+    # 2-dimensional scatter plot, a different one per bechmark: percent of satisfied properties vs error on test set
+    # for b_config in dim_benchmarks:
+    #     props_bench = b_config.filter_props(props)
+    #     b = b_config.get_caption(sep="_")
+    #     fig_path = path + b + ".pdf"
+    #
+    #     names, xs, ys = [], [], []
+    #     min_sat_ratio = None
+    #     for conf in dim_cols:
+    #         props_method = conf.filter_props(props_bench)
+    #         if len(props_method) == 0:
+    #             continue
+    #
+    #         name = conf.get_caption(sep="_")
+    #
+    #         x = math.log10(_get_median_testMSE(props_method))
+    #         y = _getAvgSatisfiedRatios(props_method)  #use 'getAvgSatStochasticVerificator' for number of satisfied properties
+    #         if min_sat_ratio is None or y < min_sat_ratio:
+    #             min_sat_ratio = y  # for the x axis
+    #
+    #         if x is None or y is None:
+    #             print("Data could not be plotted: {0}".format(name))
+    #         else:
+    #             names.append(name)
+    #             xs.append(x)
+    #             ys.append(y)
+    #
+    #
+    #     # Idea: draw a cloud of all CDGP configs and where they landed
+    #
+    #
+    #     # Plotting in matplotlib
+    #     plt.clf()
+    #     fig, ax = plt.subplots(figsize=(12, 7))  #figsize=(12, 7)
+    #     plt.title(str(b))
+    #     plt.margins(0.01)  # Pad margins so that markers don't get clipped by the axes
+    #     plt.xlabel('Median MSE on test set (log10 scale)')
+    #     plt.ylabel('Average ratio of satisfied properties')
+    #     min_sat_ratio_norm = round_decimals_down(min_sat_ratio, 1)
+    #     plt.yticks(np.arange(min_sat_ratio_norm, 1.01, 0.1))
+    #     plt.ylim((min_sat_ratio_norm, 1.0))
+    #     plt.grid('on')
+    #     plt.scatter(xs, ys)
+    #     for i, txt in enumerate(names):
+    #         ax.annotate(txt, (xs[i], ys[i]))
+    #
+    #
+    #     # Drawing small points for CDGP configs
+    #     # TODO
+    #
+    #     plt.savefig("reports/" + fig_path)
+    #     # plt.show()
+    #     plt.clf()
+
+    # Plotting in seaborn
+    import seaborn as sns
+    # sns.set_theme(style="darkgrid")
+    # sns.relplot(data=)
+
+    # section.add(reporting.BlockLatex(r"\includegraphics{"  + fig_path + r"}\\"))
+
+    return section
+
 
 
 
@@ -793,8 +903,7 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
     return reporting.Subsection(title, get_content_of_subsections(subsects_cdgp))
 
 
-
-def saveLogsAsCsv(props, dim_rows, dim_cols, path="data.csv"):
+def convertPropsToDataFrame(props):
     attributes = [
         "evoplotter.file",
         "benchmark",
@@ -810,6 +919,7 @@ def saveLogsAsCsv(props, dim_rows, dim_cols, path="data.csv"):
         "result.validation.best.passedConstraints",
         "result.best.verificator.decisions",
         "result.best.verificator.ratios",
+        (getAvgSatRatioStochasticVerifier_p, "result.best.verificator.satRatio"),
         "result.best.trainMSE",
         "result.best.validMSE",
         "result.best.testMSE",
@@ -827,14 +937,25 @@ def saveLogsAsCsv(props, dim_rows, dim_cols, path="data.csv"):
             key_names.append(a)
 
     frame = evoplotter.utils.props_to_DataFrame(props, lambdas, key_names)
+    return frame
+
+
+def saveLogsAsCsv(props, dim_rows, dim_cols, path="data.csv", frame=None):
+    if frame is None:
+        frame = convertPropsToDataFrame(props)
     frame.to_csv("reports/csv_data/{}".format(path), sep=";")
 
+    # utils.ensure_dir("reports/csv_data/by_benchmarks/")
+    # for config_b in dim_rows:
+    #     csv_path = "reports/csv_data/by_benchmarks/{}.csv".format(config_b.get_caption())
+    #     props_b = config_b.filter_props(props)
+    #     frame_b = evoplotter.utils.props_to_DataFrame(props_b, lambdas, key_names)
+    #     frame_b.to_csv(csv_path, sep=";")
 
     utils.ensure_dir("reports/csv_data/by_benchmarks/")
-    for config_b in dim_rows:
-        csv_path = "reports/csv_data/by_benchmarks/{}.csv".format(config_b.get_caption())
-        props_b = config_b.filter_props(props)
-        frame_b = evoplotter.utils.props_to_DataFrame(props_b, lambdas, key_names)
+    for b in frame["benchmark"].unique():
+        csv_path = "reports/csv_data/by_benchmarks/{}.csv".format(b)
+        frame_b = frame.loc[frame['benchmark'] == b]
         frame_b.to_csv(csv_path, sep=";")
 
     return frame
@@ -951,7 +1072,9 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     dim_cols_ea += dim_cols_ea.dim_true_within()
     dim_cols_cdgp += dim_cols_cdgp.dim_true_within()
 
-    saveLogsAsCsv(props, dim_rows, dim_cols)
+
+    dataFrame = convertPropsToDataFrame(props)
+    saveLogsAsCsv(props, dim_rows, dim_cols, frame=dataFrame)
 
     headerRowNames = ["method", "weight"]
     subs = [
@@ -959,7 +1082,8 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
         # (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows_all, dim_cols_scikit, 25, headerRowNames]),
         # (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
         # (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
-        (create_subsection_figures_analysis, [props, dim_cols, dim_rows, "figures/"])
+        # (create_subsection_figures_analysis, [props, dim_cols, dim_rows, "figures/"]),
+        (create_subsection_figures_analysis_seaborn, [dataFrame, "figures/"]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]
