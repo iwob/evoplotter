@@ -350,6 +350,8 @@ def _get_median_testMSE(props):
 def _getAvgSatisfiedRatios(props):
     if len(props) == 0:
         return None
+    elif any(["result.best.verificator.ratios" not in p for p in props]):
+        return "n/a"
     sumSat = 0
     numProps = None
     for p in props:
@@ -362,7 +364,7 @@ def _getAvgSatisfiedRatios(props):
     return avgSat
 
 
-def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
+def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path, dir_path):
     """Creates a section filled with figures placed under appropriate paths."""
     if path[-1] != "/":
         path += "/"
@@ -419,7 +421,7 @@ def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
         # Drawing small points for CDGP configs
         # TODO
 
-        plt.savefig("reports/" + fig_path)
+        plt.savefig(dir_path + fig_path)
         # plt.show()
         plt.clf()
 
@@ -428,7 +430,7 @@ def create_subsection_figures_analysis(props, dim_cols, dim_benchmarks, path):
         # sns.set_theme(style="darkgrid")
         # sns.relplot(data=)
 
-        section.add(reporting.BlockLatex(r"\includegraphics{"  + fig_path + r"}\\"))
+        section.add(reporting.BlockLatex(r"\includegraphics{" + fig_path + r"}\\"))
 
     return section
 
@@ -539,7 +541,7 @@ def create_subsection_figures_analysis_seaborn(dataFrame, path):
 
 
 
-def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix):
+def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix, dir_path):
     if len(props) == 0:
         print("No props: plots were not generated.")
         return
@@ -940,21 +942,21 @@ def convertPropsToDataFrame(props):
     return frame
 
 
-def saveLogsAsCsv(props, dim_rows, dim_cols, path="data.csv", frame=None):
+def saveLogsAsCsv(props, dim_rows, dim_cols, dir_path, path="data.csv", frame=None):
     if frame is None:
         frame = convertPropsToDataFrame(props)
-    frame.to_csv("reports/csv_data/{}".format(path), sep=";")
+    frame.to_csv("{}csv_data/{}".format(dir_path, path), sep=";")
 
-    # utils.ensure_dir("reports/csv_data/by_benchmarks/")
+    # utils.ensure_dir("{}csv_data/by_benchmarks/".format(dir_path))
     # for config_b in dim_rows:
-    #     csv_path = "reports/csv_data/by_benchmarks/{}.csv".format(config_b.get_caption())
+    #     csv_path = "{}csv_data/by_benchmarks/{}.csv".format(dir_path, config_b.get_caption())
     #     props_b = config_b.filter_props(props)
     #     frame_b = evoplotter.utils.props_to_DataFrame(props_b, lambdas, key_names)
     #     frame_b.to_csv(csv_path, sep=";")
 
-    utils.ensure_dir("reports/csv_data/by_benchmarks/")
+    utils.ensure_dir("{}csv_data/by_benchmarks/".format(dir_path))
     for b in frame["benchmark"].unique():
-        csv_path = "reports/csv_data/by_benchmarks/{}.csv".format(b)
+        csv_path = "{}csv_data/by_benchmarks/{}.csv".format(dir_path, b)
         frame_b = frame.loc[frame['benchmark'] == b]
         frame_b.to_csv(csv_path, sep=";")
 
@@ -962,85 +964,16 @@ def saveLogsAsCsv(props, dim_rows, dim_cols, path="data.csv", frame=None):
 
 
 
+def reports_universal(folders, dir_path="reports/", caption="report"):
+    if dir_path[-1] != "/":
+        dir_path += "/"
+    utils.ensure_clear_dir("{}".format(dir_path))
+    utils.ensure_dir("{}figures/".format(dir_path))
+    utils.ensure_dir("{}csv_data/".format(dir_path))
+    utils.ensure_dir("{}listings/".format(dir_path))
+    # utils.ensure_dir("{}tables/".format(dir_path))
+    utils.ensure_dir("{}listings/errors/".format(dir_path))
 
-
-def reports_withNoise():
-    title = "Experiments for regression CDGP and  baseline regressors from Scikit. A01 - with noise."
-    desc = r"""
-\parbox{30cm}{
-Training set: 300\\
-Validation set (GP/CDGP only): 75\\
-Test set: 125\\
-
-Sets were shuffled randomly from the 500 cases present in each generated benchmark.
-In this experiment, A01, noise is already present in the benchmark and is generated from the normal distribution
-with mean at the original value and standard deviation at 1% of the value.
-}
-
-\begin{lstlisting}[breaklines]
-# shared_dims={'benchmark': ['benchmarks/gpem/withNoise/keijzer5_500.sl', 'benchmarks/gpem/withNoise/nguyen4_500.sl', 'benchmarks/gpem/withNoise/resistance_par2_500.sl', 'benchmarks/gpem/withNoise/pagie1_500.sl', 'benchmarks/gpem/withNoise/keijzer15_500.sl', 'benchmarks/gpem/withNoise/nguyen3_500.sl', 'benchmarks/gpem/withNoise/gravity_500.sl', 'benchmarks/gpem/withNoise/keijzer12_500.sl', 'benchmarks/gpem/withNoise/nguyen1_500.sl', 'benchmarks/gpem/withNoise/keijzer14_500.sl', 'benchmarks/gpem/withNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
-# dims_cdgp = {'method': ['CDGP'], 'testsRatio': [1.0], 'testsTypesForRatio': ['i'], 'benchmark': ['benchmarks/gpem/withNoise/keijzer5_500.sl', 'benchmarks/gpem/withNoise/nguyen4_500.sl', 'benchmarks/gpem/withNoise/resistance_par2_500.sl', 'benchmarks/gpem/withNoise/pagie1_500.sl', 'benchmarks/gpem/withNoise/keijzer15_500.sl', 'benchmarks/gpem/withNoise/nguyen3_500.sl', 'benchmarks/gpem/withNoise/gravity_500.sl', 'benchmarks/gpem/withNoise/keijzer12_500.sl', 'benchmarks/gpem/withNoise/nguyen1_500.sl', 'benchmarks/gpem/withNoise/keijzer14_500.sl', 'benchmarks/gpem/withNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
-# dims_cdgp = {'method': ['CDGPprops'], 'testsRatio': [1.0], 'testsTypesForRatio': ['i'], 'partialConstraintsWeight': [1, 5], 'benchmark': ['benchmarks/gpem/withNoise/keijzer5_500.sl', 'benchmarks/gpem/withNoise/nguyen4_500.sl', 'benchmarks/gpem/withNoise/resistance_par2_500.sl', 'benchmarks/gpem/withNoise/pagie1_500.sl', 'benchmarks/gpem/withNoise/keijzer15_500.sl', 'benchmarks/gpem/withNoise/nguyen3_500.sl', 'benchmarks/gpem/withNoise/gravity_500.sl', 'benchmarks/gpem/withNoise/keijzer12_500.sl', 'benchmarks/gpem/withNoise/nguyen1_500.sl', 'benchmarks/gpem/withNoise/keijzer14_500.sl', 'benchmarks/gpem/withNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
-# dims_gp = {'method': ['GP'], 'benchmark': ['benchmarks/gpem/withNoise/keijzer5_500.sl', 'benchmarks/gpem/withNoise/nguyen4_500.sl', 'benchmarks/gpem/withNoise/resistance_par2_500.sl', 'benchmarks/gpem/withNoise/pagie1_500.sl', 'benchmarks/gpem/withNoise/keijzer15_500.sl', 'benchmarks/gpem/withNoise/nguyen3_500.sl', 'benchmarks/gpem/withNoise/gravity_500.sl', 'benchmarks/gpem/withNoise/keijzer12_500.sl', 'benchmarks/gpem/withNoise/nguyen1_500.sl', 'benchmarks/gpem/withNoise/keijzer14_500.sl', 'benchmarks/gpem/withNoise/resistance_par3_500.sl'], 'selection': ['lexicase'], 'evolutionMode': ['steadyState'], 'populationSize': [500], 'optThreshold': [0.0], 'sizeTrainSet': [300], 'maxRestarts': [1], 'maxGenerations': [200]}
-# 
-# opt={'seed': '$RANDOM', 'maxTime': 1800000, 'tournamentSize': 7, 'tournamentDeselectSize': 7, 'populationSize': 500, 'initMaxTreeDepth': 4, 'maxSubtreeDepth': 4, 'maxTreeDepth': 12, 'stoppingDepthRatio': 0.8, 'operatorProbs': '0.5,0.5', 'deleteOutputFile': 'true', 'parEval': 'false', 'maxNewTestsPerIter': 10, 'silent': 'true', 'solverPath': "'solver/z3'", 'solverType': 'z3', 'maxSolverRestarts': 2, 'regression': 'true', 'saveTests': 'true', 'outDir': 'phd_A01', 'solverTimeout': 3000, 'notes': "'gpem19_A01'", 'noiseDeltaX': 0.0, 'noiseDeltaY': 0.0, 'sizeValidationSet': 75, 'sizeTestSet': 125, 'notImprovedWindow': 1000, 'reportFreq': 200}
-\end{lstlisting}
-
-NOTE: for steady state, maxGenerations is multiplied by populationSize. 
-"""
-
-    # folders = ["exp3", "regression_results_withNoise"]  # "regression_results_noNoise"
-    folders = ["CDSR_logs/phd_A01", "CDSR_logs/phd_A01_run2", "results_scikit_withNoise"]  # "regression_results_noNoise"
-    desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
-    props = load_correct_props(folders)
-    standardize_benchmark_names(props)
-    dim_rows = get_benchmarks_from_props(props)
-    dim_rows += dim_rows.dim_true_within("ALL")
-
-    dim_cols_scikit = dim_methodScikit
-
-    dim_cols = dim_methodScikit + dim_methodGP + dim_methodCDGP + dim_methodCDGPprops*dim_weight
-    dim_cols += dim_cols.dim_true_within()
-
-    dim_cols_ea = dim_methodGP + dim_methodCDGP + dim_methodCDGPprops * dim_weight
-    dim_cols_ea += dim_cols_ea.dim_true_within()
-
-    dim_cols_cdgp = dim_methodCDGP + dim_methodCDGPprops*dim_weight
-    dim_cols_cdgp += dim_cols_cdgp.dim_true_within()
-
-    headerRowNames = ["method", "weight"]
-    subs = [
-        (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows, dim_cols, 25, headerRowNames]),
-        (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows, dim_cols_scikit, 25, headerRowNames]),
-        (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows, dim_cols_ea, headerRowNames]),
-        (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows, dim_cols_cdgp, headerRowNames]),
-        # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
-        # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
-    ]
-    sects = [(title, desc, subs, [])]
-
-
-    save_listings(props, dim_rows, dim_cols)
-    user_declarations = r"""\definecolor{darkred}{rgb}{0.56, 0.05, 0.0}
-\definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0}
-\definecolor{darkblue}{rgb}{0.0, 0.0, 0.55}
-\definecolor{darkorange}{rgb}{0.93, 0.53, 0.18}
-
-\usepackage{listings}
-\lstset{
-basicstyle=\small\ttfamily,
-columns=flexible,
-breaklines=true
-}
-"""
-    templates.prepare_report(sects, "cdsr_withNoise.tex", dir_path="reports/", paperwidth=190, user_declarations=user_declarations)
-
-
-
-
-
-
-def reports_noNoise():
     title = "Experiments for regression CDGP and  baseline regressors from Scikit."
     desc = r"""
 \parbox{30cm}{
@@ -1053,9 +986,8 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
 
 """
 
-    folders = ["results_thesis/noNoise/", "results_scikit_noNoise"]
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
-    props = load_correct_props(folders)
+    props = load_correct_props(folders, dir_path)
     standardize_benchmark_names(props)
     dim_rows = get_benchmarks_from_props(props)
     dim_rows_all = dim_rows.copy()
@@ -1074,23 +1006,23 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
 
 
     dataFrame = convertPropsToDataFrame(props)
-    saveLogsAsCsv(props, dim_rows, dim_cols, frame=dataFrame)
+    saveLogsAsCsv(props, dim_rows, dim_cols, dir_path=dir_path, frame=dataFrame)
 
     headerRowNames = ["method", "weight"]
     subs = [
-        # (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 25, headerRowNames]),
-        # (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows_all, dim_cols_scikit, 25, headerRowNames]),
+        (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 25, headerRowNames]),
+        (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows_all, dim_cols_scikit, 25, headerRowNames]),
         # (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
         # (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
         # (create_subsection_figures_analysis, [props, dim_cols, dim_rows, "figures/"]),
-        (create_subsection_figures_analysis_seaborn, [dataFrame, "figures/"]),
+        # (create_subsection_figures_analysis, [dataFrame, "figures/"]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]
     sects = [(title, desc, subs, [])]
 
 
-    save_listings(props, dim_rows, dim_cols)
+    save_listings(props, dim_rows, dim_cols, dir_path=dir_path)
     user_declarations = r"""\definecolor{darkred}{rgb}{0.56, 0.05, 0.0}
 \definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0}
 \definecolor{darkblue}{rgb}{0.0, 0.0, 0.55}
@@ -1103,18 +1035,21 @@ columns=flexible,
 breaklines=true
 }
 """
-    templates.prepare_report(sects, "cdsr_noNoise.tex", dir_path="reports/", paperwidth=190, user_declarations=user_declarations)
+    templates.prepare_report(sects, "cdsr_{}.tex".format(caption), dir_path=dir_path, paperwidth=190, user_declarations=user_declarations)
 
+
+
+def reports_noNoise():
+    folders = ["results_thesis/noNoise/"]
+    reports_universal(folders=folders, dir_path="reports/noNoise/", caption="noNoise")
+
+def reports_withNoise():
+    folders = ["results_thesis/withNoise/"]
+    reports_universal(folders=folders, dir_path="reports/withNoise/", caption="withNoise")
 
 
 
 if __name__ == "__main__":
     utils.ensure_clear_dir("reports/")
-    utils.ensure_dir("reports/figures/")
-    utils.ensure_dir("reports/csv_data/")
-    utils.ensure_dir("reports/listings/")
-    # utils.ensure_dir("reports/tables/")
-    utils.ensure_dir("reports/listings/errors/")
-
-    # reports_withNoise()
     reports_noNoise()
+    reports_withNoise()

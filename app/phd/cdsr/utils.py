@@ -7,8 +7,6 @@ import numpy as np
 
 
 CHECK_CORRECTNESS_OF_FILES = 1
-STATUS_FILE_NAME = "reports/status.txt"
-
 
 
 
@@ -22,8 +20,8 @@ def print_props_filenames(props):
             print("'thisFileName' not specified! Printing content instead: " + str(p))
 
 
-def create_errors_listing(error_props, filename):
-    f = open("reports/listings/{0}".format(filename), "w")
+def create_errors_listing(error_props, filename, dir_path):
+    f = open("{}listings/{}".format(dir_path, filename), "w")
     print("Creating log of errors ({0})...".format(filename))
     for i, p in enumerate(error_props):
         if i > 0:
@@ -34,10 +32,10 @@ def create_errors_listing(error_props, filename):
     f.close()
 
 
-def create_errors_solver_listing(error_props, filename, pred=None):
+def create_errors_solver_listing(error_props, filename, dir_path, pred=None):
     if pred is None:
         pred = lambda x: True
-    f = open("reports/listings/{0}".format(filename), "w")
+    f = open("{}listings/{}".format(dir_path, filename), "w")
     print("Creating log of errors ({0})...".format(filename))
     for i, p in enumerate(error_props):
         if not pred(p):  # ignore properties with certain features, e.g., types of errors
@@ -52,7 +50,7 @@ def create_errors_solver_listing(error_props, filename, pred=None):
             f.write(content)
     f.close()
 
-def load_correct_props(folders, exts=None):
+def load_correct_props(folders, dir_path, exts=None):
     # if exts is None:
     #     exts = [".cdgp"]
     props_cdgpError = utils.load_properties_dirs(folders, exts=[".cdgp.error"], add_file_path=True)
@@ -90,19 +88,19 @@ def load_correct_props(folders, exts=None):
     # delete_logs(props_cdgpError, fun, simulate=True)
 
 
-    create_errors_solver_listing(props_cdgpError, "errors_solver.txt")
+    create_errors_solver_listing(props_cdgpError, filename="errors_solver.txt", dir_path=dir_path)
     # Terminating program due to time limit may trigger solver manager in CDGP, which shows as solver error.
     # This type of error can be recognized by the "No line found" message, so we create here a file without those false positives.
     def predSolverIssue(p):
         return "terminatingException" not in p or \
                ("No line found" not in p["terminatingException"] and "model is not available" not in p["terminatingException"])
-    create_errors_solver_listing(props_cdgpError, "errors_solver_issues.txt", predSolverIssue)
+    create_errors_solver_listing(props_cdgpError, filename="errors_solver_issues.txt", dir_path=dir_path, pred=predSolverIssue)
 
 
     # Printing names of files which finished with error status or are incomplete.
     if CHECK_CORRECTNESS_OF_FILES:
         props_errors = [p for p in props0 if not is_correct(p)]
-        create_errors_listing(props_errors, "errors_run.txt")
+        create_errors_listing(props_errors, filename="errors_run.txt", dir_path=dir_path)
         if len(props_errors) > 0:
             print("Files with error status:")
             print_props_filenames(props_errors)
@@ -129,18 +127,18 @@ def produce_status_matrix(dim, props):
 
 
 
-def save_listings(props, dim_rows, dim_cols):
+def save_listings(props, dim_rows, dim_cols, dir_path):
     """Saves listings of various useful info to separate text files."""
     assert isinstance(dim_rows, Dim)
     assert isinstance(dim_cols, Dim)
-    utils.ensure_dir("reports/listings/errors/")
+    utils.ensure_dir("{}listings/errors/".format(dir_path))
 
     # Saving optimal verified solutions
     for dr in dim_rows:
         bench = dr.get_caption()
         bench = bench[:bench.rfind(".")] if "." in bench else bench
-        f = open("reports/listings/verified_{0}.txt".format(bench), "w")
-        f_errors = open("reports/listings/errors/verified_{0}.txt".format(bench), "w")
+        f = open("{}listings/verified_{}.txt".format(dir_path, bench), "w")
+        f_errors = open("{}listings/errors/verified_{}.txt".format(dir_path, bench), "w")
 
         props_bench = dr.filter_props(props)
         for dc in dim_cols:
@@ -596,6 +594,8 @@ def get_sum_solverRestarts(props):
         return str(np.sum(vals))
 def getAvgSatStochasticVerificator(props):
     assert len(props) > 0
+    if any(["result.best.verificator.decisions" not in p for p in props]):
+        return "n/a"
     # it is assumed that props contain only props with scikit runs
     sumSat = 0
     numProps = None
@@ -892,13 +892,13 @@ def print_solved_in_time(props, upper_time):
     print("Optimal solutions found under {0} s:  {1} / {2}  ({3} %)\n".format(upper_time / 1000.0, solved, num, solved / num))
 
 
-def print_status_matrix(props, dim_rows, dim_cols):
+def print_and_save_status_matrix(props, dim_rows, dim_cols, dir_path):
     d = dim_rows * dim_cols
     matrix = produce_status_matrix(d, props)
     print("\n****** Status matrix:")
     print(matrix + "\n")
-    print("Saving status matrix to file: {0}".format(STATUS_FILE_NAME))
-    utils.save_to_file(STATUS_FILE_NAME, matrix)
+    print("Saving status matrix to file: {0}".format("{}status.txt".format(dir_path)))
+    utils.save_to_file("{}status.txt".format(dir_path), matrix)
 
 
 def round_decimals_down(number:float, decimals:int=2):
