@@ -644,13 +644,13 @@ def getAvgSat(props):
             raise Exception("No information about satisfied constraints")
     avgSat = float(sumSat) / len(props)
     return avgSat, numProps
-def getAvgSatisfiedPropsForScikit1(props):
+def getAvgSatisfiedProps1(props):
     if len(props) == 0:
         return "-"
     avgSat, numProps = getAvgSat(props)
     avgSat = avgSat / numProps
     return "{0}".format("%0.2f" % avgSat)
-def getAvgSatisfiedPropsForScikit2(props):
+def getAvgSatisfiedProps2(props):
     if len(props) == 0:
         return "-"
     avgSat, numProps = getAvgSat(props)

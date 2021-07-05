@@ -40,7 +40,7 @@ class LatexTextit(LatexCommand):
 
 class CellShading(CellRenderer):
     def __init__(self, MinNumber, MidNumber, MaxNumber, MinColor="colorLow", MidColor="colorMedium",
-                 MaxColor="colorHigh"):
+                 MaxColor="colorHigh", valueExtractor=None):
         """
         :param MinNumber: (float) below or equal to this value everything will be colored fully with MinColor.
           Higher values will be gradiented towards MidColor.
@@ -50,8 +50,11 @@ class CellShading(CellRenderer):
         :param MinColor: (str) name of the LaTeX color representing the lowest value.
         :param MidColor: (str) name of the LaTeX color representing the middle value. This color is also used for
           gradient, that is closer a given cell value is to the MidNumber, more MidColor'ed it becomes.
-        :param MaxColor: (str) name of the LaTeX color representing the highest value."""
+        :param MaxColor: (str) name of the LaTeX color representing the highest value.
+        :param valueExtractor: (lambda) extracts a value from a table cell in order to apply shading to that value. Should return float."""
         def color_cell(v, body):
+            if valueExtractor is not None:
+                v = valueExtractor(v)
             if isinstance(v, str) and (v == "-" or v == "-" or v.strip().lower() == "nan" or not utils.isfloat(v.strip())):
                 return v
             else:

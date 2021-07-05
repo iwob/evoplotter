@@ -107,15 +107,15 @@ dim_methodGP = Dim([
     # Config("$GP_{1000}$", p_dict_matcher({"method": "GP", "populationSize": "1000"}), method="GP1000"),
     # Config("$GP_{5000}$", p_dict_matcher({"method": "GP", "populationSize": "5000"}), method="GP5000"),
 ])
-scikit_algs = ["AdaBoostRegressor", "XGBoost", "SGDRegressor", "RandomForestRegressor", "MLPRegressor",
-        "LinearSVR", "LinearRegression", "LassoLars", "KernelRidge", "GradientBoostingRegressor"] # , "GSGP"  - not used due to issues
+scikit_algs = sorted(["AdaBoostRegressor", "XGBoost", "SGDRegressor", "RandomForestRegressor", "MLPRegressor",
+        "LinearSVR", "LinearRegression", "LassoLars", "KernelRidge", "GradientBoostingRegressor"]) # , "GSGP"  - not used due to issues
 dim_methodScikit = Dim([Config(sa.replace("Regressor","").replace("Regression",""), p_dict_matcher({"method": sa}), method=sa) for sa in scikit_algs])
 dim_method = dim_methodScikit + dim_methodCDGP + dim_methodCDGPprops + dim_methodGP
 dim_sel = Dim([Config("$Tour$", p_sel_tourn, selection="tournament"),
                Config("$Lex$", p_sel_lexicase, selection="lexicase")])
 # dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
 #                    Config("$generational$", p_generational, evolutionMode="generational")])
-dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState")])
+dim_evoMode = Dim([Config("$generational$", p_generational, evolutionMode="generational")])
 dim_testsRatio = Dim([
     Config("$0.75$", p_testsRatio_equalTo("0.75"), testsRatio="0.75"),
     Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0"),
@@ -539,6 +539,12 @@ def create_subsection_figures_analysis_seaborn(dataFrame, path):
     return section
 
 
+def scNotColorValueExtractor(s):
+    if s == "-" or "10^{" not in s:
+        return s
+    else:
+        r = s.split("10^{")
+        return r[1][:-2]
 
 
 def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix, dir_path):
@@ -583,14 +589,14 @@ def create_subsection_scikit(props, title, dim_rows, dim_cols, numRuns, headerRo
     variants = None  # variants_benchmarkNumTests
 
     tables = [
-        TableGenerator(getAvgSatisfiedPropsForScikit1,
+        TableGenerator(getAvgSatisfiedProps1,
                        dim_rows, dim_cols,
                        title="Average ratio of satisfied properties",
                        color_scheme=reporting.color_scheme_green,
                        default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
-        TableGenerator(getAvgSatisfiedPropsForScikit2,
+        TableGenerator(getAvgSatisfiedProps2,
                        dim_rows, dim_cols,
                        title="Average number of satisfied properties",
                        vertical_border=vb, table_postprocessor=post, variants=variants,
@@ -613,6 +619,29 @@ def create_subsection_scikit(props, title, dim_rows, dim_cols, numRuns, headerRo
     return createSubsectionWithTables(title, tables, props)
 
 
+def create_subsection_shared_status(props, title, dim_rows, dim_cols, numRuns, headerRowNames):
+    vb = 1  # vertical border
+    variants = None  # variants_benchmarkNumTests
+    dim_rows_v2 = get_benchmarks_from_props(props, ignoreNumTests=True)
+    tables = [
+        TableGenerator(get_num_computed, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Status (correctly finished runs)",
+                       color_scheme=reversed(reporting.color_scheme_red),
+                       default_color_thresholds=(0.0, numRuns / 2, numRuns),
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       )
+    ]
+
+
+    subsects_main = []
+    for t in tables:
+        tup = (t.title, t.apply(props), t.color_scheme)
+        subsects_main.append(tup)
+
+    return reporting.Subsection(title, get_content_of_subsections(subsects_main))
+
+
+
 def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, headerRowNames):
     vb = 1  # vertical border
     variants = None  # variants_benchmarkNumTests
@@ -626,13 +655,6 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
     # utils.deleteFilesByPredicate(props, lambda p: len(p["maxGenerations"]) > 7, simulate=False)
     # ----------------------------------------------------
 
-    def scNotColorValueExtractor(s):
-        if s == "-" or "10^{" not in s:
-            return s
-        else:
-            r = s.split("10^{")
-            return r[1][:-2]
-
     print("\nFiles with a conflict between SMT and stochastic verificators:")
     for p in props:
         if "CDGP" in p["method"]:
@@ -640,12 +662,12 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                 print(p["evoplotter.file"])
 
     tables = [
-        TableGenerator(get_num_computed, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Status (correctly finished runs)",
-                       color_scheme=reversed(reporting.color_scheme_red),
-                       default_color_thresholds=(0.0, numRuns/2, numRuns),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
+        # TableGenerator(get_num_computed, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Status (correctly finished runs)",
+        #                color_scheme=reversed(reporting.color_scheme_red),
+        #                default_color_thresholds=(0.0, numRuns/2, numRuns),
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                ),
         # TableGenerator(fun_successRate, dim_rows, dim_cols, headerRowNames=headerRowNames,
         #                title="Success rates (properties met + mse below thresh)",
         #                color_scheme=reporting.color_scheme_darkgreen,
@@ -738,7 +760,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        default_color_thresholds=(0.0, 0.5, 1.0),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
-        TableGenerator(getAvgSatisfiedPropsForScikit1, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        TableGenerator(getAvgSatisfiedProps1, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average ratio of satisfied properties -- verified by SMT solver (CDSR configs) and stochastic verificator (scikit baselines)",
                        color_scheme=reporting.color_scheme_green,
                        default_color_thresholds=(0.0, 0.5, 1.0),
@@ -905,6 +927,132 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
     return reporting.Subsection(title, get_content_of_subsections(subsects_cdgp))
 
 
+def cellShading(a, b, c):
+    assert c >= b >= a
+    return printer.CellShading(a, b, c, "colorLow", "colorMedium", "colorHigh")
+
+def cellScNotShading(a, b, c):
+    assert c >= b >= a
+    return printer.CellShading(a, b, c, "colorLow", "colorMedium", "colorHigh", valueExtractor=scNotColorValueExtractor)
+
+rBoldWhen1 = printer.LatexTextbf(lambda v, b: v == "1.00")
+
+
+def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path, variants=None):
+    assert isinstance(dimens, dict)
+    assert exp_variant == "noNoise" or exp_variant == "withNoise"
+    vb = 1  # vertical border
+
+    # shTc = cellShading(0.0, 5000.0, 10000.0) if EXP_TYPE == "LIA" else cellShading(0.0, 250.0, 500.0)
+    tables = [
+        TableGenerator(get_median_testMSE,
+                       dimens["benchmark"],
+                       dimens["method_scikit"],
+                       title="Test set: MSE  (median); bestOfRun CDGP", headerRowNames=[],
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       cellRenderers=[rBoldWhen1, cellScNotShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/scikit_testMSE_{}.tex".format(exp_variant)]  #TODO: logarithmic coloring
+                       ),
+        TableGenerator(fun_allPropertiesMet_verificator,
+                       dimens["benchmark"],
+                       dimens["method_scikit"],
+                       title="Success rate in terms of all properties met (stochastic verifier)", headerRowNames=[],
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/scikit_succRate_{}.tex".format(exp_variant)]
+                       ),
+        TableGenerator(getAvgSatisfiedProps1,
+                       dimens["benchmark"],
+                       dimens["method_scikit"],
+                       title="Average satisfied properties", headerRowNames=[],
+                       color_scheme=reporting.color_scheme_darkgreen,
+                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/scikit_satConstrRatio_{}.tex".format(exp_variant)]
+                       ),
+        # TableGenerator(fun_successRate,
+        #                dim_rows,
+        #                dimens["method"] * dimens["evoMode"],
+        #                title="Success rates", headerRowNames=[],
+        #                color_scheme=reporting.color_scheme_darkgreen,
+        #                cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                outputFiles=[dir_path + "/tables/custom/cdgp_succRate_rowsAsTestsRatio_colsAsEvoMode.tex"]
+        #                ),
+        # TableGenerator(fun_successRate,
+        #                dim_rows,
+        #                dimens["method"] * dimens["selection"],
+        #                title="Success rates", headerRowNames=[],
+        #                color_scheme=reporting.color_scheme_darkgreen,
+        #                cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                outputFiles=[results_dir + "/tables/custom/cdgp_succRate_rowsAsTestsRatio_colsAsSelection.tex"]
+        #                ),
+        # TableGenerator(get_avg_totalTests,
+        #                dim_rows, dim_cols,
+        #                headerRowNames=[],
+        #                title="Average sizes of $T_C$ (total tests in run)",
+        #                color_scheme=reporting.color_scheme_blue, middle_col_align="l",
+        #                cellRenderers=[shTc],
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                outputFiles=[
+        #                    results_dir + "/tables/custom/cdgp_Tc_rowsAsTestsRatio.tex"]
+        #                ),
+        # TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=[],
+        #                title="Average runtime [s]",
+        #                color_scheme=reporting.color_scheme_violet,
+        #                cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                outputFiles=[results_dir + "/tables/custom/cdgp_runtime_rowsAsTestsRatio.tex"]
+        #                ),
+        # TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, dim_cols, headerRowNames=[],
+        #                title="Average runtime (only successful) [s]",
+        #                color_scheme=reporting.color_scheme_violet,
+        #                cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                outputFiles=[results_dir + "/tables/custom/cdgp_runtime_rowsAsTestsRatio_successful.tex"]
+        #                ),
+        # FriedmannTestPython(dimens["benchmark"],
+        #                     dimens["method"] * dimens["evoMode"] * dimens["selection"] * dimens["testsRatio"],
+        #                     get_successRate, p_treshold=0.05,
+        #                     title="Friedman test for success rates (all variants)",
+        #                     pathFriedmanViz="tables/custom/friedman_all.gv",
+        #                     workingDir=results_dir),
+        # FriedmannTestPython(dimensions_dict["benchmark"],
+        #                     dimensions_dict["method"] * Dim(dimensions_dict["evoMode"][0]) * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
+        #                     get_successRate, p_treshold=0.05,
+        #                     title="Friedman test for success rates (generational variants only)",
+        #                     pathFriedmanViz="tables/custom/friedman_generational.gv",
+        #                     workingDir=results_dir),
+        # FriedmannTestPython(dimensions_dict["benchmark"],
+        #                     dimensions_dict["method"] * Dim(dimensions_dict["evoMode"][1]) * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
+        #                     get_successRate, p_treshold=0.05,
+        #                     title="Friedman test for success rates (steadyState variants only)",
+        #                     pathFriedmanViz="tables/custom/friedman_steadyState.gv",
+        #                     workingDir=results_dir),
+        # TableGenerator(fun_successRate,
+        #                dimens["benchmark"],
+        #                dimens["method"] * dimens["testsRatio"],
+        #                title="Success rates", headerRowNames=[],
+        #                color_scheme=reporting.color_scheme_darkgreen,
+        #                cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                outputFiles=[results_dir + "/tables/custom/cdgp_succRate_colsAsTestsRatio.tex"]
+        #                ),
+        # FriedmannTestPython(dimens["benchmark"],
+        #                     dimens["method"] * dimens["testsRatio"],
+        #                     get_successRate, p_treshold=0.05,
+        #                     title="Friedman test for success rates (testsRatio)",
+        #                     pathFriedmanViz= "tables/custom/friedman_testsRatio.gv",
+        #                     workingDir=results_dir),
+    ]
+
+    return createSubsectionWithTables(title, tables, props)
+
+
+
 def convertPropsToDataFrame(props):
     attributes = [
         "evoplotter.file",
@@ -921,7 +1069,7 @@ def convertPropsToDataFrame(props):
         "result.validation.best.passedConstraints",
         "result.best.verificator.decisions",
         "result.best.verificator.ratios",
-        (getAvgSatRatioStochasticVerifier_p, "result.best.verificator.satRatio"),
+        (getAvgSatRatioStochasticVerifier_p, "result.best.verificator.satConstrRatio"),
         "result.best.trainMSE",
         "result.best.validMSE",
         "result.best.testMSE",
@@ -964,7 +1112,7 @@ def saveLogsAsCsv(props, dim_rows, dim_cols, dir_path, path="data.csv", frame=No
 
 
 
-def reports_universal(folders, dir_path="reports/", caption="report"):
+def reports_universal(folders, dir_path="reports/", exp_variant=""):
     if dir_path[-1] != "/":
         dir_path += "/"
     utils.ensure_clear_dir("{}".format(dir_path))
@@ -989,13 +1137,15 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders, dir_path)
     standardize_benchmark_names(props)
-    dim_rows = get_benchmarks_from_props(props)
-    dim_rows_all = dim_rows.copy()
-    dim_rows_all += dim_rows.dim_true_within("ALL")
+    dim_benchmarks = get_benchmarks_from_props(props)
+    dim_rows_all = dim_benchmarks.copy()
+    dim_rows_all += dim_benchmarks.dim_true_within("ALL")
+
+    utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_method, "results_thesis_final/{}/".format(exp_variant), maxRuns=50)
 
     dim_cols_scikit = dim_methodScikit
 
-    dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio + dim_methodCDGPprops * dim_sel  * dim_testsRatio * dim_weight
+    dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio + dim_methodCDGPprops * dim_sel * dim_testsRatio * dim_weight
     dim_cols_ea = dim_methodGP + dim_cols_cdgp
     dim_cols = dim_methodScikit + dim_cols_ea
 
@@ -1006,14 +1156,28 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
 
 
     dataFrame = convertPropsToDataFrame(props)
-    saveLogsAsCsv(props, dim_rows, dim_cols, dir_path=dir_path, frame=dataFrame)
+    saveLogsAsCsv(props, dim_benchmarks, dim_cols, dir_path=dir_path, frame=dataFrame)
+
+    dimensions_dict = {"benchmark": dim_benchmarks,
+                       "testsRatio": dim_testsRatio,
+                       "testsRatio_0.75": Dim(dim_testsRatio[0]),
+                       "testsRatio_1.0": Dim(dim_testsRatio[1]),
+                       "selection": dim_sel,
+                       "selection_tour": Dim(dim_sel[0]),
+                       "selection_lex": Dim(dim_sel[1]),
+                       "method": dim_methodScikit + dim_methodCDGP + dim_methodCDGPprops,
+                       "method_CDGP": dim_methodCDGP,
+                       "method_CDGPprops": dim_methodCDGPprops,
+                       "method_scikit": dim_methodScikit, }
 
     headerRowNames = ["method", "weight"]
     subs = [
-        (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 25, headerRowNames]),
-        (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows_all, dim_cols_scikit, 25, headerRowNames]),
+        (create_subsection_shared_status, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 50, headerRowNames]),
+        # (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 50, headerRowNames]),
+        # (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows_all, dim_cols_scikit, 50, headerRowNames]),
         # (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
         # (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
+        # (create_subsection_custom_tables, [props, "Custom tables", dimensions_dict, exp_variant, dir_path, None]),
         # (create_subsection_figures_analysis, [props, dim_cols, dim_rows, "figures/"]),
         # (create_subsection_figures_analysis, [dataFrame, "figures/"]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
@@ -1022,7 +1186,7 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     sects = [(title, desc, subs, [])]
 
 
-    save_listings(props, dim_rows, dim_cols, dir_path=dir_path)
+    save_listings(props, dim_benchmarks, dim_cols, dir_path=dir_path)
     user_declarations = r"""\definecolor{darkred}{rgb}{0.56, 0.05, 0.0}
 \definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0}
 \definecolor{darkblue}{rgb}{0.0, 0.0, 0.55}
@@ -1035,17 +1199,17 @@ columns=flexible,
 breaklines=true
 }
 """
-    templates.prepare_report(sects, "cdsr_{}.tex".format(caption), dir_path=dir_path, paperwidth=190, user_declarations=user_declarations)
+    templates.prepare_report(sects, "cdsr_{}.tex".format(exp_variant), dir_path=dir_path, paperwidth=190, user_declarations=user_declarations)
 
 
 
 def reports_noNoise():
     folders = ["results_thesis/noNoise/"]
-    reports_universal(folders=folders, dir_path="reports/noNoise/", caption="noNoise")
+    reports_universal(folders=folders, dir_path="reports/noNoise/", exp_variant="noNoise")
 
 def reports_withNoise():
     folders = ["results_thesis/withNoise/"]
-    reports_universal(folders=folders, dir_path="reports/withNoise/", caption="withNoise")
+    reports_universal(folders=folders, dir_path="reports/withNoise/", exp_variant="withNoise")
 
 
 
