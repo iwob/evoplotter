@@ -623,11 +623,15 @@ def create_subsection_shared_status(props, title, dim_rows, dim_cols, numRuns, h
     vb = 1  # vertical border
     variants = None  # variants_benchmarkNumTests
     dim_rows_v2 = get_benchmarks_from_props(props, ignoreNumTests=True)
+
+    color_scheme_red_status = reporting.ColorScheme3(["1.0, 1.0, 1.0", "0.92, 0.3, 0.3", "0.8, 0, 0"],
+                                    ["white", "light red", "red"])
+
     tables = [
         TableGenerator(get_num_computed, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Status (correctly finished runs)",
-                       color_scheme=reversed(reporting.color_scheme_red),
-                       default_color_thresholds=(0.0, numRuns / 2, numRuns),
+                       color_scheme=reversed(color_scheme_red_status),
+                       default_color_thresholds=(0.8 * numRuns, 0.9 * numRuns, numRuns),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        )
     ]
@@ -846,6 +850,12 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames)
                        default_color_thresholds=(0.0, 1e2, 1e4),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
+        # TableGenerator(???, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Thresholds for treating the solution as optimal on tests",
+        #                color_scheme=reporting.color_scheme_yellow,
+        #                default_color_thresholds=(0.0, 100.0, 200.0),
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                ),
     ]
 
     subsects_main = []
@@ -1141,8 +1151,6 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     dim_rows_all = dim_benchmarks.copy()
     dim_rows_all += dim_benchmarks.dim_true_within("ALL")
 
-    utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_method, "results_thesis_final/{}/".format(exp_variant), maxRuns=50)
-
     dim_cols_scikit = dim_methodScikit
 
     dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio + dim_methodCDGPprops * dim_sel * dim_testsRatio * dim_weight
@@ -1157,6 +1165,8 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
 
     dataFrame = convertPropsToDataFrame(props)
     saveLogsAsCsv(props, dim_benchmarks, dim_cols, dir_path=dir_path, frame=dataFrame)
+
+    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_thesis_final/{}/".format(exp_variant), maxRuns=50)
 
     dimensions_dict = {"benchmark": dim_benchmarks,
                        "testsRatio": dim_testsRatio,
@@ -1173,9 +1183,9 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     headerRowNames = ["method", "weight"]
     subs = [
         (create_subsection_shared_status, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 50, headerRowNames]),
-        # (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 50, headerRowNames]),
+        (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 50, headerRowNames]),
         # (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows_all, dim_cols_scikit, 50, headerRowNames]),
-        # (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
+        (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
         # (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
         # (create_subsection_custom_tables, [props, "Custom tables", dimensions_dict, exp_variant, dir_path, None]),
         # (create_subsection_figures_analysis, [props, dim_cols, dim_rows, "figures/"]),
@@ -1204,16 +1214,26 @@ breaklines=true
 
 
 def reports_noNoise():
-    folders = ["results_thesis/noNoise/"]
+    folders = ["results_thesis_final/noNoise/"]
     reports_universal(folders=folders, dir_path="reports/noNoise/", exp_variant="noNoise")
 
 def reports_withNoise():
-    folders = ["results_thesis/withNoise/"]
+    folders = ["results_thesis_final/withNoise/"]
     reports_universal(folders=folders, dir_path="reports/withNoise/", exp_variant="withNoise")
 
 
+def reports_noNoise_pop1k():
+    folders = ["results_thesis_pop1k/noNoise/"]
+    reports_universal(folders=folders, dir_path="reports_pop1k/noNoise/", exp_variant="noNoise")
+
+def reports_withNoise_pop1k():
+    folders = ["results_thesis_pop1k/withNoise/"]
+    reports_universal(folders=folders, dir_path="reports_pop1k/withNoise/", exp_variant="withNoise")
+
 
 if __name__ == "__main__":
-    utils.ensure_clear_dir("reports/")
-    reports_noNoise()
-    reports_withNoise()
+    # utils.ensure_clear_dir("reports/")
+    # reports_noNoise()
+    # reports_withNoise()
+    reports_noNoise_pop1k()
+    reports_withNoise_pop1k()
