@@ -213,10 +213,11 @@ def scNotClearTrailingZeros(a):
     tab = a.split('E')
     if "-" in tab[1]:
         r = a.split('E-')[1]
-        return tab[0].rstrip('0').rstrip('.') + 'E-' + r[:-1].lstrip('0') + r[-1]
+        # add rstrip('0').rstrip('.') to remove trailing zeros from mantissa
+        return tab[0] + 'E-' + r[:-1].lstrip('0') + r[-1]
     else:
         r = a.split('E')[1]
-        return tab[0].rstrip('0').rstrip('.') + 'E' + r[:-1].lstrip('0') + r[-1]
+        return tab[0] + 'E' + r[:-1].lstrip('0') + r[-1]
 def scientificNotationLatex(x):
     s = "%0.1E" % x
     if "E" not in s:
@@ -428,6 +429,13 @@ def get_median_testMSE(props):
     else:
         median = np.median([float(p["result.best.testMSE"]) for p in props])
         return scientificNotationLatex(median)  # , np.std(vals)
+def get_min_trainMSE(props):
+    # L = [float(p["result.best.trainMSE"]) for p in props if float(p["result.best.trainMSE"]) <= 1.e-8 and float(p["result.best.trainMSE"]) >= 1.e-15]  #good line
+    L = [float(p["result.best.trainMSE"]) for p in props if float(p["result.best.trainMSE"]) <= 1.e-10]  #experimental line
+    if len(L) == 0:
+        return "-"
+    else:
+        return scientificNotationLatex(np.min(L))
 def get_MSE_bestOnValidSet_p(p, outputKey):
     """For a single dict p, returns a $outputKey (train | valid | test) MSE of the best solution on the valid set.
      Checks, if best of run was better on valid set, since in some cases it terminates search in CDGP before best of valid is updated."""
@@ -830,7 +838,7 @@ def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SO
 
 
 
-def get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=70):
+def get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN_LIMIT=70, showSimplified=True):
 
     def shortenLongConstants(s):
         # cxs = re.findall("\(Map\((?:[^,]+ -> [^,]+(?:, )?)+\),None\)", s)
@@ -841,7 +849,10 @@ def get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, STR_LEN
         return s
 
     def sorted_list_lambda(props):
-        solutions = [(p["result.bestOrig"], int(p["result.bestOrig.size"]), float(p["result.best.testMSE"])) for p in props]
+        if showSimplified:
+            solutions = [(p["result.best"], int(p["result.best.size"]), float(p["result.best.testMSE"])) for p in props]
+        else:
+            solutions = [(p["result.bestOrig"], int(p["result.bestOrig.size"]), float(p["result.best.testMSE"])) for p in props]
         solutions.sort(key=lambda x: (x[2], x[1]), reverse=False)
         return solutions
 

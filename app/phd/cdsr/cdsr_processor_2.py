@@ -110,7 +110,7 @@ dim_methodGP = Dim([
 scikit_algs = sorted(["AdaBoostRegressor", "XGBoost", "SGDRegressor", "RandomForestRegressor", "MLPRegressor",
         "LinearSVR", "LinearRegression", "LassoLars", "KernelRidge", "GradientBoostingRegressor"]) # , "GSGP"  - not used due to issues
 dim_methodScikit = Dim([Config(sa.replace("Regressor","").replace("Regression",""), p_dict_matcher({"method": sa}), method=sa) for sa in scikit_algs])
-dim_method = dim_methodScikit + dim_methodCDGP + dim_methodCDGPprops + dim_methodGP
+dim_method = dim_methodScikit + dim_methodCDGP + dim_methodCDGPprops #+ dim_methodGP
 dim_sel = Dim([Config("$Tour$", p_sel_tourn, selection="tournament"),
                Config("$Lex$", p_sel_lexicase, selection="lexicase")])
 # dim_evoMode = Dim([Config("$steadyState$", p_steadyState, evolutionMode="steadyState"),
@@ -154,8 +154,7 @@ def get_content_of_subsections(subsects):
 
 def post(s):
     s = s.replace("{ccccccccccccc}", "{rrrrrrrrrrrrr}").replace("{rrr", "{lrr")\
-         .replace(r"\_{lex}", "_{lex}").replace(r"\_{", "_{").replace("resistance_par", "res")\
-         .replace("gravity", "gr")
+         .replace(r"\_{lex}", "_{lex}").replace(r"\_{", "_{").replace("resistance_par", "res")
     return s
 
 
@@ -539,7 +538,26 @@ def create_subsection_figures_analysis_seaborn(dataFrame, path):
     return section
 
 
-def scNotColorValueExtractor(s):
+def scNotValueExtractor(s):
+    if s == "-" or "10^{" not in s:
+        return s
+    else:
+        numbers = re.findall("[-]?[0-9]+[.]?[0-9]*", s)
+        if len(numbers) != 3:
+            return s  # not a scientific notation
+        mantissa = float(numbers[0])
+        base = float(numbers[1])
+        exp = float(numbers[2])
+        return mantissa * base ** exp
+
+
+def scNotLog10ValueExtractor(s):
+    base = 10.0
+    v = scNotValueExtractor(s)
+    return math.log(v, base)
+
+
+def scNotExponentExtractor(s):
     if s == "-" or "10^{" not in s:
         return s
     else:
@@ -701,7 +719,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        title="Training set: MSE  (median)",
                        color_scheme=reporting.color_scheme_gray_dark,
                        default_color_thresholds=(-10.0, 0.0, 10.0),
-                       color_value_extractor=scNotColorValueExtractor,
+                       color_value_extractor=scNotValueExtractor,
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
         # TableGenerator(get_avg_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
@@ -714,14 +732,14 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        title="Test set: MSE  (median); bestOfRun CDGP",
                        color_scheme=reporting.color_scheme_gray_dark,
                        default_color_thresholds=(-10.0, 0.0, 10.0),
-                       color_value_extractor=scNotColorValueExtractor,
+                       color_value_extractor=scNotValueExtractor,
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
         TableGenerator(get_median_testMSE_bestOnValidCDGP, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Test set: MSE  (median); bestOnValidSet CDGP",
                        color_scheme=reporting.color_scheme_gray_dark,
                        default_color_thresholds=(-10.0, 0.0, 10.0),
-                       color_value_extractor=scNotColorValueExtractor,
+                       color_value_extractor=scNotValueExtractor,
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
         TableGenerator(get_averageAlgorithmRanksCDSR(dim_cols[:-1], dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
@@ -800,7 +818,7 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames)
     # dim_rows_v2 += dim_true  # TODO: within dict
 
     tables = [
-        TableGenerator(get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15),
+        TableGenerator(get_rankingOfBestSolutionsCDSR(ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15, showSimplified=True),
                        Dim(dim_cols.configs[:-1]), Dim(dim_rows.configs[:-1]),
                        headerRowNames=headerRowNames,
                        title="The best solutions found for each benchmark and their sizes. Format: solution (MSE on test set) (size)",
@@ -848,6 +866,13 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames)
                        title="Number of algorithm restarts  (avg)",
                        color_scheme=reporting.color_scheme_gray_light,
                        default_color_thresholds=(0.0, 1e2, 1e4),
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       ),
+        TableGenerator(get_min_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
+                       title="Minimum non-zero MSE on train set; done to find if there were runs which terminated early due to correctness threshold",
+                       color_scheme=reporting.color_scheme_gray_dark,
+                       default_color_thresholds=(-10.0, 0.0, 10.0),
+                       color_value_extractor=scNotValueExtractor,
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
         # TableGenerator(???, dim_rows, dim_cols, headerRowNames=headerRowNames,
@@ -943,7 +968,8 @@ def cellShading(a, b, c):
 
 def cellScNotShading(a, b, c):
     assert c >= b >= a
-    return printer.CellShading(a, b, c, "colorLow", "colorMedium", "colorHigh", valueExtractor=scNotColorValueExtractor)
+    return printer.CellShading(a, b, c, "colorLow", "colorMedium", "colorHigh", valueExtractor=scNotValueExtractor)
+
 
 rBoldWhen1 = printer.LatexTextbf(lambda v, b: v == "1.00")
 
@@ -959,10 +985,12 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        dimens["benchmark"],
                        dimens["method_scikit"],
                        title="Test set: MSE  (median); bestOfRun CDGP", headerRowNames=[],
-                       color_scheme=reporting.color_scheme_darkgreen,
-                       cellRenderers=[rBoldWhen1, cellScNotShading(0.0, 0.5, 1.0)],
+                       color_scheme=reversed(reporting.color_scheme_darkgreen),
+                       cellRenderers=[printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
+                                      printer.CellShadingRowMinMax("colorLow", "colorMedium", "colorHigh", valueExtractor=scNotLog10ValueExtractor)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
-                       outputFiles=[dir_path + "/tables/custom/scikit_testMSE_{}.tex".format(exp_variant)]  #TODO: logarithmic coloring
+                       outputFiles=[dir_path + "/tables/custom/scikit_testMSE_{}.tex".format(exp_variant)],
+                       middle_col_align="l"
                        ),
         TableGenerator(fun_allPropertiesMet_verificator,
                        dimens["benchmark"],
@@ -1154,7 +1182,7 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     dim_cols_scikit = dim_methodScikit
 
     dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio + dim_methodCDGPprops * dim_sel * dim_testsRatio * dim_weight
-    dim_cols_ea = dim_methodGP + dim_cols_cdgp
+    dim_cols_ea = dim_cols_cdgp
     dim_cols = dim_methodScikit + dim_cols_ea
 
     dim_cols_all = dim_cols.copy()
@@ -1166,7 +1194,8 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     dataFrame = convertPropsToDataFrame(props)
     saveLogsAsCsv(props, dim_benchmarks, dim_cols, dir_path=dir_path, frame=dataFrame)
 
-    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_thesis_final/{}/".format(exp_variant), maxRuns=50)
+    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_thesis_final_2/{}/".format(exp_variant), maxRuns=50)
+    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_thesis_pop1k_final_asd/{}/".format(exp_variant), maxRuns=50)
 
     dimensions_dict = {"benchmark": dim_benchmarks,
                        "testsRatio": dim_testsRatio,
@@ -1187,7 +1216,7 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
         # (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows_all, dim_cols_scikit, 50, headerRowNames]),
         (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
         # (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
-        # (create_subsection_custom_tables, [props, "Custom tables", dimensions_dict, exp_variant, dir_path, None]),
+        (create_subsection_custom_tables, [props, "Custom tables", dimensions_dict, exp_variant, dir_path, None]),
         # (create_subsection_figures_analysis, [props, dim_cols, dim_rows, "figures/"]),
         # (create_subsection_figures_analysis, [dataFrame, "figures/"]),
         # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
@@ -1213,27 +1242,35 @@ breaklines=true
 
 
 
-def reports_noNoise():
-    folders = ["results_thesis_final/noNoise/"]
-    reports_universal(folders=folders, dir_path="reports/noNoise/", exp_variant="noNoise")
+def reports_noNoise_pop500():
+    folders = ["results_thesis_pop500_final/noNoise/"]
+    reports_universal(folders=folders, dir_path="reports_pop500/noNoise/", exp_variant="noNoise")
 
-def reports_withNoise():
-    folders = ["results_thesis_final/withNoise/"]
-    reports_universal(folders=folders, dir_path="reports/withNoise/", exp_variant="withNoise")
+def reports_withNoise_pop500():
+    folders = ["results_thesis_pop500_final/withNoise/"]
+    reports_universal(folders=folders, dir_path="reports_pop500/withNoise/", exp_variant="withNoise")
 
 
 def reports_noNoise_pop1k():
-    folders = ["results_thesis_pop1k/noNoise/"]
-    reports_universal(folders=folders, dir_path="reports_pop1k/noNoise/", exp_variant="noNoise")
+    # folders = ["results_thesis_pop1k_final/noNoise/"]
+    # reports_universal(folders=folders, dir_path="reports_pop1k/noNoise/", exp_variant="noNoise")
+
+    # special for gravity recomputations
+    folders = ["GRAVITY_1k/noNoise/"]
+    reports_universal(folders=folders, dir_path="reports_pop1k_gravity/noNoise/", exp_variant="noNoise")
 
 def reports_withNoise_pop1k():
-    folders = ["results_thesis_pop1k/withNoise/"]
-    reports_universal(folders=folders, dir_path="reports_pop1k/withNoise/", exp_variant="withNoise")
+    # folders = ["results_thesis_pop1k_final/withNoise/"]
+    # reports_universal(folders=folders, dir_path="reports_pop1k/withNoise/", exp_variant="withNoise")
+
+    # special for gravity recomputations
+    folders = ["GRAVITY_1k/withNoise/"]
+    reports_universal(folders=folders, dir_path="reports_pop1k_gravity/withNoise/", exp_variant="withNoise")
 
 
 if __name__ == "__main__":
     # utils.ensure_clear_dir("reports/")
-    # reports_noNoise()
-    # reports_withNoise()
-    reports_noNoise_pop1k()
-    reports_withNoise_pop1k()
+    reports_noNoise_pop500()
+    reports_withNoise_pop500()
+    # reports_noNoise_pop1k()
+    # reports_withNoise_pop1k()
