@@ -63,7 +63,7 @@ class TableGenerator:
                  table_postprocessor=None, cellRenderers=None, vertical_border=1, variants=None,
                  default_color_thresholds=None, layered_headline=True, color_value_extractor=None,
                  only_nonempty_rows=True, outputFiles=None, addRowWithRanks=False, addRowWithMeans=False,
-                 ranksHigherValuesBetter=True, **kwargs):
+                 ranksHigherValuesBetter=True, firstColAlign="l", middle_col_align="c", **kwargs):
         assert outputFiles is None or isinstance(outputFiles, list), "outputFiles must be either None, or a list of configs"
         self.f_cell = f_cell
         self.dim_rows = dim_rows
@@ -89,6 +89,8 @@ class TableGenerator:
         self.addRowWithRanks = addRowWithRanks
         self.ranksHigherValuesBetter = ranksHigherValuesBetter
         self.addRowWithMeans = addRowWithMeans
+        self.firstColAlign = firstColAlign
+        self.middle_col_align = middle_col_align
 
     def __call__(self, props):
         return self.apply(props)
@@ -126,7 +128,10 @@ class TableGenerator:
                               headerRowNames=self.headerRowNames,
                               addRowWithMeans=self.addRowWithMeans,
                               addRowWithRanks=self.addRowWithRanks,
-                              ranksHigherValuesBetter=self.ranksHigherValuesBetter)
+                              ranksHigherValuesBetter=self.ranksHigherValuesBetter,
+                              firstColAlign=self.firstColAlign,
+                              middle_col_align=self.middle_col_align
+        )
         return table
 
 

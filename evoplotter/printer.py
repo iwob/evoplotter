@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from . import dims
 from . import utils
@@ -8,29 +9,79 @@ class CellRenderer(object):
     Both editor and condition are functions on two elements: *value* originally stored in the
     table, and *body* being the current formatting of that value, after, e.g., successful
     applications of other cell renderers."""
-    def __init__(self, condition, editor):
+    def __init__(self, condition, editor, isFullTableContext=False):
         self.condition = condition
         self.editor = editor
+        self.isFullTableContext = isFullTableContext
 
     def __call__(self, *args, **kwargs):
         value = args[0]
         body = args[1]
-        if self.condition(value, body):
-            return self.editor(value, body)
+        if self.isFullTableContext:
+            table = args[2]
+            rowNo = args[3]
+            colNo = args[4]
+            if self.condition(value, body, table, rowNo, colNo):
+                return self.editor(value, body, table, rowNo, colNo)  # full context-aware editor
+            else:
+                return body
         else:
-            return body
+            if self.condition(value, body):
+                return self.editor(value, body)
+            else:
+                return body
 
 
 class LatexCommand(CellRenderer):
-    def __init__(self, cmdOpen, cmdClose, condition):
+    def __init__(self, cmdOpen, cmdClose, condition, isFullTableContext=False):
         assert isinstance(cmdOpen, str) and isinstance(cmdClose, str)
-        editor = lambda value, body: cmdOpen + str(body) + cmdClose
-        CellRenderer.__init__(self, condition, editor)
+        if isFullTableContext:
+            editor = lambda value, body, table, rowNo, colNo: cmdOpen + str(body) + cmdClose
+        else:
+            editor = lambda value, body: cmdOpen + str(body) + cmdClose
+        CellRenderer.__init__(self, condition, editor, isFullTableContext=isFullTableContext)
 
 
 class LatexTextbf(LatexCommand):
-    def __init__(self, condition):
-        LatexCommand.__init__(self, r"\textbf{", "}", condition)
+    def __init__(self, condition, isBoldMathMode=False):
+        if isBoldMathMode:
+            LatexCommand.__init__(self, r"{\boldmath ", "}", condition)
+        else:
+            LatexCommand.__init__(self, r"\textbf{", "}", condition)
+
+class LatexTextbfMaxInRow(LatexCommand):
+    def __init__(self, valueExtractor=None, isBoldMathMode=False):
+        def condition(value, body, table, rowNo, colNo):
+            _valueExtractor = valueExtractor
+            if _valueExtractor is None:
+                _valueExtractor = lambda x: x
+            v = float(_valueExtractor(value))
+            row = [float(_valueExtractor(r)) for r in table.content.getRow(rowNo)]
+            if v == max(row):
+                return True
+            else:
+                return False
+        if isBoldMathMode:
+            LatexCommand.__init__(self, r"{\boldmath ", "}", condition, isFullTableContext=True)
+        else:
+            LatexCommand.__init__(self, r"\textbf{", "}", condition, isFullTableContext=True)
+
+class LatexTextbfMinInRow(LatexCommand):
+    def __init__(self, valueExtractor=None, isBoldMathMode=False):
+        def condition(value, body, table, rowNo, colNo):
+            _valueExtractor = valueExtractor
+            if _valueExtractor is None:
+                _valueExtractor = lambda x: x
+            v = float(_valueExtractor(value))
+            row = [float(_valueExtractor(r)) for r in table.content.getRow(rowNo)]
+            if v == min(row):
+                return True
+            else:
+                return False
+        if isBoldMathMode:
+            LatexCommand.__init__(self, r"{\boldmath ", "}", condition, isFullTableContext=True)
+        else:
+            LatexCommand.__init__(self, r"\textbf{", "}", condition, isFullTableContext=True)
 
 
 class LatexTextit(LatexCommand):
@@ -70,6 +121,48 @@ class CellShading(CellRenderer):
         condition = lambda v, b: True
         editor = lambda v, b: color_cell(v, b)
         CellRenderer.__init__(self, condition, editor)
+
+
+class CellShadingRowMinMax(CellRenderer):
+    def __init__(self, MinColor="colorLow", MidColor="colorMedium", MaxColor="colorHigh", valueExtractor=None):
+        """
+        :param MinColor: (str) name of the LaTeX color representing the lowest value.
+        :param MidColor: (str) name of the LaTeX color representing the middle value. This color is also used for
+          gradient, that is closer a given cell value is to the MidNumber, more MidColor'ed it becomes.
+        :param MaxColor: (str) name of the LaTeX color representing the highest value.
+        :param valueExtractor: (lambda) extracts a value from a table cell in order to apply shading to that value. Should return float."""
+        def color_cell(v, body, table, rowNo, colNo):
+            def sanitize_value(x):
+                return float(x.strip()) if isinstance(x, str) else float(x)
+
+            if valueExtractor is None:
+                _valueExtractor = lambda x: x
+            else:
+                _valueExtractor = valueExtractor
+
+            v = _valueExtractor(v)
+            if isinstance(v, str) and (v == "-" or v == "-" or v.strip().lower() == "nan" or not utils.isfloat(v.strip())):
+                return v
+            else:
+                # Computing color thresholds
+                row = [sanitize_value(_valueExtractor(r)) for r in table.content.getRow(rowNo)]
+                MaxNumber = max(row)
+                MinNumber = min(row)
+                MidNumber = (MaxNumber + MinNumber) / 2.0
+
+                # Computing color gradient.
+                val = sanitize_value(v)
+                color = getLatexColorCode(val, [MinNumber, MidNumber, MaxNumber], [MinColor, MidColor, MaxColor])
+                # if val > MidNumber:
+                #     PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber - MidNumber), 100.0), 0.0)
+                #     color = "{0}!{1:.1f}!{2}".format(MaxColor, PercentColor, MidColor)
+                # else:
+                #     PercentColor = max(min(100.0 * (MidNumber - val) / (MidNumber - MinNumber), 100.0), 0.0)
+                #     color = "{0}!{1:.1f}!{2}".format(MinColor, PercentColor, MidColor)
+                return "\cellcolor{" + color + "}" + str(body)
+        condition = lambda v, b, table, rowNo, colNo: True
+        editor = lambda v, b, table, rowNo, colNo: color_cell(v, b, table, rowNo, colNo)
+        CellRenderer.__init__(self, condition, editor, isFullTableContext=True)
 
 
 
@@ -156,6 +249,15 @@ class TableContent(object):
     def __getitem__(self, item):
         return self.cells[item]
 
+    def getRow(self, rowNo):
+        return self.cells[rowNo][:]
+
+    def getColumn(self, colNo):
+        column = []
+        for row in self.cells:
+            column.append(row[colNo])
+        return column
+
     def removeColumn(self, index):
         assert isinstance(index, int)
         for row in self.cells:
@@ -223,7 +325,7 @@ class Table(object):
     def __init__(self, cells, dimCols=None, dimRows=None, cellRenderers=None, layeredHeadline=True,
                  verticalBorder=0, horizontalBorder=1, useBooktabs=False, headerRowNames=None,
                  showColumnNames=True, showRowNames=True, addRowWithMeans=False,
-                 addRowWithRanks=False, ranksHigherValuesBetter=True):
+                 addRowWithRanks=False, ranksHigherValuesBetter=True, firstColAlign="l", middle_col_align="c"):
         if cellRenderers is None:
             cellRenderers = []
         assert isinstance(cells, list) or isinstance(cells, TableContent) #"Table expects array of cells as an input" #
@@ -257,6 +359,8 @@ class Table(object):
         self.addRowWithRanks = addRowWithRanks
         self.ranksHigherValuesBetter = ranksHigherValuesBetter
         self.addRowWithMeans = addRowWithMeans
+        self.firstColAlign = firstColAlign
+        self.middle_col_align = middle_col_align
 
     def removeColumn(self, index):
         self.content.removeColumn(index)
@@ -297,10 +401,13 @@ class Table(object):
         """Part of the interface of reporting module."""
         return self.render()
 
-    def applyRenderers(self, value):
+    def applyRenderers(self, value, rowNo, colNo):
         text = str(value)
         for rend in self.cellRenderers:
-            text = rend(value, text)
+            if rend.isFullTableContext:
+                text = rend(value, text, self, rowNo, colNo)
+            else:
+                text = rend(value, text)
         return text
 
     def getPairedRanksMatrix(self):
@@ -343,7 +450,7 @@ class Table(object):
             if self.__canShowRowNames():
                 text += self.content.dimRows[i].get_caption() + " & "
 
-            rowRendered = [self.applyRenderers(cell) for cell in row]
+            rowRendered = [self.applyRenderers(cell, i, j) for j, cell in enumerate(row)]
             text += " & ".join(rowRendered) + r"\\"
             if self.horizontalBorder >= 2 and i < len(self.content) - 1:
                 text += r"\midrule " if self.useBooktabs else r"\hline "
@@ -365,7 +472,13 @@ class Table(object):
                 text += " & ".join(ranks) + r"\\"
         return text
 
-    def render(self, latexizeUnderscores=True, firstColAlign="l", middle_col_align="c"):
+    def __str__(self):
+        return self.render()
+
+    def render(self, latexizeUnderscores=True):
+        return self.renderLatex(latexizeUnderscores)
+
+    def renderLatex(self, latexizeUnderscores=True):
         text = ""
         if self.__canShowColumnNames():
             text += self.renderTableHeader()
@@ -374,15 +487,10 @@ class Table(object):
             numCols = len(self.content.dimCols) + 1
         else:
             numCols = len(self.content.dimCols)
-        return latex_table_wrapper(text, numColumns=numCols, latexize_underscores=latexizeUnderscores, vertical_border=self.verticalBorder,
-                                   horizontal_border=self.horizontalBorder, first_col_align=firstColAlign,
-                                   middle_col_align=middle_col_align, useBooktabs=self.useBooktabs)
-
-    def __str__(self):
-        return self.render()
-
-    def renderLatex(self, latexizeUnderscores=True, firstColAlign="l", middle_col_align="c"):
-        return self.render(latexizeUnderscores, firstColAlign, middle_col_align)
+        return latex_table_wrapper(text, numColumns=numCols, latexize_underscores=latexizeUnderscores,
+                                   vertical_border=self.verticalBorder,
+                                   horizontal_border=self.horizontalBorder, first_col_align=self.firstColAlign,
+                                   middle_col_align=self.middle_col_align, useBooktabs=self.useBooktabs)
 
     def renderCsv(self, delim=";", dimSep="/"):
         # Header
