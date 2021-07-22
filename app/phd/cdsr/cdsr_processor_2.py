@@ -554,7 +554,10 @@ def scNotValueExtractor(s):
 def scNotLog10ValueExtractor(s):
     base = 10.0
     v = scNotValueExtractor(s)
-    return math.log(v, base)
+    if isinstance(v, str): # scientific notation was not interpreted correctly
+        return s
+    else:
+        return math.log(v, base)
 
 
 def scNotExponentExtractor(s):
@@ -654,7 +657,6 @@ def create_subsection_shared_status(props, title, dim_rows, dim_cols, numRuns, h
                        )
     ]
 
-
     subsects_main = []
     for t in tables:
         tup = (t.title, t.apply(props), t.color_scheme)
@@ -670,13 +672,6 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
     dim_rows_v2 = get_benchmarks_from_props(props, ignoreNumTests=True)
     # dim_rows_v2 += dim_true  #TODO: within dict
 
-    # ----------------------------------------------------
-    # Cleaning experiment here, because dimension can be easily constructed.
-    # dim_rows_v3 = get_benchmarks_from_props(props, simple_names=True, ignoreNumTests=True)
-    # utils.reorganizeExperimentFiles(props, dim_rows_v3 * dim_benchmarkNumTests * dim_cols, target_dir="./exp3_final/", maxRuns=numRuns)
-    # utils.deleteFilesByPredicate(props, lambda p: len(p["maxGenerations"]) > 7, simulate=False)
-    # ----------------------------------------------------
-
     print("\nFiles with a conflict between SMT and stochastic verificators:")
     for p in props:
         if "CDGP" in p["method"]:
@@ -684,12 +679,6 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                 print(p["evoplotter.file"])
 
     tables = [
-        # TableGenerator(get_num_computed, dim_rows, dim_cols, headerRowNames=headerRowNames,
-        #                title="Status (correctly finished runs)",
-        #                color_scheme=reversed(reporting.color_scheme_red),
-        #                default_color_thresholds=(0.0, numRuns/2, numRuns),
-        #                vertical_border=vb, table_postprocessor=post, variants=variants,
-        #                ),
         # TableGenerator(fun_successRate, dim_rows, dim_cols, headerRowNames=headerRowNames,
         #                title="Success rates (properties met + mse below thresh)",
         #                color_scheme=reporting.color_scheme_darkgreen,
@@ -717,29 +706,29 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         #                ),
         TableGenerator(get_median_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Training set: MSE  (median)",
-                       color_scheme=reporting.color_scheme_gray_dark,
-                       default_color_thresholds=(-10.0, 0.0, 10.0),
-                       color_value_extractor=scNotValueExtractor,
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       color_scheme=reversed(reporting.color_scheme_gray_dark),
+                       cellRenderers=[
+                           printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
+                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
+                                                  valueExtractor=scNotLog10ValueExtractor)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants, middle_col_align="l"
                        ),
-        # TableGenerator(get_avg_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
-        #                title="Training set: MSE  (avg)",
-        #                color_scheme=reporting.color_scheme_green,
-        #                default_color_thresholds=(0.0, 1e2, 1e4),
-        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
-        #                ),
         TableGenerator(get_median_testMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Test set: MSE  (median); bestOfRun CDGP",
-                       color_scheme=reporting.color_scheme_gray_dark,
-                       default_color_thresholds=(-10.0, 0.0, 10.0),
-                       color_value_extractor=scNotValueExtractor,
+                       color_scheme=reversed(reporting.color_scheme_gray_dark),
+                       cellRenderers=[
+                           printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
+                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
+                                                  valueExtractor=scNotLog10ValueExtractor)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
         TableGenerator(get_median_testMSE_bestOnValidCDGP, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Test set: MSE  (median); bestOnValidSet CDGP",
-                       color_scheme=reporting.color_scheme_gray_dark,
-                       default_color_thresholds=(-10.0, 0.0, 10.0),
-                       color_value_extractor=scNotValueExtractor,
+                       color_scheme=reversed(reporting.color_scheme_gray_dark),
+                       cellRenderers=[
+                           printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
+                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
+                                                  valueExtractor=scNotLog10ValueExtractor)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
         TableGenerator(get_averageAlgorithmRanksCDSR(dim_cols[:-1], dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
@@ -758,18 +747,6 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
-        # TableGenerator(get_median_testMSE_noScNot, dim_rows, dim_cols, headerRowNames=headerRowNames,
-        #                title="Test set: MSE  (median) (noScNot)",
-        #                color_scheme=reporting.color_scheme_green,
-        #                default_color_thresholds=(0.0, 1e2, 1e4),
-        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
-        #                ),
-        # TableGenerator(get_avg_testMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
-        #                title="Test set: MSE  (avg)",
-        #                color_scheme=reporting.color_scheme_green,
-        #                default_color_thresholds=(0.0, 1e2, 1e4),
-        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
-        #                ),
         TableGenerator(fun_allPropertiesMet, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Success rates (properties met) -- verified formally by SMT solver",
                        color_scheme=reporting.color_scheme_green,
@@ -875,12 +852,6 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames)
                        color_value_extractor=scNotValueExtractor,
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
-        # TableGenerator(???, dim_rows, dim_cols, headerRowNames=headerRowNames,
-        #                title="Thresholds for treating the solution as optimal on tests",
-        #                color_scheme=reporting.color_scheme_yellow,
-        #                default_color_thresholds=(0.0, 100.0, 200.0),
-        #                vertical_border=vb, table_postprocessor=post, variants=variants,
-        #                ),
     ]
 
     subsects_main = []
@@ -897,34 +868,9 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
     # variants = variants_benchmarkNumTests
     variants = None
 
-    # props = [p for p in props if p["method"] in {"CDGP", "CDGPprops"}]
-
     print("AVG TOTAL TESTS")
     latex_avgTotalTests = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_totalTests, headerRowNames,
                                                      cv0=0.0, cv1=1000.0, cv2=2000.0, tableVariants=variants)
-
-    # print("AVG RUNTIME PER PROGRAM")
-    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_runtimePerProgram, layered_headline=True,
-    #                                 vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgRuntimePerProgram = printer.table_color_map(text, 0.01, 1.0, 2.0, "colorLow", "colorMedium", "colorHigh")
-
-    # print("AVG GENERATION")
-    # latex_avgGeneration = create_single_table_bundle(props, dim_rows, dim_cols, get_avg_generation, headerRowNames,
-    #                                                  cv0=0.0, cv1=100.0, cv2=200.0, tableVariants=variants)
-    # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, get_avg_generation, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgGeneration = printer.table_color_map(text, 0.0, 50.0, 100.0, "colorLow", "colorMedium", "colorHigh")
-
-    # print("AVG EVALUATED SOLUTIONS")
-    # text = post(
-    #     printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluated, layered_headline=True, vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgEvaluated = printer.table_color_map(text, 500.0, 25000.0, 100000.0, "colorLow", "colorMedium", "colorHigh")
-
-    # print("AVG EVALUATED SOLUTIONS (SUCCESSFUL)")
-    # text = post(printer.latex_table(props, dim_rows, dim_cols, get_avg_evaluatedSuccessful, layered_headline=True,
-    #                                 vertical_border=vb, headerRowNames=headerRowNames))
-    # latex_avgEvaluatedSuccessful = printer.table_color_map(text, 500.0, 25000.0, 100000.0, "colorLow", "colorMedium",
-    #                                                         "colorHigh")
 
     print("MAX SOLVER TIME")
     latex_maxSolverTimes = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_maxSolverTime, headerRowNames,
@@ -948,11 +894,6 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
 
     subsects_cdgp = [
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
-        # ("Average generation (all)", latex_avgGeneration, reporting.color_scheme_teal),
-        #("Average generation (only successful)", latex_avgGenerationSuccessful, reporting.color_scheme_teal),
-        # ("Average evaluated solutions", latex_avgEvaluated, reporting.color_scheme_brown),
-        # ("Average evaluated solutions (only successful)", latex_avgEvaluatedSuccessful, reporting.color_scheme_teal),
-        # ("Approximate average runtime per program [s]", latex_avgRuntimePerProgram, reporting.color_scheme_brown),
         ("Max solver time per query [s]", latex_maxSolverTimes, reporting.color_scheme_violet),
         ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_brown),
         ("Avg number of solver calls (in thousands; 1=1000)", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
@@ -987,9 +928,22 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        title="Test set: MSE  (median); bestOfRun CDGP", headerRowNames=[],
                        color_scheme=reversed(reporting.color_scheme_darkgreen),
                        cellRenderers=[printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
-                                      printer.CellShadingRowMinMax("colorLow", "colorMedium", "colorHigh", valueExtractor=scNotLog10ValueExtractor)],
+                                      printer.CellShadingRow("colorLow", "colorMedium", "colorHigh", valueExtractor=scNotLog10ValueExtractor)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/scikit_testMSE_{}.tex".format(exp_variant)],
+                       middle_col_align="l"
+                       ),
+        TableGenerator(get_median_testMSE,
+                       dimens["method_scikit"],
+                       dimens["benchmark"],
+                       title="Test set: MSE  (median); bestOfRun CDGP", headerRowNames=[],
+                       color_scheme=reversed(reporting.color_scheme_darkgreen),
+                       cellRenderers=[
+                           printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
+                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
+                                                  valueExtractor=scNotLog10ValueExtractor)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/scikit_testMSE_{}_v2.tex".format(exp_variant)],
                        middle_col_align="l"
                        ),
         TableGenerator(fun_allPropertiesMet_verificator,
@@ -1252,25 +1206,17 @@ def reports_withNoise_pop500():
 
 
 def reports_noNoise_pop1k():
-    # folders = ["results_thesis_pop1k_final/noNoise/"]
-    # reports_universal(folders=folders, dir_path="reports_pop1k/noNoise/", exp_variant="noNoise")
-
-    # special for gravity recomputations
-    folders = ["GRAVITY_1k/noNoise/"]
-    reports_universal(folders=folders, dir_path="reports_pop1k_gravity/noNoise/", exp_variant="noNoise")
+    folders = ["results_thesis_pop1k_final/noNoise/"]
+    reports_universal(folders=folders, dir_path="reports_pop1k/noNoise/", exp_variant="noNoise")
 
 def reports_withNoise_pop1k():
-    # folders = ["results_thesis_pop1k_final/withNoise/"]
-    # reports_universal(folders=folders, dir_path="reports_pop1k/withNoise/", exp_variant="withNoise")
-
-    # special for gravity recomputations
-    folders = ["GRAVITY_1k/withNoise/"]
-    reports_universal(folders=folders, dir_path="reports_pop1k_gravity/withNoise/", exp_variant="withNoise")
+    folders = ["results_thesis_pop1k_final/withNoise/"]
+    reports_universal(folders=folders, dir_path="reports_pop1k/withNoise/", exp_variant="withNoise")
 
 
 if __name__ == "__main__":
     # utils.ensure_clear_dir("reports/")
-    reports_noNoise_pop500()
-    reports_withNoise_pop500()
-    # reports_noNoise_pop1k()
-    # reports_withNoise_pop1k()
+    # reports_noNoise_pop500()
+    # reports_withNoise_pop500()
+    reports_noNoise_pop1k()
+    reports_withNoise_pop1k()
