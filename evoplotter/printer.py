@@ -72,9 +72,10 @@ class LatexTextbfMinInRow(LatexCommand):
             _valueExtractor = valueExtractor
             if _valueExtractor is None:
                 _valueExtractor = lambda x: x
-            v = float(_valueExtractor(value))
-            row = [float(_valueExtractor(r)) for r in table.content.getRow(rowNo)]
-            if v == min(row):
+            v = _valueExtractor(value)
+            row = [_valueExtractor(r) for r in table.content.getRow(rowNo)]
+            row = [x for x in row if not isinstance(x, str)]
+            if len(row) > 0 and not isinstance(v, str) and v == min(row):
                 return True
             else:
                 return False
@@ -123,7 +124,7 @@ class CellShading(CellRenderer):
         CellRenderer.__init__(self, condition, editor)
 
 
-class CellShadingRowMinMax(CellRenderer):
+class CellShadingRow(CellRenderer):
     def __init__(self, MinColor="colorLow", MidColor="colorMedium", MaxColor="colorHigh", valueExtractor=None):
         """
         :param MinColor: (str) name of the LaTeX color representing the lowest value.
@@ -142,10 +143,14 @@ class CellShadingRowMinMax(CellRenderer):
 
             v = _valueExtractor(v)
             if isinstance(v, str) and (v == "-" or v == "-" or v.strip().lower() == "nan" or not utils.isfloat(v.strip())):
-                return v
+                return body
             else:
                 # Computing color thresholds
-                row = [sanitize_value(_valueExtractor(r)) for r in table.content.getRow(rowNo)]
+                row = [_valueExtractor(r) for r in table.content.getRow(rowNo)]
+                row = [float(x) for x in row if not isinstance(x, str)]
+                if len(row) == 0:  # no non-string entries in the row
+                    return body
+
                 MaxNumber = max(row)
                 MinNumber = min(row)
                 MidNumber = (MaxNumber + MinNumber) / 2.0
