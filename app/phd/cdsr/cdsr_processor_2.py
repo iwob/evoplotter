@@ -604,42 +604,6 @@ def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix, dir_path):
     return section
 
 
-
-def create_subsection_scikit(props, title, dim_rows, dim_cols, numRuns, headerRowNames):
-    vb = 1  # vertical border
-    variants = None  # variants_benchmarkNumTests
-
-    tables = [
-        TableGenerator(getAvgSatisfiedProps1,
-                       dim_rows, dim_cols,
-                       title="Average ratio of satisfied properties",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-        TableGenerator(getAvgSatisfiedProps2,
-                       dim_rows, dim_cols,
-                       title="Average number of satisfied properties",
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-        TableGenerator(fun_allPropertiesMet, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Success rates (ratio of runs which satisfied all properties)",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-        TableGenerator(getAvgSatisfiedRatios,
-                       dim_rows, dim_cols,
-                       color_scheme=reporting.color_scheme_violet,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       title="Average ratio of satisfied properties (how close approximation was to meeting all properties)",
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-    ]
-
-    return createSubsectionWithTables(title, tables, props)
-
-
 def create_subsection_shared_status(props, title, dim_rows, dim_cols, numRuns, headerRowNames):
     vb = 1  # vertical border
     variants = None  # variants_benchmarkNumTests
@@ -705,23 +669,24 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
         #                ),
         TableGenerator(get_median_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Training set: MSE  (median)",
+                       title="Training set: MSE  (median); bestOfRun CDGP",
                        color_scheme=reversed(reporting.color_scheme_gray_dark),
                        cellRenderers=[
                            printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
                            printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
                                                   valueExtractor=scNotLog10ValueExtractor)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants, middle_col_align="l"
+                       vertical_border=vb, table_postprocessor=post, variants=variants, middle_col_align="l",
+                       addRowWithRanks=True, ranksHigherValuesBetter=False, valueExtractor=scNotValueExtractor
                        ),
-        TableGenerator(get_median_testMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Test set: MSE  (median); bestOfRun CDGP",
-                       color_scheme=reversed(reporting.color_scheme_gray_dark),
-                       cellRenderers=[
-                           printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
-                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
-                                                  valueExtractor=scNotLog10ValueExtractor)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
+        # TableGenerator(get_median_testMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Test set: MSE  (median); bestOfRun CDGP",
+        #                color_scheme=reversed(reporting.color_scheme_gray_dark),
+        #                cellRenderers=[
+        #                    printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
+        #                    printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
+        #                                           valueExtractor=scNotLog10ValueExtractor)],
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                ),
         TableGenerator(get_median_testMSE_bestOnValidCDGP, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Test set: MSE  (median); bestOnValidSet CDGP",
                        color_scheme=reversed(reporting.color_scheme_gray_dark),
@@ -730,6 +695,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                            printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
                                                   valueExtractor=scNotLog10ValueExtractor)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
+                       addRowWithRanks=True, ranksHigherValuesBetter=False, valueExtractor=scNotValueExtractor
                        ),
         TableGenerator(get_averageAlgorithmRanksCDSR(dim_cols[:-1], dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
                        Dim(dim_cols[-1]), Dim(dim_rows[-1]),
@@ -750,20 +716,32 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         TableGenerator(fun_allPropertiesMet, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Success rates (properties met) -- verified formally by SMT solver",
                        color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       # default_color_thresholds=(0.0, 0.5, 1.0),
+                       cellRenderers=[
+                           printer.LatexTextbfMaxInRow(),
+                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
         TableGenerator(fun_allPropertiesMet_verificator, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Success rates (properties met) -- verified by stochastic verificator",
                        color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       # default_color_thresholds=(0.0, 0.5, 1.0),
+                       cellRenderers=[
+                           printer.LatexTextbfMaxInRow(),
+                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
         TableGenerator(getAvgSatisfiedProps1, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average ratio of satisfied properties -- verified by SMT solver (CDSR configs) and stochastic verificator (scikit baselines)",
                        color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
+                       # default_color_thresholds=(0.0, 0.5, 1.0),
+                       cellRenderers=[
+                           printer.LatexTextbfMaxInRow(),
+                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
         TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average runtime [s]",
@@ -839,19 +817,12 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames)
         #                default_color_thresholds=(500.0, 25000.0, 100000.0),
         #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
         #                ),
-        TableGenerator(get_avg_doneAlgRestarts, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Number of algorithm restarts  (avg)",
-                       color_scheme=reporting.color_scheme_gray_light,
-                       default_color_thresholds=(0.0, 1e2, 1e4),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-        TableGenerator(get_min_trainMSE, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Minimum non-zero MSE on train set; done to find if there were runs which terminated early due to correctness threshold",
-                       color_scheme=reporting.color_scheme_gray_dark,
-                       default_color_thresholds=(-10.0, 0.0, 10.0),
-                       color_value_extractor=scNotValueExtractor,
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
+        # TableGenerator(get_avg_doneAlgRestarts, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="Number of algorithm restarts  (avg)",
+        #                color_scheme=reporting.color_scheme_gray_light,
+        #                default_color_thresholds=(0.0, 1e2, 1e4),
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                ),
     ]
 
     subsects_main = []
@@ -920,68 +891,120 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
     assert exp_variant == "noNoise" or exp_variant == "withNoise"
     vb = 1  # vertical border
 
+    thesis_color_scheme = reporting.ColorScheme3(["1.0, 1.0, 1.0", "0.9, 0.9, 0.9", "0.75, 0.75, 0.75"],
+                                          ["white", "gray", "gray"])
+
+    dim_cdsr_methods = dimens["method_CDGP"] * dimens["selection"] +\
+                       dimens["method_CDGPprops"] * dimens["selection"] * dimens["weight"]
+
+    dim_cdsr_methods_full = dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio"] + \
+                            dimens["method_CDGPprops"] * dimens["selection"] * dimens["testsRatio"] * dimens["weight"]
+
     # shTc = cellShading(0.0, 5000.0, 10000.0) if EXP_TYPE == "LIA" else cellShading(0.0, 250.0, 500.0)
     tables = [
+        # scikit configs
         TableGenerator(get_median_testMSE,
                        dimens["benchmark"],
                        dimens["method_scikit"],
                        title="Test set: MSE  (median); bestOfRun CDGP", headerRowNames=[],
-                       color_scheme=reversed(reporting.color_scheme_darkgreen),
+                       color_scheme=reversed(thesis_color_scheme),
                        cellRenderers=[printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
                                       printer.CellShadingRow("colorLow", "colorMedium", "colorHigh", valueExtractor=scNotLog10ValueExtractor)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/scikit_testMSE_{}.tex".format(exp_variant)],
-                       middle_col_align="l"
-                       ),
-        TableGenerator(get_median_testMSE,
-                       dimens["method_scikit"],
-                       dimens["benchmark"],
-                       title="Test set: MSE  (median); bestOfRun CDGP", headerRowNames=[],
-                       color_scheme=reversed(reporting.color_scheme_darkgreen),
-                       cellRenderers=[
-                           printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
-                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
-                                                  valueExtractor=scNotLog10ValueExtractor)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       outputFiles=[dir_path + "/tables/custom/scikit_testMSE_{}_v2.tex".format(exp_variant)],
-                       middle_col_align="l"
+                       middle_col_align="l", addRowWithRanks=True, ranksHigherValuesBetter=False,
+                       valueExtractor=scNotValueExtractor
                        ),
         TableGenerator(fun_allPropertiesMet_verificator,
                        dimens["benchmark"],
                        dimens["method_scikit"],
                        title="Success rate in terms of all properties met (stochastic verifier)", headerRowNames=[],
-                       color_scheme=reporting.color_scheme_darkgreen,
-                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
-                       outputFiles=[dir_path + "/tables/custom/scikit_succRate_{}.tex".format(exp_variant)]
+                       outputFiles=[dir_path + "/tables/custom/scikit_succRate_{}.tex".format(exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
         TableGenerator(getAvgSatisfiedProps1,
                        dimens["benchmark"],
                        dimens["method_scikit"],
                        title="Average satisfied properties", headerRowNames=[],
-                       color_scheme=reporting.color_scheme_darkgreen,
-                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
-                       outputFiles=[dir_path + "/tables/custom/scikit_satConstrRatio_{}.tex".format(exp_variant)]
+                       outputFiles=[dir_path + "/tables/custom/scikit_satConstrRatio_{}.tex".format(exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
-        # TableGenerator(fun_successRate,
-        #                dim_rows,
-        #                dimens["method"] * dimens["evoMode"],
-        #                title="Success rates", headerRowNames=[],
-        #                color_scheme=reporting.color_scheme_darkgreen,
-        #                cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
-        #                vertical_border=vb, table_postprocessor=post, variants=variants,
-        #                outputFiles=[dir_path + "/tables/custom/cdgp_succRate_rowsAsTestsRatio_colsAsEvoMode.tex"]
-        #                ),
-        # TableGenerator(fun_successRate,
-        #                dim_rows,
-        #                dimens["method"] * dimens["selection"],
-        #                title="Success rates", headerRowNames=[],
-        #                color_scheme=reporting.color_scheme_darkgreen,
-        #                cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
-        #                vertical_border=vb, table_postprocessor=post, variants=variants,
-        #                outputFiles=[results_dir + "/tables/custom/cdgp_succRate_rowsAsTestsRatio_colsAsSelection.tex"]
-        #                ),
+        # CDSR configs
+        TableGenerator(get_median_testMSE,
+                       dimens["benchmark"],
+                       dim_cdsr_methods,
+                       title="Test set: MSE  (median); bestOfRun CDGP", headerRowNames=[],
+                       color_scheme=reversed(thesis_color_scheme),
+                       cellRenderers=[
+                           printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
+                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
+                                                  valueExtractor=scNotLog10ValueExtractor)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/cdsr_testMSE_{}.tex".format(exp_variant)],
+                       middle_col_align="l", addRowWithRanks=True, ranksHigherValuesBetter=False,
+                       valueExtractor=scNotValueExtractor
+                       ),
+        TableGenerator(fun_allPropertiesMet_verificator,
+                       dimens["benchmark"],
+                       dim_cdsr_methods,
+                       title="Success rate in terms of all properties met (stochastic verifier)", headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/cdsr_succRate_{}.tex".format(exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(getAvgSatisfiedProps1,
+                       dimens["benchmark"],
+                       dim_cdsr_methods,
+                       title="Average satisfied properties", headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/cdsr_satConstrRatio_{}.tex".format(exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
+        # CDSR configs (full dimensions)
+        TableGenerator(get_median_testMSE,
+                       dimens["benchmark"],
+                       dim_cdsr_methods_full,
+                       title="Test set: MSE  (median); bestOfRun CDGP", headerRowNames=[],
+                       color_scheme=reversed(thesis_color_scheme),
+                       cellRenderers=[
+                           printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
+                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
+                                                  valueExtractor=scNotLog10ValueExtractor)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/cdsrFull_testMSE_{}.tex".format(exp_variant)],
+                       middle_col_align="l", addRowWithRanks=True, ranksHigherValuesBetter=False,
+                       valueExtractor=scNotValueExtractor
+                       ),
+        TableGenerator(fun_allPropertiesMet_verificator,
+                       dimens["benchmark"],
+                       dim_cdsr_methods_full,
+                       title="Success rate in terms of all properties met (stochastic verifier)", headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/cdsrFull_succRate_{}.tex".format(exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(getAvgSatisfiedProps1,
+                       dimens["benchmark"],
+                       dim_cdsr_methods_full,
+                       title="Average satisfied properties", headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],  #cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/cdsrFull_satConstrRatio_{}.tex".format(exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
         # TableGenerator(get_avg_totalTests,
         #                dim_rows, dim_cols,
         #                headerRowNames=[],
@@ -1128,6 +1151,12 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
 
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders, dir_path)
+
+    # manually correct CDSR logs so that always "result.best.testMSE" = "result.validation.best.testMSE"
+    for p in props:
+        if "result.validation.best.testMSE" in p:
+            p["result.best.testMSE"] = p["result.validation.best.testMSE"]
+
     standardize_benchmark_names(props)
     dim_benchmarks = get_benchmarks_from_props(props)
     dim_rows_all = dim_benchmarks.copy()
@@ -1148,8 +1177,8 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     dataFrame = convertPropsToDataFrame(props)
     saveLogsAsCsv(props, dim_benchmarks, dim_cols, dir_path=dir_path, frame=dataFrame)
 
-    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_thesis_final_2/{}/".format(exp_variant), maxRuns=50)
-    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_thesis_pop1k_final_asd/{}/".format(exp_variant), maxRuns=50)
+    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_thesis_pop500_final/{}/".format(exp_variant), maxRuns=50)
+    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_thesis_pop1k_final/{}/".format(exp_variant), maxRuns=50)
 
     dimensions_dict = {"benchmark": dim_benchmarks,
                        "testsRatio": dim_testsRatio,
@@ -1161,13 +1190,13 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
                        "method": dim_methodScikit + dim_methodCDGP + dim_methodCDGPprops,
                        "method_CDGP": dim_methodCDGP,
                        "method_CDGPprops": dim_methodCDGPprops,
-                       "method_scikit": dim_methodScikit, }
+                       "method_scikit": dim_methodScikit,
+                       "weight": dim_weight}
 
     headerRowNames = ["method", "weight"]
     subs = [
         (create_subsection_shared_status, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 50, headerRowNames]),
         (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 50, headerRowNames]),
-        # (create_subsection_scikit, [props, "Scikit Baselines Statistics", dim_rows_all, dim_cols_scikit, 50, headerRowNames]),
         (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
         # (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
         (create_subsection_custom_tables, [props, "Custom tables", dimensions_dict, exp_variant, dir_path, None]),
@@ -1216,7 +1245,7 @@ def reports_withNoise_pop1k():
 
 if __name__ == "__main__":
     # utils.ensure_clear_dir("reports/")
-    # reports_noNoise_pop500()
-    # reports_withNoise_pop500()
-    reports_noNoise_pop1k()
-    reports_withNoise_pop1k()
+    reports_noNoise_pop500()
+    reports_withNoise_pop500()
+    # reports_noNoise_pop1k()
+    # reports_withNoise_pop1k()
