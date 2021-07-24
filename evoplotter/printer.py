@@ -49,40 +49,48 @@ class LatexTextbf(LatexCommand):
         else:
             LatexCommand.__init__(self, r"\textbf{", "}", condition)
 
-class LatexTextbfMaxInRow(LatexCommand):
-    def __init__(self, valueExtractor=None, isBoldMathMode=False):
-        def condition(value, body, table, rowNo, colNo):
-            _valueExtractor = valueExtractor
-            if _valueExtractor is None:
-                _valueExtractor = lambda x: x
-            v = float(_valueExtractor(value))
-            row = [float(_valueExtractor(r)) for r in table.content.getRow(rowNo)]
-            if v == max(row):
-                return True
-            else:
-                return False
-        if isBoldMathMode:
-            LatexCommand.__init__(self, r"{\boldmath ", "}", condition, isFullTableContext=True)
-        else:
-            LatexCommand.__init__(self, r"\textbf{", "}", condition, isFullTableContext=True)
+def _canBeConvertedToFloat(s):
+    try:
+        float(s)
+    except ValueError:
+        return False
+    return True
 
-class LatexTextbfMinInRow(LatexCommand):
-    def __init__(self, valueExtractor=None, isBoldMathMode=False):
+
+class LatexTextbfFunInRow(LatexCommand):
+    def __init__(self, fun, valueExtractor=None, isBoldMathMode=False):
+        # fun - a function returning one of the elements from the row
         def condition(value, body, table, rowNo, colNo):
             _valueExtractor = valueExtractor
             if _valueExtractor is None:
                 _valueExtractor = lambda x: x
             v = _valueExtractor(value)
-            row = [_valueExtractor(r) for r in table.content.getRow(rowNo)]
-            row = [x for x in row if not isinstance(x, str)]
-            if len(row) > 0 and not isinstance(v, str) and v == min(row):
-                return True
-            else:
+
+            if not _canBeConvertedToFloat(v):
                 return False
+            else:
+                v = float(v)
+                row = [_valueExtractor(r) for r in table.content.getRow(rowNo)]
+                row = [float(x) for x in row if _canBeConvertedToFloat(x)]
+                if len(row) > 0 and not isinstance(v, str) and v == fun(row):
+                    return True
+                else:
+                    return False
+
         if isBoldMathMode:
             LatexCommand.__init__(self, r"{\boldmath ", "}", condition, isFullTableContext=True)
         else:
             LatexCommand.__init__(self, r"\textbf{", "}", condition, isFullTableContext=True)
+
+
+class LatexTextbfMaxInRow(LatexTextbfFunInRow):
+    def __init__(self, valueExtractor=None, isBoldMathMode=False):
+        LatexTextbfFunInRow.__init__(self, lambda row: max(row), valueExtractor=valueExtractor, isBoldMathMode=isBoldMathMode)
+
+
+class LatexTextbfMinInRow(LatexTextbfFunInRow):
+    def __init__(self, valueExtractor=None, isBoldMathMode=False):
+        LatexTextbfFunInRow.__init__(self, lambda row: min(row), valueExtractor=valueExtractor, isBoldMathMode=isBoldMathMode)
 
 
 class LatexTextit(LatexCommand):
@@ -329,8 +337,8 @@ class Table(object):
     """
     def __init__(self, cells, dimCols=None, dimRows=None, cellRenderers=None, layeredHeadline=True,
                  verticalBorder=0, horizontalBorder=1, useBooktabs=False, headerRowNames=None,
-                 showColumnNames=True, showRowNames=True, addRowWithMeans=False,
-                 addRowWithRanks=False, ranksHigherValuesBetter=True, firstColAlign="l", middle_col_align="c"):
+                 showColumnNames=True, showRowNames=True, addRowWithMeans=False, valueExtractor=None,
+                 addRowWithRanks=False, ranksHigherValuesBetter=True, firstColAlign="l", middleColAlign="c"):
         if cellRenderers is None:
             cellRenderers = []
         assert isinstance(cells, list) or isinstance(cells, TableContent) #"Table expects array of cells as an input" #
@@ -365,7 +373,10 @@ class Table(object):
         self.ranksHigherValuesBetter = ranksHigherValuesBetter
         self.addRowWithMeans = addRowWithMeans
         self.firstColAlign = firstColAlign
-        self.middle_col_align = middle_col_align
+        self.middle_col_align = middleColAlign
+        if valueExtractor is None:
+            valueExtractor = lambda x: x
+        self.valueExtractor = valueExtractor
 
     def removeColumn(self, index):
         self.content.removeColumn(index)
@@ -419,6 +430,15 @@ class Table(object):
         """Returns a dictionary from a config name to """
         import scipy.stats as ss
         ranksMatrix = []  # for each config name contains a list of its ranks
+        def processRow(row):
+            rowValues = []
+            for x in row:
+                if x is None or x == "-":
+                    rowValues.append(np.inf)  # so that missing values collectively get the worst spot
+                else:
+                    rowValues.append(float(self.valueExtractor(x)))
+            return rowValues
+
         for row in self.content:
             # "If there are tied values, assign to each tied value the average of
             #  the ranks that would have been assigned without ties."
@@ -427,10 +447,14 @@ class Table(object):
             #
             # In[20]: ss.rankdata([1, 2, 3, 3, 3, 4, 5])
             # Out[20]: array([1., 2., 4., 4., 4., 6., 7.])
+            valueExtractor = None
+
+            rowValues = processRow(row)
             if self.ranksHigherValuesBetter:
-                ranks = ss.rankdata([-float(x) for x in row])
+                rowValues = [-x for x in rowValues]
+                ranks = ss.rankdata(rowValues)
             else:
-                ranks = ss.rankdata([float(x) for x in row])
+                ranks = ss.rankdata(rowValues)
             ranksMatrix.append(ranks)
         return ranksMatrix
 
