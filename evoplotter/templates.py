@@ -357,7 +357,8 @@ class FriedmannTestPython:
         pairs = list(map(lambda p: (p[1], p[0]) if getRank(p[0]) > getRank(p[1]) else (p[0], p[1]),
                          pairs))  # make the elements with lower rank go first
         # pairs = [(R, L) for (L, R) in pairs if getRank(L) > getRank(R)]  # make the elements with lower rank go first
-        pairs.sort(key=lambda x: (getRank(x[0]), getRank(x[1])))  # start with the lowest ranks
+        pairs.sort(key=lambda x: (getRank(x[0]), x[0], getRank(x[1])))  # start with the lowest ranks
+        # "x[0]" protects against multiple dominant algorithms with the same ranks
         return pairs
 
 
@@ -555,9 +556,9 @@ def getSortedAveragedRanks(props, dim_ranks_trials, dim_ranking, value_getter, h
                 allRanks[name] = []
             props2 = config.filter_props(props_trial)
             if len(props2) > 0:
-                valuesList.append((name, value_getter(props2)))
+                valuesList.append((name, float(value_getter(props2))))
 
-        valuesList.sort(key=lambda x: (x[1], x[0]), reverse=higherValuesBetter) # True
+        valuesList.sort(key=lambda x: (x[1], x[0]), reverse=higherValuesBetter)
 
         # "If there are tied values, assign to each tied value the average of
         #  the ranks that would have been assigned without ties."
