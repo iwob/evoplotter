@@ -140,22 +140,20 @@ class CellShadingRow(CellRenderer):
           gradient, that is closer a given cell value is to the MidNumber, more MidColor'ed it becomes.
         :param MaxColor: (str) name of the LaTeX color representing the highest value.
         :param valueExtractor: (lambda) extracts a value from a table cell in order to apply shading to that value. Should return float."""
-        def color_cell(v, body, table, rowNo, colNo):
-            def sanitize_value(x):
-                return float(x.strip()) if isinstance(x, str) else float(x)
-
+        def color_cell(val, body, table, rowNo, colNo):
             if valueExtractor is None:
                 _valueExtractor = lambda x: x
             else:
                 _valueExtractor = valueExtractor
 
-            v = _valueExtractor(v)
-            if isinstance(v, str) and (v == "-" or v == "-" or v.strip().lower() == "nan" or not utils.isfloat(v.strip())):
+            v = _valueExtractor(val)
+            if v is None or not utils.isfloat(v):
                 return body
             else:
+                v = float(v)
                 # Computing color thresholds
                 row = [_valueExtractor(r) for r in table.content.getRow(rowNo)]
-                row = [float(x) for x in row if not isinstance(x, str)]
+                row = [float(x) for x in row if utils.isfloat(x)]
                 if len(row) == 0:  # no non-string entries in the row
                     return body
 
@@ -164,8 +162,7 @@ class CellShadingRow(CellRenderer):
                 MidNumber = (MaxNumber + MinNumber) / 2.0
 
                 # Computing color gradient.
-                val = sanitize_value(v)
-                color = getLatexColorCode(val, [MinNumber, MidNumber, MaxNumber], [MinColor, MidColor, MaxColor])
+                color = getLatexColorCode(v, [MinNumber, MidNumber, MaxNumber], [MinColor, MidColor, MaxColor])
                 # if val > MidNumber:
                 #     PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber - MidNumber), 100.0), 0.0)
                 #     color = "{0}!{1:.1f}!{2}".format(MaxColor, PercentColor, MidColor)
@@ -976,21 +973,23 @@ def getLatexColorCode(val, colorNumbers, colorNames):
     :param colorNames: (list[float]) names of the colors.
     :return: (str) LaTeX color gradient to use for example in cellcolor.
     """
-    assert len(colorNumbers) == len(colorNames) == 3, "Lists should have eactly three elements."
+    assert len(colorNumbers) == len(colorNames) == 3, "Lists should have exactly three elements."
     MinNumber, MidNumber, MaxNumber = colorNumbers[0], colorNumbers[1], colorNumbers[2]
     MinColor, MidColor, MaxColor = colorNames[0], colorNames[1], colorNames[2]
     if val >= MidNumber:
         if MaxNumber == MidNumber:
-            PercentColor = 0.0
+            # PercentColor = 0.0
+            return "{}".format(MaxColor)  # if val >= MaxNumber, then always print MaxColor
         else:
             PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber - MidNumber), 100.0), 0.0)
-        return "{0}!{1:.1f}!{2}".format(MaxColor, PercentColor, MidColor)
+            return "{0}!{1:.1f}!{2}".format(MaxColor, PercentColor, MidColor)
     else:
         if MinNumber == MidNumber:
-            PercentColor = 0.0
+            # PercentColor = 0.0
+            return "{}".format(MaxColor)  # if val < MinNumber, then always print MinColor
         else:
             PercentColor = max(min(100.0 * (MidNumber - val) / (MidNumber - MinNumber), 100.0), 0.0)
-        return "{0}!{1:.1f}!{2}".format(MinColor, PercentColor, MidColor)
+            return "{0}!{1:.1f}!{2}".format(MinColor, PercentColor, MidColor)
 
 
 def table_color_map(text, MinNumber, MidNumber, MaxNumber, MinColor="colorLow", MidColor="colorMedium",
