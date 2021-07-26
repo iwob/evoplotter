@@ -429,6 +429,12 @@ def get_median_testMSE(props):
     else:
         median = np.median([float(p["result.best.testMSE"]) for p in props])
         return scientificNotationLatex(median)  # , np.std(vals)
+def get_median_testMSE_noScNotation(props):
+    if len(props) == 0:
+        return "-"
+    else:
+        median = np.median([float(p["result.best.testMSE"]) for p in props])
+        return median
 def get_min_trainMSE(props):
     # L = [float(p["result.best.trainMSE"]) for p in props if float(p["result.best.trainMSE"]) <= 1.e-8 and float(p["result.best.trainMSE"]) >= 1.e-15]  #good line
     L = [float(p["result.best.trainMSE"]) for p in props if float(p["result.best.trainMSE"]) <= 1.e-10]  #experimental line

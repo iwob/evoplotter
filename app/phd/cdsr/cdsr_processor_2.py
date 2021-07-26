@@ -911,7 +911,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        cellRenderers=[printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
                                       printer.CellShadingRow("colorLow", "colorMedium", "colorHigh", valueExtractor=scNotLog10ValueExtractor)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
-                       outputFiles=[dir_path + "/tables/custom/scikit_testMSE_{}.tex".format(exp_variant)],
+                       outputFiles=[dir_path + "/tables/custom/scikit/scikit_testMSE_{}.tex".format(exp_variant)],
                        middle_col_align="l", addRowWithRanks=True, ranksHigherValuesBetter=False,
                        valueExtractor=scNotValueExtractor
                        ),
@@ -920,21 +920,43 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        dimens["method_scikit"],
                        title="Success rate in terms of all properties met (stochastic verifier)", headerRowNames=[],
                        color_scheme=thesis_color_scheme,
-                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
-                       outputFiles=[dir_path + "/tables/custom/scikit_succRate_{}.tex".format(exp_variant)],
+                       outputFiles=[dir_path + "/tables/custom/scikit/scikit_succRate_{}.tex".format(exp_variant)],
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
         TableGenerator(getAvgSatisfiedProps1,
                        dimens["benchmark"],
                        dimens["method_scikit"],
-                       title="Average satisfied properties", headerRowNames=[],
+                       title="Average ratio of satisfied properties", headerRowNames=[],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
-                       outputFiles=[dir_path + "/tables/custom/scikit_satConstrRatio_{}.tex".format(exp_variant)],
+                       outputFiles=[dir_path + "/tables/custom/scikit/scikit_satConstrRatio_{}.tex".format(exp_variant)],
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
+        TableGenerator(getAvgSatisfiedProps1,
+                       dimens["benchmark"],
+                       dimens["method_scikit"],
+                       title="Average ratio of satisfied properties", headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), printer.CellShadingRow()],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/scikit/_scikit_satConstrRatio_{}_rowShading.tex".format(exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
+        FriedmannTestPython(dimens["benchmark"],
+                            dimens["method_scikit"],
+                            getAvgSatisfiedProps1, p_treshold=0.05,
+                            title="Friedman test for average ratio of satisfied properties",
+                            pathFriedmanViz="tables/custom/scikit/friedman_scikit_avgSatConstr.gv",
+                            workingDir=dir_path, higherValuesBetter=True),
+        FriedmannTestPython(dimens["benchmark"],
+                            dimens["method_scikit"],
+                            get_median_testMSE_noScNotation, p_treshold=0.05,
+                            title="Friedman test for median MSE on test set",
+                            pathFriedmanViz="tables/custom/scikit/friedman_scikit_testMSE.gv",
+                            workingDir=dir_path, higherValuesBetter=False),
         # CDSR configs
         TableGenerator(get_median_testMSE,
                        dimens["benchmark"],
@@ -963,7 +985,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
         TableGenerator(getAvgSatisfiedProps1,
                        dimens["benchmark"],
                        dim_cdsr_methods,
-                       title="Average satisfied properties", headerRowNames=[],
+                       title="Average ratio of satisfied properties", headerRowNames=[],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
@@ -998,7 +1020,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
         TableGenerator(getAvgSatisfiedProps1,
                        dimens["benchmark"],
                        dim_cdsr_methods_full,
-                       title="Average satisfied properties", headerRowNames=[],
+                       title="Average ratio of satisfied properties", headerRowNames=[],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],  #cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
@@ -1155,7 +1177,28 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     # manually correct CDSR logs so that always "result.best.testMSE" = "result.validation.best.testMSE"
     for p in props:
         if "result.validation.best.testMSE" in p:
+            p["result.best"] = p["result.validation.best"]
+            p["result.best.smtlib"] = p["result.validation.best.smtlib"]
+            p["result.best.correctTests"] = p["result.validation.best.correctTests"]
+            p["result.best.correctVerification"] = p["result.validation.best.correctVerification"]
+            p["result.best.height"] = p["result.validation.best.height"]
+            p["result.best.mse"] = p["result.validation.best.mse"]
+            p["result.best.passedConstraints"] = p["result.validation.best.passedConstraints"]
+            p["result.best.size"] = p["result.validation.best.size"]
+            p["result.best.testEval"] = p["result.validation.best.testEval"]
             p["result.best.testMSE"] = p["result.validation.best.testMSE"]
+            p["result.best.trainEval"] = p["result.validation.best.trainEval"]
+            p["result.best.trainMSE"] = p["result.validation.best.trainMSE"]
+            p["result.best.validEval"] = p["result.validation.best.validEval"]
+            p["result.best.validMSE"] = p["result.validation.best.validMSE"]
+            p["result.best.verificationDecision"] = p["result.validation.best.verificationDecision"]
+            p["result.best.verificationModel"] = p["result.validation.best.verificationModel"]
+            p["result.bestOrig"] = p["result.validation.bestOrig"]
+            p["result.bestOrig.height"] = p["result.validation.bestOrig.height"]
+            p["result.bestOrig.size"] = p["result.validation.bestOrig.size"]
+            p["result.bestOrig.smtlib"] = p["result.validation.bestOrig.smtlib"]
+            p["result.best.verificationModel"] = p["result.validation.best.verificationModel"]
+            p["result.best.verificationModel"] = p["result.validation.best.verificationModel"]
 
     standardize_benchmark_names(props)
     dim_benchmarks = get_benchmarks_from_props(props)
