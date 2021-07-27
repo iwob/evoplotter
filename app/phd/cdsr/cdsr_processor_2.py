@@ -207,13 +207,13 @@ def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowN
     return text
 
 
-def getAndSaveTextForTableVariants(table, props, outputFiles=None):
+def getAndSaveTextForTableVariants(table, props):
     """Produces a list of LaTeX codes for each table variant. If outputFiles are specified,
     then the outputs will be saved there."""
     tsv = table.apply_listed(props)
-    if outputFiles is not None:
-        assert len(tsv) == len(outputFiles), "Number of output files must be the same as the number of table variants."
-        for tsv_txt, path in zip(tsv, outputFiles):
+    if table.outputFiles is not None:
+        assert len(tsv) == len(table.outputFiles), "Number of output files must be the same as the number of table variants."
+        for tsv_txt, path in zip(tsv, table.outputFiles):
             os.makedirs(os.path.dirname(path), exist_ok=True)  # automatically create directories
             f = open(path, "w")
             f.write(tsv_txt)
@@ -221,124 +221,23 @@ def getAndSaveTextForTableVariants(table, props, outputFiles=None):
     return tsv
 
 
+def createRelativeSectionForTable(tableGen, props):
+    cs = tableGen.color_scheme
+    if isinstance(cs, reporting.ColorScheme3):
+        cs = cs.toBlockLatex()
+    table_tex = " ".join(getAndSaveTextForTableVariants(tableGen, props))
+    vspace = reporting.BlockLatex(r"\vspace{0.75cm}" + "\n")
+    sub = reporting.SectionRelative(tableGen.title, contents=[cs, reporting.BlockLatex(table_tex + "\n"), vspace])
+    return sub
+
+
 def createSubsectionWithTables(title, tables, props):
     subsects_main = []
     for t in tables:
-        tsv = getAndSaveTextForTableVariants(t, props, t.outputFiles)
+        tsv = getAndSaveTextForTableVariants(t, props)
         tup = (t.title, r"\noindent " + " ".join(tsv), t.color_scheme)
         subsects_main.append(tup)
     return reporting.Subsection(title, get_content_of_subsections(subsects_main))
-
-
-def create_subsection_aggregation_tests(props, dim_rows, dim_cols, headerRowNames):
-    vb = 1  # vertical border
-    variants = None
-    dim_rows_v2 = get_benchmarks_from_props(props, ignoreNumTests=True)
-    dim_rows_v2 += dim_true
-
-    # By default: dim_cols = (dim_methodGP * dim_empty + dim_methodCDGP * dim_testsRatio) * dim_optThreshold
-
-    tables = [
-        # TableGenerator(fun_successRateMseOnly, dim_rows_v2,
-        #                (dim_methodGP + dim_methodCDGP),
-        #                headerRowNames=[""],
-        #                title="Success rates (mse below thresh)",
-        #                color_scheme=reporting.color_scheme_violet,
-        #                default_color_thresholds=(0.0, 0.5, 1.0),
-        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
-        #                ),
-
-
-        TableGenerator(fun_successRate, dim_rows_v2,
-                       dim_benchmarkNumTests * dim_method,
-                       headerRowNames=["", ""],
-                       title="Success rates (mse below thresh + properties met)",
-                       color_scheme=reporting.color_scheme_darkgreen,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-        TableGenerator(fun_successRate, dim_rows_v2,
-                       dim_method * dim_benchmarkNumTests,
-                       headerRowNames=["", ""],
-                       title="Success rates (mse below thresh + properties met)",
-                       color_scheme=reporting.color_scheme_darkgreen,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-        TableGenerator(fun_successRate, dim_rows_v2,
-                       dim_optThreshold * dim_method,
-                       headerRowNames=["tolerance", ""],
-                       title="Success rates (mse below thresh + properties met)",
-                       color_scheme=reporting.color_scheme_darkgreen,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-        TableGenerator(fun_successRate, dim_rows_v2,
-                       dim_method,
-                       headerRowNames=[""],
-                       title="Success rates (mse below thresh + properties met)",
-                       color_scheme=reporting.color_scheme_darkgreen,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-
-        TableGenerator(fun_allPropertiesMet_verificator, dim_rows_v2,
-                       dim_benchmarkNumTests * dim_method,
-                       headerRowNames=["", ""],
-                       title="Success rates (properties met) -- verified by stochastic verificator",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-        TableGenerator(fun_allPropertiesMet, dim_rows_v2,
-                       dim_benchmarkNumTests * dim_method,
-                       headerRowNames=["", ""],
-                       title="Success rates (properties met) -- verified formally by SMT solver",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-        TableGenerator(fun_allPropertiesMet, dim_rows_v2,
-                       dim_method * dim_benchmarkNumTests,
-                       headerRowNames=["", ""],
-                       title="Success rates (properties met)",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-        # TableGenerator(fun_allPropertiesMet, dim_rows_v2,
-        #                dim_benchmarkNumTests * dim_optThreshold * dim_method,
-        #                headerRowNames=["", "tolerance", ""],
-        #                title="Success rates (properties met)",
-        #                color_scheme=reporting.color_scheme_green,
-        #                default_color_thresholds=(0.0, 0.5, 1.0),
-        #                vertical_border=vb, table_postprocessor=post, table_variants=variants,
-        #                ),
-        TableGenerator(fun_allPropertiesMet, dim_rows_v2,
-                       dim_optThreshold * dim_method,
-                       headerRowNames=["tolerance", ""],
-                       title="Success rates (properties met)",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-        TableGenerator(fun_allPropertiesMet, dim_rows_v2,
-                       dim_method,
-                       headerRowNames=[""],
-                       title="Success rates (properties met)",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 0.5, 1.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
-    ]
-
-    subsects_main = []
-    for t in tables:
-        tup = (t.title, t.apply(props), t.color_scheme)
-        subsects_main.append(tup)
-
-    return reporting.Subsection("Tests of different data aggregation in tables", get_content_of_subsections(subsects_main))
-
 
 
 def _get_median_testMSE(props):
@@ -604,6 +503,20 @@ def create_subsection_figures(props, dim_rows, dim_cols, exp_prefix, dir_path):
     return section
 
 
+def cellShading(a, b, c):
+    assert c >= b >= a
+    return printer.CellShading(a, b, c, "colorLow", "colorMedium", "colorHigh")
+
+def cellScNotShading(a, b, c):
+    assert c >= b >= a
+    return printer.CellShading(a, b, c, "colorLow", "colorMedium", "colorHigh", valueExtractor=scNotValueExtractor)
+
+
+rBoldWhen1 = printer.LatexTextbf(lambda v, b: v == "1.00")
+thesis_color_scheme = reporting.ColorScheme3(["1.0, 1.0, 1.0", "0.9, 0.9, 0.9", "0.75, 0.75, 0.75"], ["white", "gray", "gray"])
+
+
+
 def create_subsection_shared_status(props, title, dim_rows, dim_cols, numRuns, headerRowNames):
     vb = 1  # vertical border
     variants = None  # variants_benchmarkNumTests
@@ -673,8 +586,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        color_scheme=reversed(reporting.color_scheme_gray_dark),
                        cellRenderers=[
                            printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
-                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
-                                                  valueExtractor=scNotLog10ValueExtractor)],
+                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh", valueExtractor=scNotLog10ValueExtractor)],
                        vertical_border=vb, table_postprocessor=post, variants=variants, middle_col_align="l",
                        addRowWithRanks=True, ranksHigherValuesBetter=False, valueExtractor=scNotValueExtractor
                        ),
@@ -719,7 +631,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        # default_color_thresholds=(0.0, 0.5, 1.0),
                        cellRenderers=[
                            printer.LatexTextbfMaxInRow(),
-                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
+                           cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
@@ -729,7 +641,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        # default_color_thresholds=(0.0, 0.5, 1.0),
                        cellRenderers=[
                            printer.LatexTextbfMaxInRow(),
-                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
+                           cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
@@ -739,7 +651,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        # default_color_thresholds=(0.0, 0.5, 1.0),
                        cellRenderers=[
                            printer.LatexTextbfMaxInRow(),
-                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
+                           cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
@@ -787,12 +699,12 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames)
                        default_color_thresholds=(0.0, 100.0, 200.0),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
-        TableGenerator(get_validation_testSet_ratio, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="A ratio of bestOfRun / bestOfValidation for MSE on test set.",
-                       color_scheme=reporting.color_scheme_green,
-                       default_color_thresholds=(0.0, 100.0, 200.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
-                       ),
+        # TableGenerator(get_validation_testSet_ratio, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        #                title="A ratio of bestOfRun / bestOfValidation for MSE on test set.",
+        #                color_scheme=reporting.color_scheme_green,
+        #                default_color_thresholds=(0.0, 100.0, 200.0),
+        #                vertical_border=vb, table_postprocessor=post, variants=variants,
+        #                ),
         # TableGenerator(get_stats_sizeOnlySuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
         #                title="Average sizes of best of runs (number of nodes) (only successful)",
         #                color_scheme=reporting.color_scheme_yellow,
@@ -874,25 +786,12 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
     return reporting.Subsection(title, get_content_of_subsections(subsects_cdgp))
 
 
-def cellShading(a, b, c):
-    assert c >= b >= a
-    return printer.CellShading(a, b, c, "colorLow", "colorMedium", "colorHigh")
-
-def cellScNotShading(a, b, c):
-    assert c >= b >= a
-    return printer.CellShading(a, b, c, "colorLow", "colorMedium", "colorHigh", valueExtractor=scNotValueExtractor)
-
-
-rBoldWhen1 = printer.LatexTextbf(lambda v, b: v == "1.00")
 
 
 def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path, variants=None):
     assert isinstance(dimens, dict)
     assert exp_variant == "noNoise" or exp_variant == "withNoise"
     vb = 1  # vertical border
-
-    thesis_color_scheme = reporting.ColorScheme3(["1.0, 1.0, 1.0", "0.9, 0.9, 0.9", "0.75, 0.75, 0.75"],
-                                          ["white", "gray", "gray"])
 
     dim_cdsr_methods = dimens["method_CDGP"] * dimens["selection"] +\
                        dimens["method_CDGPprops"] * dimens["selection"] * dimens["weight"]
@@ -992,6 +891,18 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        outputFiles=[dir_path + "/tables/custom/cdsr_satConstrRatio_{}.tex".format(exp_variant)],
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
+        FriedmannTestPython(dimens["benchmark"],
+                            dim_cdsr_methods,
+                            getAvgSatisfiedProps1, p_treshold=0.05,
+                            title="Friedman test for average ratio of satisfied properties",
+                            pathFriedmanViz="tables/custom/scikit/friedman_cdsr_avgSatConstr.gv",
+                            workingDir=dir_path, higherValuesBetter=True),
+        FriedmannTestPython(dimens["benchmark"],
+                            dim_cdsr_methods,
+                            get_median_testMSE_noScNotation, p_treshold=0.05,
+                            title="Friedman test for median MSE on test set",
+                            pathFriedmanViz="tables/custom/scikit/friedman_cdsr_testMSE.gv",
+                            workingDir=dir_path, higherValuesBetter=False),
         # CDSR configs (full dimensions)
         TableGenerator(get_median_testMSE,
                        dimens["benchmark"],
@@ -1027,6 +938,18 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        outputFiles=[dir_path + "/tables/custom/cdsrFull_satConstrRatio_{}.tex".format(exp_variant)],
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
+        FriedmannTestPython(dimens["benchmark"],
+                            dim_cdsr_methods_full,
+                            getAvgSatisfiedProps1, p_treshold=0.05,
+                            title="Friedman test for average ratio of satisfied properties",
+                            pathFriedmanViz="tables/custom/scikit/friedman_cdsrFull_avgSatConstr.gv",
+                            workingDir=dir_path, higherValuesBetter=True),
+        FriedmannTestPython(dimens["benchmark"],
+                            dim_cdsr_methods_full,
+                            get_median_testMSE_noScNotation, p_treshold=0.05,
+                            title="Friedman test for median MSE on test set",
+                            pathFriedmanViz="tables/custom/scikit/friedman_cdsrFull_testMSE.gv",
+                            workingDir=dir_path, higherValuesBetter=False),
         # TableGenerator(get_avg_totalTests,
         #                dim_rows, dim_cols,
         #                headerRowNames=[],
@@ -1051,43 +974,141 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
         #                vertical_border=vb, table_postprocessor=post, variants=variants,
         #                outputFiles=[results_dir + "/tables/custom/cdgp_runtime_rowsAsTestsRatio_successful.tex"]
         #                ),
-        # FriedmannTestPython(dimens["benchmark"],
-        #                     dimens["method"] * dimens["evoMode"] * dimens["selection"] * dimens["testsRatio"],
-        #                     get_successRate, p_treshold=0.05,
-        #                     title="Friedman test for success rates (all variants)",
-        #                     pathFriedmanViz="tables/custom/friedman_all.gv",
-        #                     workingDir=results_dir),
-        # FriedmannTestPython(dimensions_dict["benchmark"],
-        #                     dimensions_dict["method"] * Dim(dimensions_dict["evoMode"][0]) * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
-        #                     get_successRate, p_treshold=0.05,
-        #                     title="Friedman test for success rates (generational variants only)",
-        #                     pathFriedmanViz="tables/custom/friedman_generational.gv",
-        #                     workingDir=results_dir),
-        # FriedmannTestPython(dimensions_dict["benchmark"],
-        #                     dimensions_dict["method"] * Dim(dimensions_dict["evoMode"][1]) * dimensions_dict["selection"] * dimensions_dict["testsRatio"],
-        #                     get_successRate, p_treshold=0.05,
-        #                     title="Friedman test for success rates (steadyState variants only)",
-        #                     pathFriedmanViz="tables/custom/friedman_steadyState.gv",
-        #                     workingDir=results_dir),
-        # TableGenerator(fun_successRate,
-        #                dimens["benchmark"],
-        #                dimens["method"] * dimens["testsRatio"],
-        #                title="Success rates", headerRowNames=[],
-        #                color_scheme=reporting.color_scheme_darkgreen,
-        #                cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
-        #                vertical_border=vb, table_postprocessor=post, variants=variants,
-        #                outputFiles=[results_dir + "/tables/custom/cdgp_succRate_colsAsTestsRatio.tex"]
-        #                ),
-        # FriedmannTestPython(dimens["benchmark"],
-        #                     dimens["method"] * dimens["testsRatio"],
-        #                     get_successRate, p_treshold=0.05,
-        #                     title="Friedman test for success rates (testsRatio)",
-        #                     pathFriedmanViz= "tables/custom/friedman_testsRatio.gv",
-        #                     workingDir=results_dir),
     ]
 
     return createSubsectionWithTables(title, tables, props)
 
+
+
+def create_subsection_individual_constraints(props, title, dimens, exp_variant, dir_path, variants=None):
+    assert isinstance(dimens, dict)
+    assert exp_variant == "noNoise" or exp_variant == "withNoise"
+    vb = 1  # vertical border
+
+    dim_cdsr_methods = dimens["method_CDGP"] * dimens["selection"] + \
+                       dimens["method_CDGPprops"] * dimens["selection"] * dimens["weight"]
+
+    dim_cdsr_methods_full = dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio"] + \
+                            dimens["method_CDGPprops"] * dimens["selection"] * dimens["testsRatio"] * dimens["weight"]
+
+    c_arg_symmetry = "brown!30"
+    c_value_bound = "blue!20"
+    c_value_bound2 = "blue!35"
+    c_monotonicity = "green!20"
+    c_equality = "red!20"
+
+    # we need to create a situation where we can use individual constraints as a row dimension
+    propsConstr = []
+    for p in props:
+        if "result.best.verificator.decisions" in p:
+            satVector = p["result.best.verificator.decisions"].split(",")
+            satVector = [int(s) for s in satVector]
+            for i, satOutcome in enumerate(satVector):
+                new_p = p.copy()
+                new_p["propsConstr.constraint"] = p["benchmark"] + "-" + str(i)
+                new_p["propsConstr.satOutcome"] = satOutcome
+                new_p["propsConstr.method"] = p["method"]
+                propsConstr.append(new_p)
+    dimConstr = Dim.from_dict(propsConstr, "propsConstr.constraint").sort()
+
+    def funSatOutcome(props):
+        props2 = [float(p["propsConstr.satOutcome"]) for p in props if "propsConstr.satOutcome" in p]
+        if len(props2) == 0:
+            return "-"
+        else:
+            # return "{}".format("%0.2f" % (sum(props2) / len(props2)))
+            return "{:.2f}".format(sum(props2) / len(props2))
+
+    tables = [
+        TableGenerator(funSatOutcome,
+                       dimConstr,
+                       dimens["method_scikit"],
+                       title="Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality), headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/scikit/_scikit_satIndividualConstrRatio_{}.tex".format(
+                           exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(funSatOutcome,
+                       dimConstr,
+                       dim_cdsr_methods,
+                       title="Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality), headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/scikit/_scikit_satIndividualConstrRatio_{}.tex".format(
+                           exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(funSatOutcome,
+                       dimConstr,
+                       dim_cdsr_methods_full,
+                       title="Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality), headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/scikit/_scikit_satIndividualConstrRatio_{}.tex".format(
+                           exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
+    ]
+    content = [createRelativeSectionForTable(t, propsConstr) for t in tables]
+
+    col_arg_symmetry = "\cellcolor{" + c_arg_symmetry + "}"
+    col_value_bound = "\cellcolor{" + c_value_bound + "}"
+    col_value_bound2 = "\cellcolor{" + c_value_bound2 + "}"
+    col_monotonicity = "\cellcolor{" + c_monotonicity + "}"
+    col_equality = "\cellcolor{" + c_equality + "}"
+
+    for sec in content:
+        sec.contents[1].text = sec.contents[1].text.replace("gravity-0", "{}gravity-0".format(col_arg_symmetry))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer14-3", "{}keijzer14-3".format(col_arg_symmetry))
+        sec.contents[1].text = sec.contents[1].text.replace("pagie1-2", "{}pagie1-2".format(col_arg_symmetry))
+        sec.contents[1].text = sec.contents[1].text.replace("res2-0", "{}res2-0".format(col_arg_symmetry))
+        sec.contents[1].text = sec.contents[1].text.replace("res3-0", "{}res3-0".format(col_arg_symmetry))
+        sec.contents[1].text = sec.contents[1].text.replace("res3-1", "{}res3-1".format(col_arg_symmetry))
+        sec.contents[1].text = sec.contents[1].text.replace("res3-2", "{}res3-2".format(col_arg_symmetry))
+
+        sec.contents[1].text = sec.contents[1].text.replace("gravity-1", "{}gravity-1".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer14-0", "{}keijzer14-0".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer14-1", "{}keijzer14-1".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer5-1", "{}keijzer5-1".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer5-2", "{}keijzer5-2".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer15-1", "{}keijzer15-1".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer15-2", "{}keijzer15-2".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("nguyen1-0", "{}nguyen1-0".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("nguyen1-1", "{}nguyen1-1".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("nguyen3-0", "{}nguyen3-0".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("nguyen3-1", "{}nguyen3-1".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("nguyen4-0", "{}nguyen4-0".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("nguyen4-1", "{}nguyen4-1".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("pagie1-0", "{}pagie1-0".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("pagie1-1", "{}pagie1-1".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("res2-2", "{}res2-2".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("res3-3", "{}res3-3".format(col_value_bound))
+        sec.contents[1].text = sec.contents[1].text.replace("res3-4", "{}res3-4".format(col_value_bound))
+
+        sec.contents[1].text = sec.contents[1].text.replace("res2-1", "{}res2-1".format(col_value_bound2))
+        sec.contents[1].text = sec.contents[1].text.replace("res3-3", "{}res3-3".format(col_value_bound2))
+        sec.contents[1].text = sec.contents[1].text.replace("nguyen4-2", "{}nguyen4-2".format(col_value_bound2))
+        sec.contents[1].text = sec.contents[1].text.replace("nguyen3-2", "{}nguyen3-2".format(col_value_bound2))
+        sec.contents[1].text = sec.contents[1].text.replace("nguyen1-2", "{}nguyen1-2".format(col_value_bound2))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer14-2", "{}keijzer14-2".format(col_value_bound2))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer12-0", "{}keijzer12-0".format(col_value_bound2))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer12-1", "{}keijzer12-1".format(col_value_bound2))
+
+        sec.contents[1].text = sec.contents[1].text.replace("gravity-2", "{}gravity-2".format(col_monotonicity))
+        sec.contents[1].text = sec.contents[1].text.replace("gravity-3", "{}gravity-3".format(col_monotonicity))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer12-3", "{}keijzer12-3".format(col_monotonicity))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer12-4", "{}keijzer12-4".format(col_monotonicity))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer12-5", "{}keijzer12-5".format(col_monotonicity))
+
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer5-0", "{}keijzer5-0".format(col_equality))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer12-2", "{}keijzer12-2".format(col_equality))
+        sec.contents[1].text = sec.contents[1].text.replace("keijzer15-0", "{}keijzer15-0".format(col_equality))
+    return reporting.Subsection("Custom tables – individual constraints", content)
 
 
 def convertPropsToDataFrame(props):
@@ -1241,11 +1262,11 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
         (create_subsection_shared_status, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 50, headerRowNames]),
         (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 50, headerRowNames]),
         (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
-        # (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
+        (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
         (create_subsection_custom_tables, [props, "Custom tables", dimensions_dict, exp_variant, dir_path, None]),
+        (create_subsection_individual_constraints, [props, "Custom tables -- individual constraints", dimensions_dict, exp_variant, dir_path, None]),
         # (create_subsection_figures_analysis, [props, dim_cols, dim_rows, "figures/"]),
         # (create_subsection_figures_analysis, [dataFrame, "figures/"]),
-        # (create_subsection_aggregation_tests, [dim_rows, dim_cols, headerRowNames]),
         # (create_subsection_figures, [dim_rows, dim_cols, exp_prefix]),
     ]
     sects = [(title, desc, subs, [])]
