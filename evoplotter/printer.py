@@ -57,10 +57,71 @@ def _canBeConvertedToFloat(s):
     return True
 
 
+class LatexTextbfFunInTable(LatexCommand):
+    def __init__(self, fun, valueExtractor=None, isBoldMathMode=False):
+        # fun - a function returning one of the elements from the row
+        def condition(value, body, table, rowNo, colNo):
+            assert isinstance(table, Table)
+            _valueExtractor = valueExtractor
+            if _valueExtractor is None:
+                _valueExtractor = lambda x: x
+            v = _valueExtractor(value)
+
+            if not _canBeConvertedToFloat(v):
+                return False
+            else:
+                v = float(v)
+                if v == fun(table.content.cells, _valueExtractor):
+                    return True
+                else:
+                    return False
+
+        if isBoldMathMode:
+            LatexCommand.__init__(self, r"{\boldmath ", "}", condition, isFullTableContext=True)
+        else:
+            LatexCommand.__init__(self, r"\textbf{", "}", condition, isFullTableContext=True)
+
+
+class LatexTextbfMaxInTable(LatexTextbfFunInTable):
+    def __init__(self, valueExtractor=None, isBoldMathMode=False):
+        def findMaxInTable(cells, valueExtractor):
+            cells2 = []
+            for r in cells:
+                tmp = []
+                for c in r:
+                    if c is None or c == "-":
+                        continue
+                    x = valueExtractor(c)
+                    if _canBeConvertedToFloat(x):
+                        tmp.append(float(x))
+                cells2.append(tmp)
+            return max(max(cells2))
+        LatexTextbfFunInTable.__init__(self, findMaxInTable, valueExtractor=valueExtractor, isBoldMathMode=isBoldMathMode)
+
+
+class LatexTextbfMinInTable(LatexTextbfFunInTable):
+    def __init__(self, valueExtractor=None, isBoldMathMode=False):
+        def findMinInTable(cells, valueExtractor):
+            cells2 = []
+            for r in cells:
+                tmp = []
+                for c in r:
+                    if c is None or c == "-":
+                        continue
+                    x = valueExtractor(c)
+                    if _canBeConvertedToFloat(x):
+                        tmp.append(float(x))
+                cells2.append(tmp)
+            return min(min(cells2))
+        LatexTextbfFunInTable.__init__(self, findMinInTable, valueExtractor=valueExtractor, isBoldMathMode=isBoldMathMode)
+
+
+
 class LatexTextbfFunInRow(LatexCommand):
     def __init__(self, fun, valueExtractor=None, isBoldMathMode=False):
         # fun - a function returning one of the elements from the row
         def condition(value, body, table, rowNo, colNo):
+            assert isinstance(table, Table)
             _valueExtractor = valueExtractor
             if _valueExtractor is None:
                 _valueExtractor = lambda x: x
