@@ -524,7 +524,7 @@ class Table(object):
     def getMeans(self):
         meansMatrix = []
         for row in self.content.cells:
-            meansMatrix.append([float(r) for r in row])
+            meansMatrix.append([float(self.valueExtractor(r)) for r in row])
         means = np.mean(np.array(meansMatrix), axis=0)
         return means
 
