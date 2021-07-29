@@ -86,7 +86,7 @@ def p_sel_lexicase(p):
 def p_sel_tourn(p):
     return p["selection"] == "tournament"
 def p_testsRatio_equalTo(ratio):
-    return lambda p, ratio=ratio: p["testsRatio"] == ratio
+    return lambda p, ratio=ratio: p["testsRatio"] == ratio if "testsRatio" in p else False
 def p_true(p):
     return True
 
@@ -786,6 +786,30 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
 
 
 
+def normalizeCellsByRows(cells, mode="max", valueExtractor=None):
+    """All values in the table's rows are scaled so that:
+    a) if mode='max', then maximum value in the row is 1 and all other are value/maxValue
+    b) if mode='min', then minimum value in the row is 1 and all other are minValue/value
+    """
+    assert mode in {"max", "min"}
+    if valueExtractor is None:
+        valueExtractor = lambda x: x
+    newCells = []
+    for row in cells:
+        newRow = []
+        for value in row:
+            value = valueExtractor(value)
+            if value is None:
+                newRow.append("-")
+            elif mode == "max":
+                maxValue = max(row)
+                newRow.append("{:.2f}".format(value / maxValue))
+            elif mode == "min":
+                minValue = min(row)
+                newRow.append("{:.2f}".format(minValue / value))
+        newCells.append(newRow)
+    return newCells
+
 
 def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path, variants=None):
     assert isinstance(dimens, dict)
@@ -797,6 +821,9 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
 
     dim_cdsr_methods_full = dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio"] + \
                             dimens["method_CDGPprops"] * dimens["selection"] * dimens["testsRatio"] * dimens["weight"]
+
+    dim_cdsr_methods_1 = dimens["method_CDGP"] * dimens["selection"] + \
+                         dimens["method_CDGPprops"] * dimens["selection"] * dimens["weight"]
 
     def postprocessorMse(s):
         s = post(s)
@@ -881,7 +908,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                                                   valueExtractor=scNotLog10ValueExtractor)],
                        vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/cdsr/cdsr_testMSE_{}.tex".format(exp_variant)],
-                       middle_col_align="l", addRowWithRanks=True, ranksHigherValuesBetter=False,
+                       middle_col_align="l", addRowWithMeans=False, addRowWithRanks=True, ranksHigherValuesBetter=False,
                        valueExtractor=scNotValueExtractor
                        ),
         TableGenerator(fun_allPropertiesMet_verificator,
@@ -892,7 +919,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/cdsr/cdsr_succRate_{}.tex".format(exp_variant)],
-                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
         TableGenerator(getAvgSatisfiedProps1,
                        dimens["benchmark"],
@@ -902,7 +929,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/cdsr/cdsr_satConstrRatio_{}.tex".format(exp_variant)],
-                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
         FriedmannTestPython(dimens["benchmark"],
                             dim_cdsr_methods,
@@ -928,7 +955,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                                                   valueExtractor=scNotLog10ValueExtractor)],
                        vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/cdsrFull/cdsrFull_testMSE_{}.tex".format(exp_variant)],
-                       middle_col_align="l", addRowWithRanks=True, ranksHigherValuesBetter=False,
+                       middle_col_align="l", addRowWithMeans=False, addRowWithRanks=True, ranksHigherValuesBetter=False,
                        valueExtractor=scNotValueExtractor
                        ),
         TableGenerator(fun_allPropertiesMet_verificator,
@@ -939,7 +966,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/cdsrFull/cdsrFull_succRate_{}.tex".format(exp_variant)],
-                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
         TableGenerator(getAvgSatisfiedProps1,
                        dimens["benchmark"],
@@ -949,7 +976,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],  #cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/cdsrFull/cdsrFull_satConstrRatio_{}.tex".format(exp_variant)],
-                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
         FriedmannTestPython(dimens["benchmark"],
                             dim_cdsr_methods_full,
@@ -963,6 +990,56 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                             title="Friedman test for median MSE on test set",
                             pathFriedmanViz="tables/custom/cdsrFull/friedman_cdsrFull_testMSE.gv",
                             workingDir=dir_path, higherValuesBetter=False),
+
+        # aggregation tables
+        TableGenerator(getAvgSatisfiedProps1,
+                       dimens["testsRatio"],
+                       dim_cdsr_methods_1,
+                       title="Average ratio of satisfied properties", headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInTable(),
+                                      cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
+                       outputFiles=[
+                           dir_path + "/tables/custom/aggrSat_{}.tex".format(exp_variant)],
+                       addRowWithMeans=False, addRowWithRanks=False, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(getAvgSatisfiedProps1,
+                       Dim.dim_true(""),
+                       dim_methodScikit,
+                       title="Average ratio of satisfied properties", headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInTable(),
+                                      cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
+                       outputFiles=[
+                           dir_path + "/tables/custom/aggrSat_scikit_{}.tex".format(exp_variant)],
+                       addRowWithMeans=False, addRowWithRanks=False, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(get_avg_runtime,
+                       dimens["testsRatio"],
+                       dim_cdsr_methods_1,
+                       title="Average runtime [s]", headerRowNames=[],
+                       color_scheme=reversed(thesis_color_scheme),
+                       cellRenderers=[printer.LatexTextbfMinInTable(),
+                                      cellShading(0.0, 900.0, 1800.0)],
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
+                       outputFiles=[
+                           dir_path + "/tables/custom/aggrRuntime_{}.tex".format(exp_variant)],
+                       addRowWithMeans=False, addRowWithRanks=False, ranksHigherValuesBetter=False
+                       ),
+        TableGenerator(get_avg_runtime,
+                       Dim.dim_true(""),
+                       dim_methodScikit,
+                       title="Average runtime [s]", headerRowNames=[],
+                       color_scheme=reversed(thesis_color_scheme),
+                       cellRenderers=[printer.LatexTextbfMinInTable(),
+                                      cellShading(0.0, 900.0, 1800.0)],
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
+                       outputFiles=[
+                           dir_path + "/tables/custom/aggrRuntime_scikit_{}.tex".format(exp_variant)],
+                       addRowWithMeans=False, addRowWithRanks=False, ranksHigherValuesBetter=False
+                       ),
         # TableGenerator(get_avg_totalTests,
         #                dim_rows, dim_cols,
         #                headerRowNames=[],
