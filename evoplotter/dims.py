@@ -144,6 +144,11 @@ class Dim(object):
         return Dim(ConfigOr(name, self.configs))
 
     @classmethod
+    def dim_true(cls, name="ALL"):
+        """Returns a new dimension accepting all configurations."""
+        return Dim(Config(name, lambda p: True, method=None))
+
+    @classmethod
     def generic_labels(cls, num, prefix="A"):
         """Creates a Dim object containing num generic names."""
         configs = [prefix + str(x) for x in range(num)]
