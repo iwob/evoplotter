@@ -96,11 +96,11 @@ dim_true = Dim(Config("ALL", lambda p: True, method=None))
 # dim_methodCDGP = Dim([Config("CDGP", p_method_for("CDGP"), method="CDGP")])
 # dim_methodGP = Dim([Config("GP", p_method_for("GP"), method="GP")])
 dim_methodCDGP = Dim([
-    Config("CDGP", p_dict_matcher({"method": "CDGP"}), method="CDGP"),
-    # Config("$CDGP_{props}$", p_dict_matcher({"method": "CDGPprops"}), method="CDGPprops"),
+    Config("CDSR", p_dict_matcher({"method": "CDGP"}), method="CDGP"),
+    # Config("$CDSR_{props}$", p_dict_matcher({"method": "CDGPprops"}), method="CDGPprops"),
 ])
 dim_methodCDGPprops = Dim([
-    Config("$CDGP_{props}$", p_dict_matcher({"method": "CDGPprops"}), method="CDGPprops"),
+    Config("$CDSR_{props}$", p_dict_matcher({"method": "CDGPprops"}), method="CDGPprops"),
 ])
 dim_methodGP = Dim([
     Config("$GP$", p_dict_matcher({"method": "GP", "populationSize": "500"}), method="GP500"),
@@ -822,6 +822,9 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
     dim_cdsr_methods_full = dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio"] + \
                             dimens["method_CDGPprops"] * dimens["selection"] * dimens["testsRatio"] * dimens["weight"]
 
+    dim_cdsr_methods_semiFull = dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio_0.75"] + \
+                                dimens["method_CDGPprops"] * dimens["selection"] * dimens["testsRatio_0.75"] * dimens["weight"]
+
     dim_cdsr_methods_1 = dimens["method_CDGP"] * dimens["selection"] + \
                          dimens["method_CDGPprops"] * dimens["selection"] * dimens["weight"]
 
@@ -837,6 +840,8 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
         s = s.replace("LinearSVR", r"\makecell[tc]{Linear-\\SVR}")
         s = s.replace("RandomForest", r"\makecell[tc]{Random-\\Forest}")
         s = s.replace("XGBoost", r"\makecell[tc]{XG-\\Boost}")
+
+        s = s.replace("10^{", "{\scriptscriptstyle 10}^{")
         return s
 
     # shTc = cellShading(0.0, 5000.0, 10000.0) if EXP_TYPE == "LIA" else cellShading(0.0, 250.0, 500.0)
@@ -860,7 +865,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        title="Success rate in terms of all properties met (stochastic verifier)", headerRowNames=[],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/scikit/scikit_succRate_{}.tex".format(exp_variant)],
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
@@ -870,7 +875,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        title="Average ratio of satisfied properties", headerRowNames=[],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/scikit/scikit_satConstrRatio_{}.tex".format(exp_variant)],
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
@@ -880,7 +885,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        title="Average ratio of satisfied properties", headerRowNames=[],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), printer.CellShadingRow()],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/scikit/_scikit_satConstrRatio_{}_rowShading.tex".format(exp_variant)],
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
@@ -917,7 +922,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        title="Success rate in terms of all properties met (stochastic verifier)", headerRowNames=[],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/cdsr/cdsr_succRate_{}.tex".format(exp_variant)],
                        addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
@@ -927,7 +932,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        title="Average ratio of satisfied properties", headerRowNames=[],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/cdsr/cdsr_satConstrRatio_{}.tex".format(exp_variant)],
                        addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
@@ -964,7 +969,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        title="Success rate in terms of all properties met (stochastic verifier)", headerRowNames=[],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/cdsrFull/cdsrFull_succRate_{}.tex".format(exp_variant)],
                        addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
@@ -974,7 +979,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        title="Average ratio of satisfied properties", headerRowNames=[],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],  #cellShading(0.0, 0.5, 1.0)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/cdsrFull/cdsrFull_satConstrRatio_{}.tex".format(exp_variant)],
                        addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
@@ -989,6 +994,58 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                             get_median_testMSE_noScNotation, p_treshold=0.05,
                             title="Friedman test for median MSE on test set",
                             pathFriedmanViz="tables/custom/cdsrFull/friedman_cdsrFull_testMSE.gv",
+                            workingDir=dir_path, higherValuesBetter=False),
+
+        # CDSR configs (semi full dimensions)
+        TableGenerator(get_median_testMSE,
+                       dimens["benchmark"],
+                       dim_cdsr_methods_semiFull,
+                       title="Test set: MSE  (median); bestOfRun CDGP", headerRowNames=[],
+                       color_scheme=reversed(thesis_color_scheme),
+                       cellRenderers=[
+                           printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
+                           printer.CellShadingRow("colorLow", "colorMedium", "colorHigh",
+                                                  valueExtractor=scNotLog10ValueExtractor)],
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/cdsrSemiFull/cdsrSemiFull_testMSE_{}.tex".format(exp_variant)],
+                       middle_col_align="l", addRowWithMeans=False, addRowWithRanks=True, ranksHigherValuesBetter=False,
+                       valueExtractor=scNotValueExtractor
+                       ),
+        TableGenerator(fun_allPropertiesMet_verificator,
+                       dimens["benchmark"],
+                       dim_cdsr_methods_semiFull,
+                       title="Success rate in terms of all properties met (stochastic verifier)", headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(),
+                                      printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
+                       outputFiles=[dir_path + "/tables/custom/cdsrSemiFull/cdsrSemiFull_succRate_{}.tex".format(exp_variant)],
+                       addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(getAvgSatisfiedProps1,
+                       dimens["benchmark"],
+                       dim_cdsr_methods_semiFull,
+                       title="Average ratio of satisfied properties", headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(),
+                                      printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
+                       # cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
+                       outputFiles=[
+                           dir_path + "/tables/custom/cdsrSemiFull/cdsrSemiFull_satConstrRatio_{}.tex".format(exp_variant)],
+                       addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
+        FriedmannTestPython(dimens["benchmark"],
+                            dim_cdsr_methods_semiFull,
+                            getAvgSatisfiedProps1, p_treshold=0.05,
+                            title="Friedman test for average ratio of satisfied properties",
+                            pathFriedmanViz="tables/custom/cdsrSemiFull/friedman_cdsrSemiFull_avgSatConstr.gv",
+                            workingDir=dir_path, higherValuesBetter=True),
+        FriedmannTestPython(dimens["benchmark"],
+                            dim_cdsr_methods_semiFull,
+                            get_median_testMSE_noScNotation, p_treshold=0.05,
+                            title="Friedman test for median MSE on test set",
+                            pathFriedmanViz="tables/custom/cdsrSemiFull/friedman_cdsrSemiFull_testMSE.gv",
                             workingDir=dir_path, higherValuesBetter=False),
 
         # aggregation tables
