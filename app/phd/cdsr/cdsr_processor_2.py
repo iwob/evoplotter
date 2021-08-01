@@ -1,4 +1,5 @@
 import os
+import copy
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -822,11 +823,18 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
     dim_cdsr_methods_full = dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio"] + \
                             dimens["method_CDGPprops"] * dimens["selection"] * dimens["testsRatio"] * dimens["weight"]
 
-    dim_cdsr_methods_semiFull = dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio_0.75"] + \
-                                dimens["method_CDGPprops"] * dimens["selection"] * dimens["testsRatio_0.75"] * dimens["weight"]
+    dim_cdsr_methods_semiFull = dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio_1.0"] + \
+                                dimens["method_CDGPprops"] * dimens["selection"] * dimens["testsRatio_1.0"] * dimens["weight"]
 
     dim_cdsr_methods_1 = dimens["method_CDGP"] * dimens["selection"] + \
                          dimens["method_CDGPprops"] * dimens["selection"] * dimens["weight"]
+
+
+    configs = []
+    for c in dimens["testsRatio"]:
+        name, fun = c.filters[0]
+        configs.append(Config(r"$\alpha$=" + name, fun))
+    dim_testRatio_moreText = Dim(configs)
 
     def postprocessorMse(s):
         s = post(s)
@@ -1000,7 +1008,8 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
         TableGenerator(get_median_testMSE,
                        dimens["benchmark"],
                        dim_cdsr_methods_semiFull,
-                       title="Test set: MSE  (median); bestOfRun CDGP", headerRowNames=[],
+                       title="Test set: MSE  (median); bestOfRun CDGP",
+                       headerRowNames=["", "", r"$\alpha$", r"\constrWeight"],
                        color_scheme=reversed(thesis_color_scheme),
                        cellRenderers=[
                            printer.LatexTextbfMinInRow(valueExtractor=scNotLog10ValueExtractor, isBoldMathMode=True),
@@ -1014,7 +1023,8 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
         TableGenerator(fun_allPropertiesMet_verificator,
                        dimens["benchmark"],
                        dim_cdsr_methods_semiFull,
-                       title="Success rate in terms of all properties met (stochastic verifier)", headerRowNames=[],
+                       title="Success rate in terms of all properties met (stochastic verifier)",
+                       headerRowNames=["", "", r"$\alpha$", r"\constrWeight"],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInRow(),
                                       printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
@@ -1025,7 +1035,8 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
         TableGenerator(getAvgSatisfiedProps1,
                        dimens["benchmark"],
                        dim_cdsr_methods_semiFull,
-                       title="Average ratio of satisfied properties", headerRowNames=[],
+                       title="Average ratio of satisfied properties",
+                       headerRowNames=["", "", r"$\alpha$", r"\constrWeight"],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInRow(),
                                       printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
@@ -1050,9 +1061,10 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
 
         # aggregation tables
         TableGenerator(getAvgSatisfiedProps1,
-                       dimens["testsRatio"],
+                       dim_testRatio_moreText,
                        dim_cdsr_methods_1,
-                       title="Average ratio of satisfied properties", headerRowNames=[],
+                       title="Average ratio of satisfied properties",
+                       headerRowNames=["", "", r"\constrWeight"],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInTable(),
                                       cellShading(0.0, 0.5, 1.0)],
@@ -1064,7 +1076,8 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
         TableGenerator(getAvgSatisfiedProps1,
                        Dim.dim_true(""),
                        dim_methodScikit,
-                       title="Average ratio of satisfied properties", headerRowNames=[],
+                       title="Average ratio of satisfied properties",
+                       headerRowNames=[],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInTable(),
                                       cellShading(0.0, 0.5, 1.0)],
@@ -1074,9 +1087,10 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        addRowWithMeans=False, addRowWithRanks=False, ranksHigherValuesBetter=True
                        ),
         TableGenerator(get_avg_runtime,
-                       dimens["testsRatio"],
+                       dim_testRatio_moreText,
                        dim_cdsr_methods_1,
-                       title="Average runtime [s]", headerRowNames=[],
+                       title="Average runtime [s]",
+                       headerRowNames=["", "", r"\constrWeight"],
                        color_scheme=reversed(thesis_color_scheme),
                        cellRenderers=[printer.LatexTextbfMinInTable(),
                                       cellShading(0.0, 900.0, 1800.0)],
@@ -1088,7 +1102,8 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
         TableGenerator(get_avg_runtime,
                        Dim.dim_true(""),
                        dim_methodScikit,
-                       title="Average runtime [s]", headerRowNames=[],
+                       title="Average runtime [s]",
+                       headerRowNames=[],
                        color_scheme=reversed(thesis_color_scheme),
                        cellRenderers=[printer.LatexTextbfMinInTable(),
                                       cellShading(0.0, 900.0, 1800.0)],
@@ -1445,21 +1460,24 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
 
 
     save_listings(props, dim_benchmarks, dim_cols, dir_path=dir_path)
-    user_declarations = r"""\definecolor{darkred}{rgb}{0.56, 0.05, 0.0}
-\definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0}
-\definecolor{darkblue}{rgb}{0.0, 0.0, 0.55}
-\definecolor{darkorange}{rgb}{0.93, 0.53, 0.18}
-
+    user_declarations = r"""
+\usepackage{xspace}
+\usepackage{makecell} % introduces two very useful commands, \thead and \makecell, useful
 \usepackage{listings}
+
 \lstset{
 basicstyle=\small\ttfamily,
 columns=flexible,
 breaklines=true
 }
 
-\usepackage{makecell} % introduces two very useful commands, \thead and \makecell, useful
+\definecolor{darkred}{rgb}{0.56, 0.05, 0.0}
+\definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0}
+\definecolor{darkblue}{rgb}{0.0, 0.0, 0.55}
+\definecolor{darkorange}{rgb}{0.93, 0.53, 0.18}
 
 \newcommand{\unaryminus}{\scalebox{0.4}[1.0]{\( - \)}} % for shorter minus sign, see: https://tex.stackexchange.com/questions/6058/making-a-shorter-minus
+\newcommand{\constrWeight}{\ensuremath{constrWeight}\xspace}
 """
     templates.prepare_report(sects, "cdsr_{}.tex".format(exp_variant), dir_path=dir_path, paperwidth=190, user_declarations=user_declarations)
 
