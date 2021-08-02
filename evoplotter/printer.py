@@ -236,6 +236,48 @@ class CellShadingRow(CellRenderer):
         CellRenderer.__init__(self, condition, editor, isFullTableContext=True)
 
 
+class CellShadingTable(CellRenderer):
+    def __init__(self, MinColor="colorLow", MidColor="colorMedium", MaxColor="colorHigh", valueExtractor=None):
+        """
+        :param MinColor: (str) name of the LaTeX color representing the lowest value.
+        :param MidColor: (str) name of the LaTeX color representing the middle value. This color is also used for
+          gradient, that is closer a given cell value is to the MidNumber, more MidColor'ed it becomes.
+        :param MaxColor: (str) name of the LaTeX color representing the highest value.
+        :param valueExtractor: (lambda) extracts a value from a table cell in order to apply shading to that value. Should return float."""
+        def color_cell(val, body, table, rowNo, colNo):
+            if valueExtractor is None:
+                _valueExtractor = lambda x: x
+            else:
+                _valueExtractor = valueExtractor
+
+            v = _valueExtractor(val)
+            if v is None or not utils.isfloat(v):
+                return body
+            else:
+                v = float(v)
+                # Computing color thresholds
+                values = [_valueExtractor(c) for r in table.content.cells for c in r]
+                values = [float(x) for x in values if utils.isfloat(x)]
+                if len(values) == 0:  # no non-string entries in the row
+                    return body
+
+                MaxNumber = max(values)
+                MinNumber = min(values)
+                MidNumber = (MaxNumber + MinNumber) / 2.0
+
+                # Computing color gradient.
+                color = getLatexColorCode(v, [MinNumber, MidNumber, MaxNumber], [MinColor, MidColor, MaxColor])
+                # if val > MidNumber:
+                #     PercentColor = max(min(100.0 * (val - MidNumber) / (MaxNumber - MidNumber), 100.0), 0.0)
+                #     color = "{0}!{1:.1f}!{2}".format(MaxColor, PercentColor, MidColor)
+                # else:
+                #     PercentColor = max(min(100.0 * (MidNumber - val) / (MidNumber - MinNumber), 100.0), 0.0)
+                #     color = "{0}!{1:.1f}!{2}".format(MinColor, PercentColor, MidColor)
+                return "\cellcolor{" + color + "}" + str(body)
+        condition = lambda v, b, table, rowNo, colNo: True
+        editor = lambda v, b, table, rowNo, colNo: color_cell(v, b, table, rowNo, colNo)
+        CellRenderer.__init__(self, condition, editor, isFullTableContext=True)
+
 
 class TableHeaderInterface(object):
     def __init__(self):
