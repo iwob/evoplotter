@@ -387,7 +387,8 @@ def get_avg_totalTests(props):
         x = np.mean(vals)
         if x < 1e-5:
             x = 0.0
-        return str(int(round(x))) #"%0.1f" % x
+        # return str(int(round(x)))
+        return "{:.1f}".format(x)
 mse_dformat = "%0.4f"
 def get_avg_trainMSE(props):
     vals = []
@@ -566,7 +567,8 @@ def get_avg_evaluated(props):
     if len(vals) == 0:
         return "-"
     else:
-        return str(int(round(np.mean(vals)))) #"%0.1f" % np.mean(vals)  # , np.std(vals)
+        return "{:.1f}".format(np.mean(vals) / 1000.0)
+        # return str(int(round(np.mean(vals)))) #"%0.1f" % np.mean(vals)  # , np.std(vals)
 def get_avg_evaluatedSuccessful(props):
     if len(props) == 0:
         return "-"

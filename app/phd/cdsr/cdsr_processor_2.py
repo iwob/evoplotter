@@ -101,7 +101,7 @@ dim_methodCDGP = Dim([
     # Config("$CDSR_{props}$", p_dict_matcher({"method": "CDGPprops"}), method="CDGPprops"),
 ])
 dim_methodCDGPprops = Dim([
-    Config("$CDSR_{props}$", p_dict_matcher({"method": "CDGPprops"}), method="CDGPprops"),
+    Config(r"\cdsrProps", p_dict_matcher({"method": "CDGPprops"}), method="CDGPprops"),
 ])
 dim_methodGP = Dim([
     Config("$GP$", p_dict_matcher({"method": "GP", "populationSize": "500"}), method="GP500"),
@@ -718,9 +718,11 @@ def create_subsection_ea_stats(props, title, dim_rows, dim_cols, headerRowNames)
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
         TableGenerator(get_avg_evaluated, dim_rows, dim_cols, headerRowNames=headerRowNames,
-                       title="Average number of evaluated solutions",
+                       title="Average number of evaluated solutions (in thousands)",
+                       cellRenderers=[
+                           printer.LatexTextbfMaxInRow(),
+                           printer.CellShadingTable()],
                        color_scheme=reporting.color_scheme_brown,
-                       default_color_thresholds=(0.0, 5000.0, 10000.0),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
         # TableGenerator(get_avg_evaluatedSuccessful, dim_rows, dim_cols, headerRowNames=headerRowNames,
@@ -1060,6 +1062,32 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                             workingDir=dir_path, higherValuesBetter=False),
 
         # aggregation tables
+        TableGenerator(get_avg_evaluated,
+                       dim_testRatio_moreText,
+                       dim_cdsr_methods_1,
+                       title="Average number of evaluated solutions (in thousands)",
+                       headerRowNames=["", "", r"\constrWeight"],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInTable(),
+                                      printer.CellShadingTable()],
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
+                       outputFiles=[
+                           dir_path + "/tables/custom/aggrEvaluated_{}.tex".format(exp_variant)],
+                       addRowWithMeans=False, addRowWithRanks=False, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(get_avg_totalTests,
+                       dim_testRatio_moreText,
+                       dim_cdsr_methods_1,
+                       title="Average sizes of $T_C$ at the end of the run.",
+                       headerRowNames=["", "", r"\constrWeight"],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInTable(),
+                                      printer.CellShadingTable()],
+                       vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
+                       outputFiles=[
+                           dir_path + "/tables/custom/aggrTc_{}.tex".format(exp_variant)],
+                       addRowWithMeans=False, addRowWithRanks=False, ranksHigherValuesBetter=True
+                       ),
         TableGenerator(getAvgSatisfiedProps1,
                        dim_testRatio_moreText,
                        dim_cdsr_methods_1,
@@ -1067,7 +1095,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        headerRowNames=["", "", r"\constrWeight"],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInTable(),
-                                      cellShading(0.0, 0.5, 1.0)],
+                                      printer.CellShadingTable()],
                        vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
                        outputFiles=[
                            dir_path + "/tables/custom/aggrSat_{}.tex".format(exp_variant)],
@@ -1080,7 +1108,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        headerRowNames=[],
                        color_scheme=thesis_color_scheme,
                        cellRenderers=[printer.LatexTextbfMaxInTable(),
-                                      cellShading(0.0, 0.5, 1.0)],
+                                      printer.CellShadingTable()],
                        vertical_border=vb, table_postprocessor=postprocessorMse, variants=variants,
                        outputFiles=[
                            dir_path + "/tables/custom/aggrSat_scikit_{}.tex".format(exp_variant)],
@@ -1464,6 +1492,7 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
 \usepackage{xspace}
 \usepackage{makecell} % introduces two very useful commands, \thead and \makecell, useful
 \usepackage{listings}
+\usepackage{amsmath}
 
 \lstset{
 basicstyle=\small\ttfamily,
@@ -1478,6 +1507,7 @@ breaklines=true
 
 \newcommand{\unaryminus}{\scalebox{0.4}[1.0]{\( - \)}} % for shorter minus sign, see: https://tex.stackexchange.com/questions/6058/making-a-shorter-minus
 \newcommand{\constrWeight}{\ensuremath{constrWeight}\xspace}
+\newcommand{\cdsrProps}{CDSR$_{\text{props}}$\xspace}
 """
     templates.prepare_report(sects, "cdsr_{}.tex".format(exp_variant), dir_path=dir_path, paperwidth=190, user_declarations=user_declarations)
 
