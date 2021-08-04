@@ -60,17 +60,26 @@ class Dim(object):
             yield c
 
     def __getitem__(self, item):
-        return self.configs[item]
+        if isinstance(item, tuple) or isinstance(item, list):
+            configs = []
+            for i in item:
+                configs.append(self.configs[i])
+            return configs
+        else:
+            return self.configs[item]
 
     def __delitem__(self, key):
         del self.configs[key]
 
     def __mul__(self, other):
-        assert isinstance(other, Dim), "Dimension may be merged only with other Dimension."
-        if len(other) == 0:
-            return self
+        assert isinstance(other, Dim) or isinstance(other, ConfigList), "Dimension may be merged only with other Dimension or ConfigList."
+        if isinstance(other, Dim):
+            if len(other) == 0:
+                return self
+            else:
+                return Dim(generate_configs([self, other]))
         else:
-            return Dim(generate_configs([self, other]))
+            return self * Dim(other)
 
     def __add__(self, other):
         if isinstance(other, ConfigList):
