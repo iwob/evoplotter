@@ -833,7 +833,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
 
     dim_method_winners = Dim(dimens["method_scikit"][0, 2]) +\
                          dimens["method_CDGP"] * Dim(dimens["selection"][1]) * dimens["testsRatio_1.0"] +\
-                         dimens["method_CDGPprops"] * Dim(dimens["selection"][0]) * dimens["testsRatio_1.0"] * dimens["weight"][1]
+                         dimens["method_CDGPprops"] * Dim(dimens["selection"][1]) * dimens["testsRatio_1.0"] * dimens["weight"][1]
 
 
     configs = []
