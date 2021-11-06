@@ -388,6 +388,9 @@ class FriedmannTestPython:
     def apply(self, props, **kwargs):
         """Returns a content of the subsection as a LaTeX formatted string."""
         friedmanData = self.getFriedmanData(props)
+        if friedmanData is None:
+            return r"Friedman test failed due to missing values!\\"
+
         avgRanks = getSortedAveragedRanks(props, self.dimRows, self.dimCols, self.fun, higherValuesBetter=self.higherValuesBetter)
 
         def entry_formatter_lambda(allSolutions, entryIndex):

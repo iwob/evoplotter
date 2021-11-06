@@ -560,14 +560,22 @@ class Table(object):
 
     def getAvgRanks(self):
         ranksMatrix = np.array(self.getPairedRanksMatrix())
-        means = np.mean(ranksMatrix, axis=0)
+        means = np.nanmean(ranksMatrix, axis=0)
         return means
 
     def getMeans(self):
         meansMatrix = []
         for row in self.content.cells:
-            meansMatrix.append([float(self.valueExtractor(r)) for r in row])
-        means = np.mean(np.array(meansMatrix), axis=0)
+            mmRow = []
+            for r in row:
+                x = self.valueExtractor(r)
+                if not utils.isfloat(x):
+                    mmRow.append(np.nan)
+                else:
+                    mmRow.append(float(x))
+            meansMatrix.append(mmRow)
+            # meansMatrix.append([float(self.valueExtractor(r)) for r in row])
+        means = np.nanmean(np.array(meansMatrix), axis=0)
         return means
 
     def renderTableHeader(self):

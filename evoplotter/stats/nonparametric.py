@@ -73,8 +73,11 @@ class FriedmanResult:
 def runFriedmanPython(table):
     """Runs a Friedman statistical test with Nemenyi posthoc test using implementation in scikit_posthocs package."""
     assert isinstance(table, printer.Table)
-    data = np.array(table.content.cells, dtype=np.float32)
-    return runFriedmanPython_array(data)
+    try:
+        data = np.array(table.content.cells, dtype=np.float32)
+        return runFriedmanPython_array(data)
+    except ValueError:
+        return None
 
 
 def runFriedmanPython_array(data):
