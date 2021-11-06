@@ -124,6 +124,7 @@ dim_evoMode = Dim([Config("$generational$", p_generational, evolutionMode="gener
 dim_testsRatio = Dim([
     Config("$0.75$", p_testsRatio_equalTo("0.75"), testsRatio="0.75"),
     Config("$1.0$", p_testsRatio_equalTo("1.0"), testsRatio="1.0"),
+    # Config("$2.0$", p_testsRatio_equalTo("2.0"), testsRatio="2.0"),
 ])
 dim_optThreshold = Dim([
     Config("$0.01$", p_dict_matcher({"optThresholdC": "0.01"}), optThreshold="0.01"),
