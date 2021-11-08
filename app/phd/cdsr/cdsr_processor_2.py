@@ -1,5 +1,6 @@
 import os
 import copy
+import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,6 +13,19 @@ from evoplotter import reporting
 from evoplotter.dims import *
 from evoplotter import templates
 from evoplotter.templates import *
+
+
+
+# c_arg_symmetry = "brown!30"
+# c_value_bound = "blue!20"
+# c_value_bound2 = "blue!35"
+# c_monotonicity = "green!20"
+# c_equality = "red!20"
+c_arg_symmetry = "cArgSymmetry"
+c_value_bound = "cValueBound"
+c_value_bound2 = "cValueBoundEx"
+c_monotonicity = "cMonotonicity"
+c_equality = "cEquality"
 
 
 
@@ -1255,15 +1269,14 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
 
     dim_cdsr_methods_full = dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio"] + \
                             dimens["method_CDGPprops"] * dimens["selection"] * dimens["testsRatio"] * dimens["weight"]
+    dim_method_winners = Dim(dimens["method_scikit"][0, 2]) + \
+                         dimens["method_CDGP"] * Dim(dimens["selection"][1]) * dimens["testsRatio_1.0"] + \
+                         dimens["method_CDGPprops"] * Dim(dimens["selection"][1]) * dimens["testsRatio_1.0"] * dimens["weight"][1]
 
-    c_arg_symmetry = "brown!30"
-    c_value_bound = "blue!20"
-    c_value_bound2 = "blue!35"
-    c_monotonicity = "green!20"
-    c_equality = "red!20"
 
     def postprocessor(s):
         s = post(s)
+        s = s.replace(r"\hdashline", "")
 
         s = s.replace("AdaBoost", r"\makecell[tc]{Ada-\\Boost}")
         s = s.replace("GradientBoosting", r"\makecell[tc]{Gradient-\\Boosting}")
@@ -1273,63 +1286,65 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
         s = s.replace("RandomForest", r"\makecell[tc]{Random-\\Forest}")
         s = s.replace("XGBoost", r"\makecell[tc]{XG-\\Boost}")
 
-        col_arg_symmetry = r"\cellcolor{" + c_arg_symmetry + "}"
-        col_value_bound = r"\cellcolor{" + c_value_bound + "}"
-        col_value_bound2 = r"\cellcolor{" + c_value_bound2 + "}"
-        col_monotonicity = r"\cellcolor{" + c_monotonicity + "}"
-        col_equality = r"\cellcolor{" + c_equality + "}"
+        col_arg_symmetry = r"\\cellcolor{" + c_arg_symmetry + "}"
+        col_value_bound = r"\\cellcolor{" + c_value_bound + "}"
+        col_value_bound2 = r"\\cellcolor{" + c_value_bound2 + "}"
+        col_monotonicity = r"\\cellcolor{" + c_monotonicity + "}"
+        col_equality = r"\\cellcolor{" + c_equality + "}"
 
-        s = s.replace("gravity-0", "{}gravity-0".format(col_arg_symmetry))
-        s = s.replace("keijzer14-3", "{}keijzer14-3".format(col_arg_symmetry))
-        s = s.replace("pagie1-2", "{}pagie1-2".format(col_arg_symmetry))
-        s = s.replace("res2-0", "{}res2-0".format(col_arg_symmetry))
-        s = s.replace("res3-0", "{}res3-0".format(col_arg_symmetry))
-        s = s.replace("res3-1", "{}res3-1".format(col_arg_symmetry))
-        s = s.replace("res3-2", "{}res3-2".format(col_arg_symmetry))
+        s = re.sub("(gravityN?-0)", "{}\\1".format(col_arg_symmetry), s)
+        s = re.sub("(keijzer14N?-3)", "{}\\1".format(col_arg_symmetry), s)
+        s = re.sub("(pagie1N?-2)", "{}\\1".format(col_arg_symmetry), s)
+        s = re.sub("(res2N?-0)", "{}\\1".format(col_arg_symmetry), s)
+        s = re.sub("(res3N?-0)", "{}\\1".format(col_arg_symmetry), s)
+        s = re.sub("(res3N?-1)", "{}\\1".format(col_arg_symmetry), s)
+        s = re.sub("(res3N?-2)", "{}\\1".format(col_arg_symmetry), s)
 
-        s = s.replace("gravity-1", "{}gravity-1".format(col_value_bound))
-        s = s.replace("keijzer14-0", "{}keijzer14-0".format(col_value_bound))
-        s = s.replace("keijzer14-1", "{}keijzer14-1".format(col_value_bound))
-        s = s.replace("keijzer5-1", "{}keijzer5-1".format(col_value_bound))
-        s = s.replace("keijzer5-2", "{}keijzer5-2".format(col_value_bound))
-        s = s.replace("keijzer15-1", "{}keijzer15-1".format(col_value_bound))
-        s = s.replace("keijzer15-2", "{}keijzer15-2".format(col_value_bound))
-        s = s.replace("nguyen1-0", "{}nguyen1-0".format(col_value_bound))
-        s = s.replace("nguyen1-1", "{}nguyen1-1".format(col_value_bound))
-        s = s.replace("nguyen3-0", "{}nguyen3-0".format(col_value_bound))
-        s = s.replace("nguyen3-1", "{}nguyen3-1".format(col_value_bound))
-        s = s.replace("nguyen4-0", "{}nguyen4-0".format(col_value_bound))
-        s = s.replace("nguyen4-1", "{}nguyen4-1".format(col_value_bound))
-        s = s.replace("pagie1-0", "{}pagie1-0".format(col_value_bound))
-        s = s.replace("pagie1-1", "{}pagie1-1".format(col_value_bound))
-        s = s.replace("res2-2", "{}res2-2".format(col_value_bound))
-        s = s.replace("res3-3", "{}res3-3".format(col_value_bound))
-        s = s.replace("res3-4", "{}res3-4".format(col_value_bound))
+        s = re.sub("(gravityN?-1)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(keijzer14N?-0)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(keijzer14N?-1)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(keijzer5N?-1)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(keijzer5N?-2)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(keijzer15N?-1)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(keijzer15N?-2)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(nguyen1N?-0)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(nguyen1N?-1)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(nguyen3N?-0)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(nguyen3N?-1)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(nguyen4N?-0)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(nguyen4N?-1)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(pagie1N?-0)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(pagie1N?-1)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(res2N?-2)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(res3N?-3)", "{}\\1".format(col_value_bound), s)
+        s = re.sub("(res3N?-4)", "{}\\1".format(col_value_bound), s)
 
-        s = s.replace("res2-1", "{}res2-1".format(col_value_bound2))
-        s = s.replace("res3-3", "{}res3-3".format(col_value_bound2))
-        s = s.replace("nguyen4-2", "{}nguyen4-2".format(col_value_bound2))
-        s = s.replace("nguyen3-2", "{}nguyen3-2".format(col_value_bound2))
-        s = s.replace("nguyen1-2", "{}nguyen1-2".format(col_value_bound2))
-        s = s.replace("keijzer14-2", "{}keijzer14-2".format(col_value_bound2))
-        s = s.replace("keijzer12-0", "{}keijzer12-0".format(col_value_bound2))
-        s = s.replace("keijzer12-1", "{}keijzer12-1".format(col_value_bound2))
+        s = re.sub("(res2N?-1)", "{}\\1".format(col_value_bound2), s)
+        s = re.sub("(res3N?-3)", "{}\\1".format(col_value_bound2), s)
+        s = re.sub("(nguyen4N?-2)", "{}\\1".format(col_value_bound2), s)
+        s = re.sub("(nguyen3N?-2)", "{}\\1".format(col_value_bound2), s)
+        s = re.sub("(nguyen1N?-2)", "{}\\1".format(col_value_bound2), s)
+        s = re.sub("(keijzer14N?-2)", "{}\\1".format(col_value_bound2), s)
+        s = re.sub("(keijzer12N?-0)", "{}\\1".format(col_value_bound2), s)
+        s = re.sub("(keijzer12N?-1)", "{}\\1".format(col_value_bound2), s)
 
-        s = s.replace("gravity-2", "{}gravity-2".format(col_monotonicity))
-        s = s.replace("gravity-3", "{}gravity-3".format(col_monotonicity))
-        s = s.replace("keijzer12-3", "{}keijzer12-3".format(col_monotonicity))
-        s = s.replace("keijzer12-4", "{}keijzer12-4".format(col_monotonicity))
-        s = s.replace("keijzer12-5", "{}keijzer12-5".format(col_monotonicity))
+        s = re.sub("(gravityN?-2)", "{}\\1".format(col_monotonicity), s)
+        s = re.sub("(gravityN?-3)", "{}\\1".format(col_monotonicity), s)
+        s = re.sub("(keijzer12N?-3)", "{}\\1".format(col_monotonicity), s)
+        s = re.sub("(keijzer12N?-4)", "{}\\1".format(col_monotonicity), s)
+        s = re.sub("(keijzer12N?-5)", "{}\\1".format(col_monotonicity), s)
 
-        s = s.replace("keijzer5-0", "{}keijzer5-0".format(col_equality))
-        s = s.replace("keijzer12-2", "{}keijzer12-2".format(col_equality))
-        s = s.replace("keijzer15-0", "{}keijzer15-0".format(col_equality))
+        s = re.sub("(keijzer5N?-0)", "{}\\1".format(col_equality), s)
+        s = re.sub("(keijzer12N?-2)", "{}\\1".format(col_equality), s)
+        s = re.sub("(keijzer15N?-0)", "{}\\1".format(col_equality), s)
 
         # s = s.replace("\\\\\ngravityN", "\\\\\\hdashline\ngravityN")
         return s
 
     # we need to create a situation where we can use individual constraints as a row dimension
     propsConstr = []
+    propsConstr_noNoise = []
+    propsConstr_withNoise = []
     for p in props:
         if "result.best.verificator.decisions" in p:
             satVector = p["result.best.verificator.decisions"].split(",")
@@ -1340,7 +1355,13 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                 new_p["propsConstr.satOutcome"] = satOutcome
                 new_p["propsConstr.method"] = p["method"]
                 propsConstr.append(new_p)
+                if "N" not in new_p["propsConstr.constraint"]:
+                    propsConstr_noNoise.append(new_p)
+                else:
+                    propsConstr_withNoise.append(new_p)
     dimConstr = Dim.from_dict(propsConstr, "propsConstr.constraint").sort()
+    dimConstr_noNoise = Dim.from_dict(propsConstr_noNoise, "propsConstr.constraint").sort()
+    dimConstr_withNoise = Dim.from_dict(propsConstr_withNoise, "propsConstr.constraint").sort()
 
     def funSatOutcome(props):
         props2 = [float(p["propsConstr.satOutcome"]) for p in props if "propsConstr.satOutcome" in p]
@@ -1395,6 +1416,48 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                        vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
                        outputFiles=[
                            dir_path + "/tables/custom/all/all_satIndividualConstrRatio_{}.tex".format(
+                               exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(funSatOutcome,
+                       dimConstr,
+                       dim_method_winners,
+                       title="(winners) Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(
+                           c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
+                       headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
+                       outputFiles=[
+                           dir_path + "/tables/custom/winners/winners_satIndividualConstrRatio_{}.tex".format(
+                               exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(funSatOutcome,
+                       dimConstr_noNoise,
+                       dim_method_winners,
+                       title="(winners-noNoise) Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(
+                           c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
+                       headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
+                       outputFiles=[
+                           dir_path + "/tables/custom/winners/winners_satIndividualConstrRatio_noNoise_{}.tex".format(
+                               exp_variant)],
+                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(funSatOutcome,
+                       dimConstr_withNoise,
+                       dim_method_winners,
+                       title="(winners-withNoise) Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(
+                           c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
+                       headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
+                       outputFiles=[
+                           dir_path + "/tables/custom/winners/winners_satIndividualConstrRatio_withNoise_{}.tex".format(
                                exp_variant)],
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
@@ -1582,6 +1645,11 @@ breaklines=true
 \definecolor{darkgreen}{rgb}{0.0, 0.5, 0.0}
 \definecolor{darkblue}{rgb}{0.0, 0.0, 0.55}
 \definecolor{darkorange}{rgb}{0.93, 0.53, 0.18}
+\colorlet{cArgSymmetry}{brown!30}
+\colorlet{cValueBound}{blue!20}
+\colorlet{cValueBoundEx}{blue!35}
+\colorlet{cMonotonicity}{green!20}
+\colorlet{cEquality}{red!20}
 
 \newcommand{\unaryminus}{\scalebox{0.4}[1.0]{\( - \)}} % for shorter minus sign, see: https://tex.stackexchange.com/questions/6058/making-a-shorter-minus
 \newcommand{\constrWeight}{\ensuremath{constrWeight}\xspace}
