@@ -570,6 +570,8 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
     for p in props:
         if "CDGP" in p["method"]:
             if not p_allPropertiesMet_verificator(p) and p_allPropertiesMet_smt(p) and "nguyen1" in p["benchmark"]:
+                x = p_allPropertiesMet_verificator(p)
+                y = p_allPropertiesMet_smt(p)
                 print(p["evoplotter.file"])
 
     tables = [
@@ -1363,6 +1365,10 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
     dimConstr_noNoise = Dim.from_dict(propsConstr_noNoise, "propsConstr.constraint").sort()
     dimConstr_withNoise = Dim.from_dict(propsConstr_withNoise, "propsConstr.constraint").sort()
 
+    order = [6,14,17,1,10,11,15,16,18,19,20,21,23,24,26,27,29,30,34,39,4,5,12,22,25,28,33,38,0,13,31,32,35,36,37,2,3,7,8,9]
+    dimConstr_noNoise_ctypeSorted = Dim([dimConstr_noNoise.configs[i] for i in order])
+    dimConstr_withNoise_ctypeSorted = Dim([dimConstr_withNoise.configs[i] for i in order])
+
     def funSatOutcome(props):
         props2 = [float(p["propsConstr.satOutcome"]) for p in props if "propsConstr.satOutcome" in p]
         if len(props2) == 0:
@@ -1420,6 +1426,34 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
         TableGenerator(funSatOutcome,
+                       dimConstr_noNoise_ctypeSorted,
+                       dimens["method_scikit"] + dim_cdsr_methods_full,
+                       title="Average ratio of satisfied individual properties (noNoise). \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(
+                           c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
+                       headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
+                       outputFiles=[
+                           dir_path + "/tables/custom/all/all_satIndividualConstrRatio_noNoise_{}.tex".format(
+                               exp_variant)],
+                       addRowWithRanks=True, addRowWithMeans=True, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(funSatOutcome,
+                       dimConstr_withNoise_ctypeSorted,
+                       dimens["method_scikit"] + dim_cdsr_methods_full,
+                       title="Average ratio of satisfied individual properties (withNoise). \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(
+                           c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
+                       headerRowNames=[],
+                       color_scheme=thesis_color_scheme,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
+                       outputFiles=[
+                           dir_path + "/tables/custom/all/all_satIndividualConstrRatio_withNoise_{}.tex".format(
+                               exp_variant)],
+                       addRowWithRanks=True, addRowWithMeans=True, ranksHigherValuesBetter=True
+                       ),
+        TableGenerator(funSatOutcome,
                        dimConstr,
                        dim_method_winners,
                        title="(winners) Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(
@@ -1433,8 +1467,22 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                                exp_variant)],
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
+        # TableGenerator(funSatOutcome,
+        #                dimConstr_noNoise,
+        #                dim_method_winners,
+        #                title="(winners-noNoise) Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(
+        #                    c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
+        #                headerRowNames=[],
+        #                color_scheme=thesis_color_scheme,
+        #                cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+        #                vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
+        #                outputFiles=[
+        #                    dir_path + "/tables/custom/winners/winners_satIndividualConstrRatio_noNoise_{}.tex".format(
+        #                        exp_variant)],
+        #                addRowWithRanks=True, ranksHigherValuesBetter=True
+        #                ),
         TableGenerator(funSatOutcome,
-                       dimConstr_noNoise,
+                       dimConstr_noNoise_ctypeSorted,
                        dim_method_winners,
                        title="(winners-noNoise) Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(
                            c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
@@ -1443,12 +1491,26 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                        cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
                        outputFiles=[
-                           dir_path + "/tables/custom/winners/winners_satIndividualConstrRatio_noNoise_{}.tex".format(
+                           dir_path + "/tables/custom/winners/winners_satIndividualConstrRatio_noNoise_typeSorted_{}.tex".format(
                                exp_variant)],
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
+        # TableGenerator(funSatOutcome,
+        #                dimConstr_withNoise,
+        #                dim_method_winners,
+        #                title="(winners-withNoise) Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(
+        #                    c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
+        #                headerRowNames=[],
+        #                color_scheme=thesis_color_scheme,
+        #                cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+        #                vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
+        #                outputFiles=[
+        #                    dir_path + "/tables/custom/winners/winners_satIndividualConstrRatio_withNoise_{}.tex".format(
+        #                        exp_variant)],
+        #                addRowWithRanks=True, ranksHigherValuesBetter=True
+        #                ),
         TableGenerator(funSatOutcome,
-                       dimConstr_withNoise,
+                       dimConstr_withNoise_ctypeSorted,
                        dim_method_winners,
                        title="(winners-withNoise) Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(
                            c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
@@ -1457,7 +1519,7 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                        cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
                        outputFiles=[
-                           dir_path + "/tables/custom/winners/winners_satIndividualConstrRatio_withNoise_{}.tex".format(
+                           dir_path + "/tables/custom/winners/winners_satIndividualConstrRatio_withNoise_typeSorted_{}.tex".format(
                                exp_variant)],
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
@@ -1575,6 +1637,8 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
             p["result.bestOrig.smtlib"] = p["result.validation.bestOrig.smtlib"]
             p["result.best.verificationModel"] = p["result.validation.best.verificationModel"]
             p["result.best.verificationModel"] = p["result.validation.best.verificationModel"]
+            p["result.best.verificator.decisions"] = p["result.validation.best.verificator.decisions"]
+            p["result.best.verificator.ratios"] = p["result.validation.best.verificator.ratios"]
 
     standardize_benchmark_names(props, exp_variant)
     dim_benchmarks = get_benchmarks_from_props(props, simplify_names=False, exp_variant=exp_variant)
