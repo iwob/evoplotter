@@ -305,18 +305,26 @@ def fun_sizeOnlySuccessful(props):
         return str(int(round(np.mean(vals)))) #, np.std(vals)
 def fun_sizeOnlySuccessful_simplified(props):
     vals = [float(p["result.best.size"]) for p in props if is_optimal_solution(p)]
-    if len(vals) == 0:
-        return "-"#-1.0, -1.0
+    if len(props) == 0:
+        return "-"
+    elif len(vals) == 0:
+        return "n/a" #-1.0, -1.0
     else:
         return str(int(round(np.mean(vals)))) #, np.std(vals)
 def fun_sizeOnlySuccessful_original(props):
     vals = [float(p["result.bestOrig.size"]) for p in props if is_optimal_solution(p)]
-    if len(vals) == 0:
-        return "-"#-1.0, -1.0
+    if len(props) == 0:
+        return "-"
+    elif len(vals) == 0:
+        return "n/a" #-1.0, -1.0
     else:
         return str(int(round(np.mean(vals)))) #, np.std(vals)
 def fun_sizeOnlySuccessful_chooseBest(props):
     vals_simp = [float(p["result.best.size"]) for p in props if is_optimal_solution(p)]
+    if len(props) == 0:
+        return "-"
+    elif len(vals_simp) == 0:
+        return "n/a"
     vals_orig = [float(p["result.bestOrig.size"]) for p in props if is_optimal_solution(p)]
     vals = []
     for vs, vo in zip(vals_simp, vals_orig):

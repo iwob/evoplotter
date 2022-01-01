@@ -1,4 +1,5 @@
 import os
+import math
 from app.phd.cdgp.phd_utils import *
 from evoplotter import utils
 from evoplotter import plotter
@@ -155,6 +156,11 @@ def post(s):
          .replace("gravity", "gr")
     return s
 
+def postRemoveZeros(s):
+    s = post(s)
+    s = s.replace("}0.00", "}\\phantom{0.00}").replace("{0.00}", "{\\phantom{0.00}}")
+    return s
+
 
 
 def create_single_table_bundle(props, dim_rows, dim_cols, cellLambda, headerRowNames, cv0, cv1, cv2, vb=1,
@@ -241,8 +247,8 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         TableGenerator(fun_successRate, Dim(dim_rows[:-1]), Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Success rates (properties met)",
                        color_scheme=reporting.color_scheme_darkgreen,
-                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       vertical_border=vb, table_postprocessor=postRemoveZeros, variants=variants,
                        addRowWithRanks=True, addRowWithMeans=True,
                        outputFiles=[results_dir + "/tables/cdgp_succRate_{0}.tex".format(utils.normalize_name(vid)) for vid in variants_ids]
                        ),
@@ -419,6 +425,13 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
     return createSubsectionWithTables(title, tables, props)
 
 
+def log10ValueExtractor(s):
+    base = 10.0
+    if not utils.isfloat(s):
+        return s
+    else:
+        return math.log(float(s), base)
+
 
 def create_subsection_custom_tables(props, title, EXP_TYPE, dimens, results_dir, variants=None):
     assert isinstance(dimens, dict)
@@ -427,14 +440,13 @@ def create_subsection_custom_tables(props, title, EXP_TYPE, dimens, results_dir,
 
     dim_rows = reversed(dimens["testsRatio"])
     dim_cols = dimens["method"] * dimens["evoMode"] * dimens["selection"]
-    shTc = cellShading(0.0, 5000.0, 10000.0) if EXP_TYPE == "LIA" else cellShading(0.0, 250.0, 500.0)
     tables = [
         TableGenerator(fun_successRate,
                        dim_rows,
                        dimens["method"] * dimens["evoMode"] * dimens["selection"],
                        title="Success rates", headerRowNames=[],
                        color_scheme=reporting.color_scheme_darkgreen,
-                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[printer.LatexTextbfMaxInTable(), printer.CellShadingTable("colorLow", "colorMedium", "colorHigh")],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[results_dir + "/tables/custom/cdgp_succRate_rowsAsTestsRatio.tex"]
                        ),
@@ -443,7 +455,7 @@ def create_subsection_custom_tables(props, title, EXP_TYPE, dimens, results_dir,
                        dimens["method"] * dimens["evoMode"],
                        title="Success rates", headerRowNames=[],
                        color_scheme=reporting.color_scheme_darkgreen,
-                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[printer.LatexTextbfMaxInTable(), printer.CellShadingTable("colorLow", "colorMedium", "colorHigh")],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[results_dir + "/tables/custom/cdgp_succRate_rowsAsTestsRatio_colsAsEvoMode.tex"]
                        ),
@@ -452,7 +464,7 @@ def create_subsection_custom_tables(props, title, EXP_TYPE, dimens, results_dir,
                        dimens["method"] * dimens["selection"],
                        title="Success rates", headerRowNames=[],
                        color_scheme=reporting.color_scheme_darkgreen,
-                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[printer.LatexTextbfMaxInTable(), printer.CellShadingTable("colorLow", "colorMedium", "colorHigh")],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[results_dir + "/tables/custom/cdgp_succRate_rowsAsTestsRatio_colsAsSelection.tex"]
                        ),
@@ -461,7 +473,7 @@ def create_subsection_custom_tables(props, title, EXP_TYPE, dimens, results_dir,
                        headerRowNames=[],
                        title="Average sizes of $T_C$ (total tests in run)",
                        color_scheme=reporting.color_scheme_blue, middle_col_align="l",
-                       cellRenderers=[shTc],
+                       cellRenderers=[printer.LatexTextbfMaxInTable(), printer.CellShadingTable("colorLow", "colorMedium", "colorHigh", valueExtractor=log10ValueExtractor)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[
                            results_dir + "/tables/custom/cdgp_Tc_rowsAsTestsRatio.tex"]
@@ -469,14 +481,14 @@ def create_subsection_custom_tables(props, title, EXP_TYPE, dimens, results_dir,
         TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=[],
                        title="Average runtime [s]",
                        color_scheme=reporting.color_scheme_violet,
-                       cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
+                       cellRenderers=[printer.LatexTextbfMinInTable(), printer.CellShadingTable("colorHigh", "colorMedium", "colorLow", valueExtractor=log10ValueExtractor)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[results_dir + "/tables/custom/cdgp_runtime_rowsAsTestsRatio.tex"]
                        ),
         TableGenerator(get_avg_runtimeOnlySuccessful, dim_rows, dim_cols, headerRowNames=[],
                        title="Average runtime (only successful) [s]",
                        color_scheme=reporting.color_scheme_violet,
-                       cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
+                       cellRenderers=[printer.LatexTextbfMinInTable(), printer.CellShadingTable("colorHigh", "colorMedium", "colorLow")],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[results_dir + "/tables/custom/cdgp_runtime_rowsAsTestsRatio_successful.tex"]
                        ),
@@ -518,16 +530,13 @@ def create_subsection_custom_tables(props, title, EXP_TYPE, dimens, results_dir,
     if EXP_TYPE == "LIA":  # LIA specific tables
         tables.extend([
             FriedmannTestPython(dimens["benchmark"],
-                                dimens["method_CDGP"] * dimens["evoMode"] * dimens[
-                                    "selection"] *
-                                dimens["testsRatio"],
+                                dimens["method_CDGP"] * dimens["evoMode"] * dimens["selection"] * dimens["testsRatio"],
                                 get_successRate, p_treshold=0.05,
                                 title="Friedman test for success rates (CDGP variants)",
                                 pathFriedmanViz="tables/custom/friedman_cdgp.gv",
                                 workingDir=results_dir),
             FriedmannTestPython(dimens["benchmark"],
-                                dimens["method_GPR"] * dimens["evoMode"] * dimens[
-                                    "selection"] * dimens["testsRatio"],
+                                dimens["method_GPR"] * dimens["evoMode"] * dimens["selection"] * dimens["testsRatio"],
                                 get_successRate, p_treshold=0.05,
                                 title="Friedman test for success rates (GPR variants)",
                                 pathFriedmanViz="tables/custom/friedman_gpr.gv",
@@ -613,7 +622,8 @@ def create_subsection_formal(props_lia, props_slia, title, EXP_TYPE, dimens, res
                        dimens["benchmark"], dim_cols,
                        title="Success rates",
                        color_scheme=reporting.color_scheme_darkgreen,
-                       cellRenderers=[rBoldWhen1, cellShading(0.0, 0.5, 1.0)],
+                       # cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[results_dir + "/tables/formal/succRate_all.tex"]
                        ),
@@ -621,15 +631,16 @@ def create_subsection_formal(props_lia, props_slia, title, EXP_TYPE, dimens, res
                        dimens["benchmark"], dim_cols,
                        title="Average runtime [s]",
                        color_scheme=reporting.color_scheme_violet,
-                       cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
+                       cellRenderers=[printer.LatexTextbfMinInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
+                       addRowWithRanks=True, ranksHigherValuesBetter=False
                        #outputFiles=[results_dir + "/tables/formal/runtime_all.tex"]
                        ),
         TableGenerator(get_avg_runtimeOnlySuccessful,
                        dimens["benchmark"], dim_cols,
                        title="Average runtime (only successful) [s]",
                        color_scheme=reporting.color_scheme_violet,
-                       cellRenderers=[cellShading(0.0, 900.0, 1800.0)],
+                       cellRenderers=[printer.LatexTextbfMinInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[results_dir + "/tables/formal/runtime_successful.tex"]
                        ),
@@ -637,21 +648,21 @@ def create_subsection_formal(props_lia, props_slia, title, EXP_TYPE, dimens, res
                        dimens["benchmark"], dim_cols,
                        title="Average sizes of best of runs (number of nodes) (only successful) (NOT SIMPLIFIED)",
                        color_scheme=reporting.color_scheme_yellow,
-                       cellRenderers=[cellShading(0.0, 100.0, 200.0)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       cellRenderers=[printer.LatexTextbfMinInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
+                       vertical_border=vb, table_postprocessor=post, variants=variants
                        ),
         TableGenerator(fun_sizeOnlySuccessful_simplified,
                        dimens["benchmark"], dim_cols,
                        title="Average sizes of best of runs (number of nodes) (only successful) (SIMPLIFIED)",
                        color_scheme=reporting.color_scheme_yellow,
-                       cellRenderers=[cellShading(0.0, 100.0, 200.0)],
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       cellRenderers=[printer.LatexTextbfMinInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
+                       vertical_border=vb, table_postprocessor=post, variants=variants
                        ),
         TableGenerator(fun_sizeOnlySuccessful_chooseBest,
                        dimens["benchmark"], dim_cols,
                        title="Average sizes of best of runs (number of nodes) (only successful) (CHOOSE BEST)",
                        color_scheme=reporting.color_scheme_yellow,
-                       cellRenderers=[cellShading(0.0, 100.0, 200.0)],
+                       cellRenderers=[printer.LatexTextbfMinInRow(), printer.CellShadingRow("colorLow", "colorMedium", "colorHigh")],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        outputFiles=[results_dir + "/tables/formal/size_chooseBest.tex"]
                        ),
@@ -660,7 +671,7 @@ def create_subsection_formal(props_lia, props_slia, title, EXP_TYPE, dimens, res
                        title="The best solutions (simplified) found for each benchmark and their sizes. Format: solution (isCorrect?) (size)",
                        color_scheme=reporting.color_scheme_violet, middle_col_align="l",
                        default_color_thresholds=(0.0, 900.0, 1800.0),
-                       vertical_border=vb, table_postprocessor=post, variants=variants,
+                       vertical_border=vb, table_postprocessor=post, variants=variants
                        ),
     ]
 
@@ -999,6 +1010,6 @@ Rerun of the CDGP experiments series for my PhD thesis.
 
 if __name__ == "__main__":
     # reports_e0_paramTests()
-    # reports_e0_lia()
-    # reports_e0_slia()
-    reports_e0_formal()
+    reports_e0_lia()
+    reports_e0_slia()
+    # reports_e0_formal()

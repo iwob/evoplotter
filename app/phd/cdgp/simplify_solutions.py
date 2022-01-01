@@ -140,7 +140,7 @@ def simplifyExpression(expr, logic, var_type):
 
     # If shell=True, the command string is interpreted as a raw shell command.
     z3_args = "pp.single_line=true pp.decimal_precision=50 pp.decimal=true pp.min-alias-size=1000000 pp.max_depth=1000000"
-    completed_proc = subprocess.run("./z3 {0} tmp.smt2".format(z3_args), shell=True, universal_newlines=True, stdout=PIPE, stderr=PIPE)
+    completed_proc = subprocess.run("/home/iwob/Programs/Z3/z3 {0} tmp.smt2".format(z3_args), shell=True, universal_newlines=True, stdout=PIPE, stderr=PIPE)
     out = completed_proc.stdout #.decode("utf-8")
     err = completed_proc.stderr #.decode("utf-8")
 
