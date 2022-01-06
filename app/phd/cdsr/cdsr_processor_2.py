@@ -1302,6 +1302,8 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                          dimens["method_CDGP"] * Dim(dimens["selection"][1]) * dimens["testsRatio_1.0"] + \
                          dimens["method_CDGPprops"] * Dim(dimens["selection"][1]) * dimens["testsRatio_1.0"] * dimens["weight"][1]
 
+    rPhantomize = printer.CellRenderer(lambda x, y: str(x) == "0.00", lambda x, y: r"\phantom{" + str(y) + "}")
+
 
     def postprocessor(s):
         s = post(s)
@@ -1410,7 +1412,7 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                        dimens["method_scikit"],
                        title="Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality), headerRowNames=[],
                        color_scheme=thesis_color_scheme,
-                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0), rPhantomize],
                        vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/scikit/scikit_satIndividualConstrRatio_{}.tex".format(
                            exp_variant)],
@@ -1432,7 +1434,7 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                        dim_cdsr_methods_full,
                        title="Average ratio of satisfied individual properties. \colorbox{{{}}}{{Symmetry w.r.t.\ arguments}}, \colorbox{{{}}}{{constant output bound}}, \colorbox{{{}}}{{variable output bound}}, \colorbox{{{}}}{{monotonicity}}, \colorbox{{{}}}{{equality}}.".format(c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality), headerRowNames=[],
                        color_scheme=thesis_color_scheme,
-                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0), rPhantomize],
                        vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
                        outputFiles=[dir_path + "/tables/custom/cdsrFull/cdsrFull_satIndividualConstrRatio_{}.tex".format(
                            exp_variant)],
@@ -1445,7 +1447,7 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                            c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
                        headerRowNames=[],
                        color_scheme=thesis_color_scheme,
-                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0), rPhantomize],
                        vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
                        outputFiles=[
                            dir_path + "/tables/custom/all/all_satIndividualConstrRatio_{}.tex".format(
@@ -1459,7 +1461,7 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                            c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
                        headerRowNames=[],
                        color_scheme=thesis_color_scheme,
-                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0), rPhantomize],
                        vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
                        outputFiles=[
                            dir_path + "/tables/custom/all/all_satIndividualConstrRatio_noNoise_{}.tex".format(
@@ -1473,7 +1475,7 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                            c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
                        headerRowNames=[],
                        color_scheme=thesis_color_scheme,
-                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0), rPhantomize],
                        vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
                        outputFiles=[
                            dir_path + "/tables/custom/all/all_satIndividualConstrRatio_withNoise_{}.tex".format(
@@ -1487,7 +1489,7 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                            c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
                        headerRowNames=[],
                        color_scheme=thesis_color_scheme,
-                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0), rPhantomize],
                        vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
                        outputFiles=[
                            dir_path + "/tables/custom/winners/winners_satIndividualConstrRatio_{}.tex".format(
@@ -1515,7 +1517,7 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                            c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
                        headerRowNames=[],
                        color_scheme=thesis_color_scheme,
-                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0), rPhantomize],
                        vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
                        outputFiles=[
                            dir_path + "/tables/custom/winners/winners_satIndividualConstrRatio_noNoise_typeSorted_{}.tex".format(
@@ -1543,7 +1545,7 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                            c_arg_symmetry, c_value_bound, c_value_bound2, c_monotonicity, c_equality),
                        headerRowNames=[],
                        color_scheme=thesis_color_scheme,
-                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0)],
+                       cellRenderers=[printer.LatexTextbfMaxInRow(), cellShading(0.0, 0.5, 1.0), rPhantomize],
                        vertical_border=vb, table_postprocessor=postprocessor, variants=variants,
                        outputFiles=[
                            dir_path + "/tables/custom/winners/winners_satIndividualConstrRatio_withNoise_typeSorted_{}.tex".format(
