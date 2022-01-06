@@ -1,4 +1,5 @@
 import math
+import re
 import numpy as np
 from . import dims
 from . import utils
@@ -533,7 +534,7 @@ class Table(object):
         def processRow(row):
             rowValues = []
             for x in row:
-                if x is None or x == "-":
+                if x is None or x == "-" or not utils.isfloat(x):
                     rowValues.append(np.inf)  # so that missing values collectively get the worst spot
                 else:
                     rowValues.append(float(self.valueExtractor(x)))
@@ -650,7 +651,7 @@ class Table(object):
 
 
 
-def latexToArray(text):
+def latexToArray(text, removeRenderings=False):
     """Converts the inside of the LaTeX tabular environment into a 2D array represented as nested lists."""
     rows = []
     for line in text.strip().split("\n"):
@@ -660,6 +661,14 @@ def latexToArray(text):
         elif cols[-1].endswith(r"\\\hline"):
             cols[-1] = cols[-1][:-8]
         rows.append(cols)
+    if removeRenderings:
+        def process2(text):
+            text = re.sub(r"\\[^{}\\]+\{.*\}\s*([0-9.-]+|\\[^{}\\]+\{([^{}]+)\})", r"\g<1>",
+                          text)  # handle case when \command{}VALUE or \command{} \command2{VALUE}
+            return re.sub(r"\\[^{}\\]+\{([0-9.-]+)\}", r"\g<1>", text)  # handle case when VALUE or \command2{VALUE}
+        for i, cols in enumerate(rows):
+            for j, cell in enumerate(cols):
+                rows[i][j] = process2(rows[i][j])
     return rows
 
 
