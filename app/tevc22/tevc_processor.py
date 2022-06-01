@@ -785,6 +785,11 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
     latex_avgSolverRatio = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_ratioSolverTime, headerRowNames,
                                                       cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants)
 
+    print("CORRECTED RATIO SOLVER TIME")
+    latex_avgSolverRatio_corrected = create_single_table_bundle(props, dim_rows, dim_cols, get_stats_ratioSolverTime_corrected,
+                                                      headerRowNames,
+                                                      cv0=0.0, cv1=0.5, cv2=1.0, tableVariants=variants)
+
     print("AVG NUM SOLVER CALLS")
     latex_avgSolverTotalCalls = create_single_table_bundle(props, dim_rows, dim_cols, get_avgSolverTotalCalls, headerRowNames,
                                                       cv0=1e1, cv1=1e2, cv2=1e4, tableVariants=variants)
@@ -801,6 +806,7 @@ def create_subsection_cdgp_specific(props, title, dim_rows, dim_cols, headerRowN
         ("Average sizes of $T_C$ (total tests in run)", latex_avgTotalTests, reporting.color_scheme_blue),
         ("Max solver time per query [s]", latex_maxSolverTimes, reporting.color_scheme_violet),
         ("Ratio of time spent in SMT solver", latex_avgSolverRatio, reporting.color_scheme_violet),
+        ("Ratio of time spent in SMT solver (corrected)", latex_avgSolverRatio_corrected, reporting.color_scheme_violet),
         ("Avg solver time per query [s]", latex_avgSolverTimes, reporting.color_scheme_brown),
         ("Avg number of solver calls (in thousands; 1=1000)", latex_avgSolverTotalCalls, reporting.color_scheme_blue),
         ("Number of solver calls $>$ 0.5s", latex_numSolverCallsOverXs, reporting.color_scheme_blue),
@@ -1693,8 +1699,7 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     dataFrame = convertPropsToDataFrame(props)
     saveLogsAsCsv(props, dim_benchmarks, dim_cols, dir_path=dir_path, frame=dataFrame)
 
-    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_thesis_pop500_final/{}/".format(exp_variant), maxRuns=50)
-    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_thesis_pop1k_final/{}/".format(exp_variant), maxRuns=50)
+    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_tevc_all/", maxRuns=50)
 
     dimensions_dict = {"benchmark": dim_benchmarks,
                        "testsRatio": dim_testsRatio,
@@ -1754,22 +1759,12 @@ breaklines=true
 
 
 
-def reports_noNoise_pop1k():
-    folders = ["results_thesis_pop1k_final/noNoise/"]
-    reports_universal(folders=folders, dir_path="reports_pop1k/noNoise/", exp_variant="noNoise")
-
-def reports_withNoise_pop1k():
-    folders = ["results_thesis_pop1k_final/withNoise/"]
-    reports_universal(folders=folders, dir_path="reports_pop1k/withNoise/", exp_variant="withNoise")
-
 def reports_both_pop1k():
-    # folders = ["results_thesis_pop1k_final/noNoise/", "results_thesis_pop1k_final/withNoise/", "results_tevc/"]
-    folders = ["results_thesis_pop1k_final/noNoise/", "results_thesis_pop1k_final/withNoise/"]
-    reports_universal(folders=folders, dir_path="reports_pop1k/both/", exp_variant="both")
+    folders = ["results_tevc_all/"]
+    # folders = ["results_thesis_pop1k_final/noNoise/", "results_thesis_pop1k_final/withNoise/"]
+    reports_universal(folders=folders, dir_path="reports/reports_pop1k/both/", exp_variant="both")
 
 
 if __name__ == "__main__":
-    # utils.ensure_clear_dir("reports/")
-    # reports_noNoise_pop1k()
-    # reports_withNoise_pop1k()
+    utils.ensure_dir("reports/")
     reports_both_pop1k()

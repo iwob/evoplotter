@@ -358,11 +358,23 @@ def get_stats_avgSolverTime(props):
     else:
         return "%0.3f" % (sum / sumWeights)
 def get_ratioSolverTime(p):
-    if p["method"] == "CDSR" and p["selection"] == "tournament" and p["testsRatio"] == "1.0":
-        print("BINGO")
     totalTime = float(p["result.totalTimeSystem"])  # in ms
     # totalTime = get_avg_runtime(props)  #alternative version
     totalTimeSmt = float(p["solver.timeSumSec"]) * 1000.  # in ms
+    return totalTimeSmt / totalTime
+def get_ratioSolverTime_corrected(p):
+    totalTime = float(p["result.totalTimeSystem"])  # in ms
+    totalTimeSmt = 0.
+    # Example: solver.allTimesCountMap = (0.002,152), (0.003,2256), [..], (2.235,1)
+    for smtPair in (p["solver.allTimesCountMap"]+",").split():
+        y = [float(x) for x in smtPair[1:-2].split(",")]
+        t, num = y[0]*1000., y[1]
+        if t > 3000.0:
+            rem = t - 3000.0
+            totalTimeSmt += 3000.0 * num
+            totalTime -= rem * num
+        else:
+            totalTimeSmt += t * num
     return totalTimeSmt / totalTime
 
 def get_stats_ratioSolverTime(props):
@@ -370,6 +382,13 @@ def get_stats_ratioSolverTime(props):
     if len(props) == 0:
         return "-"
     vals = np.mean([get_ratioSolverTime(p) for p in props])
+    return "%0.5f" % round(np.mean(vals), 5)
+
+def get_stats_ratioSolverTime_corrected(props):
+    """Computes the average ratio of time that the run spends in SMT solver."""
+    if len(props) == 0:
+        return "-"
+    vals = np.mean([get_ratioSolverTime_corrected(p) for p in props])
     return "%0.5f" % round(np.mean(vals), 5)
 
 def get_avgSolverTotalCalls(props):
