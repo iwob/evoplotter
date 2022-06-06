@@ -534,10 +534,11 @@ class Table(object):
         def processRow(row):
             rowValues = []
             for x in row:
+                x = self.valueExtractor(x)
                 if x is None or x == "-" or not utils.isfloat(x):
                     rowValues.append(np.inf)  # so that missing values collectively get the worst spot
                 else:
-                    rowValues.append(float(self.valueExtractor(x)))
+                    rowValues.append(float(x))
             return rowValues
 
         for row in self.content:
