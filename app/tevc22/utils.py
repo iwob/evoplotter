@@ -822,7 +822,7 @@ def get_rankingOfBestSolversCDSR(dim_ranking, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=
 
 
 
-def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15):
+def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, key, ONLY_VISIBLE_SOLS=True, NUM_SHOWN=15):
     def sorted_list_lambda(props):
         allRanks = {}  # for each config name contains a list of its ranks
         for config_trial in dim_ranks_trials:
@@ -835,7 +835,7 @@ def get_averageAlgorithmRanksCDSR(dim_ranking, dim_ranks_trials, ONLY_VISIBLE_SO
                     allRanks[name] = []
                 props2 = config.filter_props(props_trial)
                 if len(props2) > 0:
-                    v = np.median([float(p["result.best.testMSE"]) for p in props2])
+                    v = np.median([float(p[key]) for p in props2])
                     valuesList.append((name, float(v)))
 
             valuesList.sort(key=lambda x: (x[1], x[0]), reverse=False)

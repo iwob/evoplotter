@@ -457,7 +457,7 @@ def create_subsection_figures_analysis_seaborn(dataFrame, path):
 
 
 def scNotValueExtractor(s):
-    if s == "-" or "10^{" not in s:
+    if s is None or s == "-" or "10^{" not in s:
         return s
     else:
         numbers = re.findall("[-]?[0-9]+[.]?[0-9]*", s)
@@ -617,7 +617,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
         #                                           valueExtractor=scNotLog10ValueExtractor)],
         #                vertical_border=vb, table_postprocessor=post, variants=variants,
         #                ),
-        TableGenerator(get_median_testMSE_bestOnValidCDGP, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        TableGenerator(get_median_testMSE_bestOnValidCDGP, Dim(dim_rows[:-1]), Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Test set: MSE  (median); bestOnValidSet CDGP",
                        color_scheme=reversed(reporting.color_scheme_gray_dark),
                        cellRenderers=[
@@ -627,7 +627,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        addRowWithRanks=True, ranksHigherValuesBetter=False, valueExtractor=scNotValueExtractor
                        ),
-        TableGenerator(get_averageAlgorithmRanksCDSR(dim_cols[:-1], dim_rows[:-1], ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
+        TableGenerator(get_averageAlgorithmRanksCDSR(dim_cols[:-1], dim_rows[:-1], key="result.best.testMSE", ONLY_VISIBLE_SOLS=True, NUM_SHOWN=100),
                        Dim(dim_cols[-1]), Dim(dim_rows[-1]),
                        headerRowNames=headerRowNames,
                        title="Average ranks of the solvers (median MSE on test set)",
@@ -643,7 +643,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        default_color_thresholds=(0.0, 900.0, 1800.0),
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        ),
-        TableGenerator(fun_allPropertiesMet, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        TableGenerator(fun_allPropertiesMet, Dim(dim_rows[:-1]), Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Success rates (properties met) -- verified formally by SMT solver",
                        color_scheme=reporting.color_scheme_green,
                        # default_color_thresholds=(0.0, 0.5, 1.0),
@@ -653,7 +653,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
-        TableGenerator(fun_allPropertiesMet_verificator, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        TableGenerator(fun_allPropertiesMet_verificator, Dim(dim_rows[:-1]), Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Success rates (properties met) -- verified by stochastic verificator",
                        color_scheme=reporting.color_scheme_green,
                        # default_color_thresholds=(0.0, 0.5, 1.0),
@@ -663,7 +663,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                        vertical_border=vb, table_postprocessor=post, variants=variants,
                        addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
-        TableGenerator(getAvgSatisfiedProps1, dim_rows, dim_cols, headerRowNames=headerRowNames,
+        TableGenerator(getAvgSatisfiedProps1, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Average ratio of satisfied properties -- verified by SMT solver (CDSR configs) and stochastic verificator (scikit baselines)",
                        color_scheme=reporting.color_scheme_green,
                        # default_color_thresholds=(0.0, 0.5, 1.0),
@@ -1567,6 +1567,51 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
     return reporting.Subsection("Custom tables – individual constraints", content)
 
 
+def convertPropsToDataFrame_aggregates(props, dim_rows, dim_cols):
+    table_testMSE = TableGenerator(get_median_testMSE_bestOnValidCDGP, dim_rows, dim_cols,
+                       title="Test set: MSE  (median); bestOnValidSet CDGP",
+                       addRowWithRanks=True, ranksHigherValuesBetter=False, valueExtractor=scNotValueExtractor)
+    table_succRate = TableGenerator(fun_allPropertiesMet_verificator, dim_rows, dim_cols,
+                       title="Success rates (properties met) -- verified by stochastic verificator",
+                       addRowWithRanks=True, addRowWithMeans=True, ranksHigherValuesBetter=True)
+    table_satRatio = TableGenerator(getAvgSatisfiedProps1, dim_rows, dim_cols,
+                       title="Average ratio of satisfied properties -- verified by SMT solver (CDSR configs) and stochastic verificator (scikit baselines)",
+                       addRowWithRanks=True, addRowWithMeans=True, ranksHigherValuesBetter=True)
+
+    table_testMSE = table_testMSE.generateTable(props)
+    table_succRate = table_succRate.generateTable(props)
+    table_satRatio = table_satRatio.generateTable(props)
+
+    header = ["_".join(s) for s in table_testMSE.getHeader().cells]
+    ranks_testMSE = table_testMSE.getAvgRanks()
+    ranks_succRate = table_succRate.getAvgRanks()
+    means_succRate = table_succRate.getMeans()
+    ranks_satRatio = table_satRatio.getAvgRanks()
+    means_satRatio = table_satRatio.getMeans()
+
+    def assignCategory(h):
+        if "cdsrProps" in h and "noVer" in h:
+            return "CDSRprops noVer"
+        elif "cdsrProps" in h and "noVer" not in h:
+            return "CDSRprops"
+        elif "CDSR" in h:
+            return "CDSR"
+        elif "GP" in h:
+            return "GP"
+        else:
+            return "regressorML"
+
+    d = {}
+    d["method"] = header
+    d["ranks_testMSE"] = ranks_testMSE
+    d["ranks_succRate"] = ranks_succRate
+    d["means_succRate"] = means_succRate
+    d["ranks_satRatio"] = ranks_satRatio
+    d["means_satRatio"] = means_satRatio
+    d["method_category"] = [assignCategory(h) for h in header]
+    return pd.DataFrame(d)
+
+
 def convertPropsToDataFrame(props):
     attributes = [
         "evoplotter.file",
@@ -1608,6 +1653,9 @@ def saveLogsAsCsv(props, dim_rows, dim_cols, dir_path, path="data.csv", frame=No
     if frame is None:
         frame = convertPropsToDataFrame(props)
     frame.to_csv("{}csv_data/{}".format(dir_path, path), sep=";")
+
+    frame2 = convertPropsToDataFrame_aggregates(props, dim_rows, dim_cols)
+    frame2.to_csv("{}csv_data/methods_summary.csv".format(dir_path), sep=";")
 
     # utils.ensure_dir("{}csv_data/by_benchmarks/".format(dir_path))
     # for config_b in dim_rows:
@@ -1721,7 +1769,7 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
         (create_subsection_shared_stats, [props, "Shared Statistics", dim_rows_all, dim_cols_all, 50, headerRowNames]),
         (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
         (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
-        # (create_subsection_custom_tables, [props, "Custom tables", dimensions_dict, exp_variant, dir_path, None]),
+        (create_subsection_custom_tables, [props, "Custom tables", dimensions_dict, exp_variant, dir_path, None]),
         # (create_subsection_individual_constraints, [props, "Custom tables -- individual constraints", dimensions_dict, exp_variant, dir_path, None]),
     ]
     sects = [(title, desc, subs, [])]
