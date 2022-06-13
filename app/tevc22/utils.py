@@ -490,7 +490,11 @@ def get_MSE_bestOnValidSet_p(p, outputKey):
             if best_run < best_valid:
                 return float(p["result.best.{}".format(outputKey)])  # the best valid would be updated anyway, but was deemed to be a solution and search terminated
             else:
-                return float(p["result.validation.best.{}".format(outputKey)])
+                x = p["result.validation.best.{}".format(outputKey)]
+                if utils.isfloat(x):
+                    return float(x)
+                else:
+                    return np.finfo(np.float128).max
     else:
         k = "result.best.{}".format(outputKey)
         if k in p:

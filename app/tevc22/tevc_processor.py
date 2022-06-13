@@ -120,7 +120,7 @@ dim_methodCDGPprops = Dim([
     Config(r"\cdsrProps", p_dict_matcher({"method": "CDGPprops"}), method="CDGPprops"),
 ])
 dim_methodCDGPprops_noVer = Dim([
-    Config(r"\cdsrProps noVer", p_dict_matcher({"method": "CDGPprops", "testsRatio": "2.0"}), method="CDGPprops"),
+    Config(r"\gpProps", p_dict_matcher({"method": "CDGPprops", "testsRatio": "2.0"}), method="CDGPprops"),
 ])
 dim_methodGP = Dim([
     Config("$GP$", p_dict_matcher({"method": "CDGP", "testsRatio": "2.0"}), method="GP"),
@@ -1591,7 +1591,7 @@ def convertPropsToDataFrame_aggregates(props, dim_rows, dim_cols):
 
     def assignCategory(h):
         if "cdsrProps" in h and "noVer" in h:
-            return "CDSRprops noVer"
+            return "GPprops noVer"
         elif "cdsrProps" in h and "noVer" not in h:
             return "CDSRprops"
         elif "CDSR" in h:
@@ -1696,6 +1696,13 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
 
 """
 
+    def convertInfMSE(text):
+        if utils.isfloat(text):
+            return float(text)
+        else:
+            print("Warning: non-float text converted to a maximum float value: '{}'".format(text))
+            return np.finfo(np.float128).max
+
     desc += "\n\\bigskip\\noindent Folders with data: " + r"\lstinline{" + str(folders) + "}\n"
     props = load_correct_props(folders, dir_path)
 
@@ -1711,11 +1718,11 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
             p["result.best.passedConstraints"] = p["result.validation.best.passedConstraints"]
             p["result.best.size"] = p["result.validation.best.size"]
             p["result.best.testEval"] = p["result.validation.best.testEval"]
-            p["result.best.testMSE"] = p["result.validation.best.testMSE"]
+            p["result.best.testMSE"] = convertInfMSE(p["result.validation.best.testMSE"])
             p["result.best.trainEval"] = p["result.validation.best.trainEval"]
-            p["result.best.trainMSE"] = p["result.validation.best.trainMSE"]
+            p["result.best.trainMSE"] = convertInfMSE(p["result.validation.best.trainMSE"])
             p["result.best.validEval"] = p["result.validation.best.validEval"]
-            p["result.best.validMSE"] = p["result.validation.best.validMSE"]
+            p["result.best.validMSE"] = convertInfMSE(p["result.validation.best.validMSE"])
             p["result.best.verificationDecision"] = p["result.validation.best.verificationDecision"]
             p["result.best.verificationModel"] = p["result.validation.best.verificationModel"]
             p["result.bestOrig"] = p["result.validation.bestOrig"]
@@ -1724,8 +1731,8 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
             p["result.bestOrig.smtlib"] = p["result.validation.bestOrig.smtlib"]
             p["result.best.verificationModel"] = p["result.validation.best.verificationModel"]
             p["result.best.verificationModel"] = p["result.validation.best.verificationModel"]
-            p["result.best.verificator.decisions"] = p["result.validation.best.verificator.decisions"]
-            p["result.best.verificator.ratios"] = p["result.validation.best.verificator.ratios"]
+            # p["result.best.verificator.decisions"] = p["result.validation.best.verificator.decisions"]
+            # p["result.best.verificator.ratios"] = p["result.validation.best.verificator.ratios"]
 
     standardize_benchmark_names(props, exp_variant)
     dim_benchmarks = get_benchmarks_from_props(props, simplify_names=False, exp_variant=exp_variant)
@@ -1747,7 +1754,7 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     dataFrame = convertPropsToDataFrame(props)
     saveLogsAsCsv(props, dim_benchmarks, dim_cols, dir_path=dir_path, frame=dataFrame)
 
-    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_tevc_all/", maxRuns=50)
+    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_tevc_all_v2/", maxRuns=50)
 
     dimensions_dict = {"benchmark": dim_benchmarks,
                        "testsRatio": dim_testsRatio,
@@ -1802,6 +1809,7 @@ breaklines=true
 \newcommand{\unaryminus}{\scalebox{0.4}[1.0]{\( - \)}} % for shorter minus sign, see: https://tex.stackexchange.com/questions/6058/making-a-shorter-minus
 \newcommand{\constrWeight}{\ensuremath{constrWeight}\xspace}
 \newcommand{\cdsrProps}{CDSR$_{\text{props}}$\xspace}
+\newcommand{\gpProps}{GP$_{\text{props}}$\xspace}
 """
     templates.prepare_report(sects, "cdsr_{}.tex".format(exp_variant), dir_path=dir_path, paperwidth=190, user_declarations=user_declarations)
 
