@@ -1754,7 +1754,7 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
     dataFrame = convertPropsToDataFrame(props)
     saveLogsAsCsv(props, dim_benchmarks, dim_cols, dir_path=dir_path, frame=dataFrame)
 
-    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_tevc_all_v2/", maxRuns=50)
+    # utils.reorganizeExperimentFiles(props, dim_benchmarks * dim_cols, "results_tevc_all_v3/", maxRuns=50)
 
     dimensions_dict = {"benchmark": dim_benchmarks,
                        "testsRatio": dim_testsRatio,

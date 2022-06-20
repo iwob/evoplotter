@@ -143,17 +143,18 @@ def save_listings(props, dim_rows, dim_cols, dir_path):
         props_bench = dr.filter_props(props)
         for dc in dim_cols:
             f.write("{0}\n".format(dc.get_caption()))
-            f_errors.write("{0}\n".format(dc.get_caption())) # TODO: finish
+            f_errors.write("{0}\n".format(dc.get_caption()))  # TODO: finish
             props_final = [p for p in dc.filter_props(props_bench) if is_optimal_solution(p)]
 
+            props_final2 = []
             for p in props_final:
-                fname = p["thisFileName"].replace("/home/ibladek/workspace/GECCO19/gecco19/", "")
+                fname = p["thisFileName"].replace("/home/ibladek/workspace/CDSR/", "")
                 best = p["result.best"]
-                fit = float(p["result.best.trainMSE"])
-                if fit >= 1e-15:
-                    f.write("{0}\t\t\t(FILE: {1}) (MSE: {2})\n".format(best, fname, fit))
-                else:
-                    f.write("{0}\t\t\t(FILE: {1})\n".format(best, fname))
+                fit = float(p["result.best.testMSE"])
+                props_final2.append((best, fname, fit))
+            props_final2.sort(key=lambda x: x[2])
+            for (best, fname, fit) in props_final2:
+                f.write("{0}\t\t\t(FILE: {1}) (MSE: {2})\n".format(best, fname, fit))
 
             f.write("\n\n")
         f.close()
@@ -180,7 +181,7 @@ def isOptimalTests(p):
     return value < float(p["cdgp.optThresholdMSE"])
 def is_optimal_solution(p):
     if p["method"] in {"CDGP", "CDGPprops", "GP"}:
-        return isOptimalVerification(p) and isOptimalTests(p)
+        return isOptimalVerification(p) # and isOptimalTests(p)
     else:
         return False
 
