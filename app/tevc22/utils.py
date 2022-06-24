@@ -683,8 +683,10 @@ def getAvgSat(props):
             satVector = p["result.best.verificator.decisions"].split(",")
             satVector = [int(s) for s in satVector]
             sumSat += sum(satVector)
-            numProps = len(satVector)
+            if numProps is None:
+                numProps = len(satVector)
         elif "result.best.passedConstraints" in p:
+            print("Warning: using 'result.best.passedConstraints' where possibly 'result.best.verificator.decisions' might be preffered")
             # result.best.passedConstraints = List(1, 1, 1, 1)
             satVector = p["result.best.passedConstraints"][5:-1].split(", ")
             satVector = [int(s) for s in satVector]
@@ -694,11 +696,41 @@ def getAvgSat(props):
                 elif satVector[i] == 0:
                     satVector[i] = 1
             sumSat += sum(satVector)
-            numProps = len(satVector)
+            if numProps is None:
+                numProps = len(satVector)
         else:
             raise Exception("No information about satisfied constraints")
     avgSat = float(sumSat) / len(props)
     return avgSat, numProps
+def getAvgSatFair(props):
+    assert len(props) > 0
+    # it is assumed that props contain only props with scikit runs
+    ratios = []
+    numProps = None
+    for p in props:
+        if "result.best.verificator.decisions" in p:
+            satVector = p["result.best.verificator.decisions"].split(",")
+            satVector = [int(s) for s in satVector]
+            ratios.append(sum(satVector)/len(satVector))
+        elif "result.best.passedConstraints" in p:
+            print("Warning: using 'result.best.passedConstraints' where possibly 'result.best.verificator.decisions' might be preffered")
+            # result.best.passedConstraints = List(1, 1, 1, 1)
+            satVector = p["result.best.passedConstraints"][5:-1].split(", ")
+            satVector = [int(s) for s in satVector]
+            for i, s in enumerate(satVector):  # reversing, because 0 in CDSR logs means that constraint was passed
+                if satVector[i] == 1:
+                    satVector[i] = 0
+                elif satVector[i] == 0:
+                    satVector[i] = 1
+            ratios.append(sum(satVector) / len(satVector))
+        else:
+            raise Exception("No information about satisfied constraints")
+    return sum(ratios) / len(ratios)
+def getAvgSatisfiedProps1Fair(props):
+    if len(props) == 0:
+        return "-"
+    avgSat = getAvgSatFair(props)
+    return "{0}".format("%0.2f" % avgSat)
 def getAvgSatisfiedProps1(props):
     if len(props) == 0:
         return "-"

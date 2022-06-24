@@ -36,6 +36,7 @@ def simplify_benchmark_name(name, exp_variant):
     if exp_variant is not None and exp_variant == "both" and "withNoise" in name:
         noisePart = "N"
     name = name.replace("resistance_par", "res")
+    name = name.replace("ComputerHardware", "hardware")
     name = name if i == -1 else name[i+1:]
     name = name[:name.rfind(".")]  # cut off '.sl'
     name = name[:name.rfind("_")]  # cut off number of tests
@@ -175,6 +176,7 @@ def post(s):
     s = s.replace("{ccccccccccccc}", "{rrrrrrrrrrrrr}").replace("{rrr", "{lrr")\
          .replace(r"\_{lex}", "_{lex}").replace(r"\_{", "_{").replace("resistance_par", "res")
     s = s.replace("\\\\\ngravityN", "\\\\\\hdashline\ngravityN")
+    s = s.replace("\\\\\nhardware ", "\\\\\\hdashline\nhardware ")
     return s
 
 
@@ -651,7 +653,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                            printer.LatexTextbfMaxInRow(),
                            cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
-                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       addRowWithRanks=True, addRowWithMeans=True, ranksHigherValuesBetter=True
                        ),
         TableGenerator(fun_allPropertiesMet_verificator, Dim(dim_rows[:-1]), Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Success rates (properties met) -- verified by stochastic verificator",
@@ -661,7 +663,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                            printer.LatexTextbfMaxInRow(),
                            cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
-                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       addRowWithRanks=True, addRowWithMeans=True, ranksHigherValuesBetter=True
                        ),
         TableGenerator(getAvgSatisfiedProps1, dim_rows, Dim(dim_cols[:-1]), headerRowNames=headerRowNames,
                        title="Average ratio of satisfied properties -- verified by SMT solver (CDSR configs) and stochastic verificator (scikit baselines)",
@@ -671,7 +673,7 @@ def create_subsection_shared_stats(props, title, dim_rows, dim_cols, numRuns, he
                            printer.LatexTextbfMaxInRow(),
                            cellShading(0.0, 0.5, 1.0)],
                        vertical_border=vb, table_postprocessor=post, variants=variants,
-                       addRowWithRanks=True, ranksHigherValuesBetter=True
+                       addRowWithRanks=True, addRowWithMeans=True, ranksHigherValuesBetter=True
                        ),
         TableGenerator(get_avg_runtime, dim_rows, dim_cols, headerRowNames=headerRowNames,
                        title="Average runtime [s]",
@@ -849,16 +851,18 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
     # dim_cdsr_methods = dimens["method_CDGP"] * dimens["selection"] +\
     #                    dimens["method_CDGPprops"] * dimens["selection"] * dimens["weight"]
 
-    dim_cdsr_methods_full = dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio"] + \
+    dim_cdsr_methods_full = dimens["method_GP"] * dimens["selection"] + \
+                            dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio"] + \
                             dimens["method_CDGPprops"] * dimens["selection"] * dimens["testsRatio"] * dimens["weight"]
 
-    dim_cdsr_methods_semiFull = dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio_1.0"] + \
+    dim_cdsr_methods_semiFull = dimens["method_GP"] * dimens["selection"] + \
+                                dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio_1.0"] + \
                                 dimens["method_CDGPprops"] * dimens["selection"] * dimens["testsRatio_1.0"] * dimens["weight"]
 
     dim_cdsr_methods_1 = dimens["method_CDGP"] * dimens["selection"] + \
                          dimens["method_CDGPprops"] * dimens["selection"] * dimens["weight"]
 
-    dim_method_winners = Dim(dimens["method_scikit"][0, 2]) +\
+    dim_method_winners = Dim(dimens["method_scikit"][2, 7]) +\
                          dimens["method_CDGP"] * Dim(dimens["selection"][1]) * dimens["testsRatio_1.0"] +\
                          dimens["method_CDGPprops"] * Dim(dimens["selection"][1]) * dimens["testsRatio_1.0"] * dimens["weight"][1]
 
@@ -911,7 +915,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        outputFiles=[dir_path + "/tables/custom/scikit/scikit_succRate_{}.tex".format(exp_variant)],
                        addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
-        TableGenerator(getAvgSatisfiedProps1,
+        TableGenerator(getAvgSatisfiedProps1Fair,
                        dimens["benchmark"],
                        dimens["method_scikit"],
                        title="(scikit) Average ratio of satisfied properties", headerRowNames=[],
@@ -921,7 +925,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        outputFiles=[dir_path + "/tables/custom/scikit/scikit_satConstrRatio_{}.tex".format(exp_variant)],
                        addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
-        TableGenerator(getAvgSatisfiedProps1,
+        TableGenerator(getAvgSatisfiedProps1Fair,
                        dimens["benchmark"],
                        dimens["method_scikit"],
                        title="(scikit) Average ratio of satisfied properties", headerRowNames=[],
@@ -933,7 +937,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        ),
         FriedmannTestPython(dimens["benchmark"],
                             dimens["method_scikit"],
-                            getAvgSatisfiedProps1, p_treshold=0.05,
+                            getAvgSatisfiedProps1Fair, p_treshold=0.05,
                             title="(scikit) Friedman test for average ratio of satisfied properties",
                             pathFriedmanViz="tables/custom/scikit/friedman_scikit_avgSatConstr.gv",
                             workingDir=dir_path, higherValuesBetter=True),
@@ -968,7 +972,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
         #                outputFiles=[dir_path + "/tables/custom/cdsr/cdsr_succRate_{}.tex".format(exp_variant)],
         #                addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
         #                ),
-        # TableGenerator(getAvgSatisfiedProps1,
+        # TableGenerator(getAvgSatisfiedProps1Fair,
         #                dimens["benchmark"],
         #                dim_cdsr_methods,
         #                title="Average ratio of satisfied properties", headerRowNames=[],
@@ -980,7 +984,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
         #                ),
         # FriedmannTestPython(dimens["benchmark"],
         #                     dim_cdsr_methods,
-        #                     getAvgSatisfiedProps1, p_treshold=0.05,
+        #                     getAvgSatisfiedProps1Fair, p_treshold=0.05,
         #                     title="Friedman test for average ratio of satisfied properties",
         #                     pathFriedmanViz="tables/custom/cdsr/friedman_cdsr_avgSatConstr.gv",
         #                     workingDir=dir_path, higherValuesBetter=True),
@@ -1015,7 +1019,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        outputFiles=[dir_path + "/tables/custom/cdsrFull/cdsrFull_succRate_{}.tex".format(exp_variant)],
                        addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
-        TableGenerator(getAvgSatisfiedProps1,
+        TableGenerator(getAvgSatisfiedProps1Fair,
                        dimens["benchmark"],
                        dim_cdsr_methods_full,
                        title="(cdsrFull) Average ratio of satisfied properties", headerRowNames=[],
@@ -1027,7 +1031,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        ),
         FriedmannTestPython(dimens["benchmark"],
                             dim_cdsr_methods_full,
-                            getAvgSatisfiedProps1, p_treshold=0.05,
+                            getAvgSatisfiedProps1Fair, p_treshold=0.05,
                             title="(cdsrFull) Friedman test for average ratio of satisfied properties",
                             pathFriedmanViz="tables/custom/cdsrFull/friedman_cdsrFull_avgSatConstr.gv",
                             workingDir=dir_path, higherValuesBetter=True),
@@ -1078,7 +1082,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        outputFiles=[dir_path + "/tables/custom/cdsrSemiFull/cdsrSemiFull_succRate_{}.tex".format(exp_variant)],
                        addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
-        TableGenerator(getAvgSatisfiedProps1,
+        TableGenerator(getAvgSatisfiedProps1Fair,
                        dimens["benchmark"],
                        dim_cdsr_methods_semiFull,
                        title="(cdsrSemiFull) Average ratio of satisfied properties",
@@ -1092,7 +1096,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                            dir_path + "/tables/custom/cdsrSemiFull/cdsrSemiFull_satConstrRatio_rowShading_{}.tex".format(exp_variant)],
                        addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
-        TableGenerator(getAvgSatisfiedProps1,
+        TableGenerator(getAvgSatisfiedProps1Fair,
                        dimens["benchmark"],
                        dim_cdsr_methods_semiFull,
                        title="(cdsrSemiFull) Average ratio of satisfied properties",
@@ -1109,7 +1113,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        ),
         FriedmannTestPython(dimens["benchmark"],
                             dim_cdsr_methods_semiFull,
-                            getAvgSatisfiedProps1, p_treshold=0.05,
+                            getAvgSatisfiedProps1Fair, p_treshold=0.05,
                             title="Friedman test for average ratio of satisfied properties",
                             pathFriedmanViz="tables/custom/cdsrSemiFull/friedman_cdsrSemiFull_avgSatConstr.gv",
                             workingDir=dir_path, higherValuesBetter=True),
@@ -1147,7 +1151,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                            dir_path + "/tables/custom/aggrTc_{}.tex".format(exp_variant)],
                        addRowWithMeans=False, addRowWithRanks=False, ranksHigherValuesBetter=True
                        ),
-        TableGenerator(getAvgSatisfiedProps1,
+        TableGenerator(getAvgSatisfiedProps1Fair,
                        dim_testRatio_moreText,
                        dim_cdsr_methods_1,
                        title="(aggr) Average ratio of satisfied properties",
@@ -1160,7 +1164,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                            dir_path + "/tables/custom/aggrSat_{}.tex".format(exp_variant)],
                        addRowWithMeans=False, addRowWithRanks=False, ranksHigherValuesBetter=True
                        ),
-        TableGenerator(getAvgSatisfiedProps1,
+        TableGenerator(getAvgSatisfiedProps1Fair,
                        Dim.dim_true(""),
                        dim_methodScikit,
                        title="(aggr) Average ratio of satisfied properties",
@@ -1229,7 +1233,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                            dir_path + "/tables/custom/winners/winners_succRate_{}.tex".format(exp_variant)],
                        addRowWithMeans=True, addRowWithRanks=True, ranksHigherValuesBetter=True
                        ),
-        TableGenerator(getAvgSatisfiedProps1,
+        TableGenerator(getAvgSatisfiedProps1Fair,
                        dimens["benchmark"],
                        dim_method_winners,
                        title="(winners) Average ratio of satisfied properties",
@@ -1258,7 +1262,7 @@ def create_subsection_custom_tables(props, title, dimens, exp_variant, dir_path,
                        ),
         FriedmannTestPython(dimens["benchmark"],
                             dim_method_winners,
-                            getAvgSatisfiedProps1, p_treshold=0.05,
+                            getAvgSatisfiedProps1Fair, p_treshold=0.05,
                             title="(winners) Friedman test for average ratio of satisfied properties",
                             pathFriedmanViz="tables/custom/winners/friedman_winners_avgSatConstr.gv",
                             workingDir=dir_path, higherValuesBetter=True),
@@ -1303,12 +1307,14 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
     assert exp_variant == "noNoise" or exp_variant == "withNoise" or exp_variant == "both"
     vb = 1  # vertical border
 
-    dim_cdsr_methods = dimens["method_CDGP"] * dimens["selection"] + \
+    dim_cdsr_methods = dimens["method_GP"] * dimens["selection"] + \
+                       dimens["method_CDGP"] * dimens["selection"] + \
                        dimens["method_CDGPprops"] * dimens["selection"] * dimens["weight"]
 
-    dim_cdsr_methods_full = dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio"] + \
+    dim_cdsr_methods_full = dimens["method_GP"] * dimens["selection"] + \
+                            dimens["method_CDGP"] * dimens["selection"] * dimens["testsRatio"] + \
                             dimens["method_CDGPprops"] * dimens["selection"] * dimens["testsRatio"] * dimens["weight"]
-    dim_method_winners = Dim(dimens["method_scikit"][0, 2]) + \
+    dim_method_winners = Dim(dimens["method_scikit"][2, 7]) + \
                          dimens["method_CDGP"] * Dim(dimens["selection"][1]) * dimens["testsRatio_1.0"] + \
                          dimens["method_CDGPprops"] * Dim(dimens["selection"][1]) * dimens["testsRatio_1.0"] * dimens["weight"][1]
 
@@ -1341,6 +1347,7 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
         s = re.sub("(res3N?-1)", "{}\\1".format(col_arg_symmetry), s)
         s = re.sub("(res3N?-2)", "{}\\1".format(col_arg_symmetry), s)
 
+        s = re.sub("(hardware2?-0)", "{}\\1".format(col_value_bound), s)
         s = re.sub("(gravityN?-1)", "{}\\1".format(col_value_bound), s)
         s = re.sub("(keijzer14N?-0)", "{}\\1".format(col_value_bound), s)
         s = re.sub("(keijzer14N?-1)", "{}\\1".format(col_value_bound), s)
@@ -1369,6 +1376,8 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
         s = re.sub("(keijzer12N?-0)", "{}\\1".format(col_value_bound2), s)
         s = re.sub("(keijzer12N?-1)", "{}\\1".format(col_value_bound2), s)
 
+        s = re.sub("(hardware2?-1)", "{}\\1".format(col_monotonicity), s)
+        s = re.sub("(hardware2?-2)", "{}\\1".format(col_monotonicity), s)
         s = re.sub("(gravityN?-2)", "{}\\1".format(col_monotonicity), s)
         s = re.sub("(gravityN?-3)", "{}\\1".format(col_monotonicity), s)
         s = re.sub("(keijzer12N?-3)", "{}\\1".format(col_monotonicity), s)
@@ -1386,6 +1395,7 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
     propsConstr = []
     propsConstr_noNoise = []
     propsConstr_withNoise = []
+    propsConstr_hardware = []
     for p in props:
         if "result.best.verificator.decisions" in p:
             satVector = p["result.best.verificator.decisions"].split(",")
@@ -1396,15 +1406,20 @@ def create_subsection_individual_constraints(props, title, dimens, exp_variant, 
                 new_p["propsConstr.satOutcome"] = satOutcome
                 new_p["propsConstr.method"] = p["method"]
                 propsConstr.append(new_p)
-                if "N" not in new_p["propsConstr.constraint"]:
+                if "hardware" in new_p["propsConstr.constraint"]:
+                    propsConstr_hardware.append(new_p)
+                elif "N" not in new_p["propsConstr.constraint"]:
                     propsConstr_noNoise.append(new_p)
                 else:
                     propsConstr_withNoise.append(new_p)
-    dimConstr = Dim.from_dict(propsConstr, "propsConstr.constraint").sort()
-    dimConstr_noNoise = Dim.from_dict(propsConstr_noNoise, "propsConstr.constraint").sort()
-    dimConstr_withNoise = Dim.from_dict(propsConstr_withNoise, "propsConstr.constraint").sort()
 
-    order = [6,14,17,1,10,11,15,16,18,19,20,21,23,24,26,27,29,30,34,39,4,5,12,22,25,28,33,38,0,13,31,32,35,36,37,2,3,7,8,9]
+    dimConstr = Dim.from_dict(propsConstr, "propsConstr.constraint").sort()
+    dimConstr_hardware = Dim.from_dict(propsConstr_hardware, "propsConstr.constraint").sort()
+    dimConstr_noNoise = Dim.from_dict(propsConstr_noNoise, "propsConstr.constraint").sort() + dimConstr_hardware
+    dimConstr_withNoise = Dim.from_dict(propsConstr_withNoise, "propsConstr.constraint").sort() + dimConstr_hardware
+
+    # order = [6,14,17,1,10,11,15,16,18,19,20,21,23,24,26,27,29,30,34,39,4,5,12,22,25,28,33,38,0,13,31,32,35,36,37,2,3,7,8,9]
+    order = [6,14,17,1,10,11,15,16,18,19,20,21,23,24,26,27,29,30,34,39,40,43,4,5,12,22,25,28,33,38,0,13,31,32,35,36,37,2,3,7,8,9,41,42,44,45]
     dimConstr_noNoise_ctypeSorted = Dim([dimConstr_noNoise.configs[i] for i in order])
     dimConstr_withNoise_ctypeSorted = Dim([dimConstr_withNoise.configs[i] for i in order])
 
@@ -1731,18 +1746,20 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
             p["result.bestOrig.smtlib"] = p["result.validation.bestOrig.smtlib"]
             p["result.best.verificationModel"] = p["result.validation.best.verificationModel"]
             p["result.best.verificationModel"] = p["result.validation.best.verificationModel"]
-            # p["result.best.verificator.decisions"] = p["result.validation.best.verificator.decisions"]
-            # p["result.best.verificator.ratios"] = p["result.validation.best.verificator.ratios"]
+            p["result.best.verificator.decisions"] = p["result.validation.best.verificator.decisions"]
+            p["result.best.verificator.ratios"] = p["result.validation.best.verificator.ratios"]
 
     standardize_benchmark_names(props, exp_variant)
     dim_benchmarks = get_benchmarks_from_props(props, simplify_names=False, exp_variant=exp_variant)
+    configs = dim_benchmarks.configs
+    dim_benchmarks = Dim([configs[0]] + configs[3:] + [configs[1], configs[2]])
     dim_rows_all = dim_benchmarks.copy()
     dim_rows_all += dim_benchmarks.dim_true_within("ALL")
 
     dim_cols_scikit = dim_methodScikit
 
     dim_cols_cdgp = dim_methodCDGP * dim_sel * dim_testsRatio + dim_methodCDGPprops * dim_sel * dim_testsRatio * dim_weight
-    dim_cols_ea = dim_methodGP * dim_sel + dim_methodCDGPprops_noVer * dim_sel * dim_weight + dim_cols_cdgp
+    dim_cols_ea = dim_methodGP * dim_sel + dim_cols_cdgp
     dim_cols = dim_methodScikit + dim_cols_ea
 
     dim_cols_all = dim_cols.copy()
@@ -1777,7 +1794,7 @@ Sets were shuffled randomly from the 500 cases present in each generated benchma
         (create_subsection_ea_stats, [props, "EA/CDGP Statistics", dim_rows_all, dim_cols_ea, headerRowNames]),
         (create_subsection_cdgp_specific, [props, "CDGP Statistics", dim_rows_all, dim_cols_cdgp, headerRowNames]),
         (create_subsection_custom_tables, [props, "Custom tables", dimensions_dict, exp_variant, dir_path, None]),
-        # (create_subsection_individual_constraints, [props, "Custom tables -- individual constraints", dimensions_dict, exp_variant, dir_path, None]),
+        (create_subsection_individual_constraints, [props, "Custom tables -- individual constraints", dimensions_dict, exp_variant, dir_path, None]),
     ]
     sects = [(title, desc, subs, [])]
 
