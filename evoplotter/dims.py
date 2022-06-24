@@ -139,9 +139,11 @@ class Dim(object):
         """Returns True, if a given property file is covered by at least one config."""
         return any(c.filter(p) for c in self.configs)
 
-    def sort(self):
+    def sort(self, key=None):
         """Sorts this dimension alphabetically on the names of Configs within it."""
-        self.configs.sort()
+        if key is None:
+            key = lambda x: x
+        self.configs.sort(key=key)
         return self
 
     def copy(self):
