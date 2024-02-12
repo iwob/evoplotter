@@ -8,7 +8,7 @@ class ReportPDF(object):
     """
     GEOM_PARAMS = "[paperwidth=65cm, paperheight=40cm, margin=0.3cm]"
 
-    def __init__(self, contents = None, packages=None, geometry_params=GEOM_PARAMS, user_declarations="", tabcolsep=8):
+    def __init__(self, contents=None, packages=None, geometry_params=GEOM_PARAMS, user_declarations="", tabcolsep=8):
         if contents is None:
             contents = []
         if packages is None:
@@ -51,12 +51,14 @@ class ReportPDF(object):
         file_.write(self.apply())
         file_.close()
 
-    def save_and_compile(self, filename):
+    def save_and_compile(self, filename, output_dir=None):
         """Saves LaTeX source file under the given name and compiles it using pdflatex."""
+        output_dir = "." if output_dir is None else str(output_dir)  # str in case output_dir was provided as a Path
+        filename = str(filename)  # str in case filename was provided as a Path
         self.save(filename)
         try:
-            subprocess.check_output(["pdflatex", "-interaction=nonstopmode", filename], stderr=STDOUT, universal_newlines=True)
-            subprocess.check_output(["pdflatex", "-interaction=nonstopmode", filename], stderr=STDOUT, universal_newlines=True) # for index to catch up
+            subprocess.check_output(["pdflatex", "-interaction=nonstopmode", f"-output-directory={output_dir}", filename], stderr=STDOUT, universal_newlines=True)
+            subprocess.check_output(["pdflatex", "-interaction=nonstopmode", f"-output-directory={output_dir}", filename], stderr=STDOUT, universal_newlines=True) # for index to catch up
         except subprocess.CalledProcessError as exc:
             print("Status: FAIL, return code: {0}, msg: {1}".format(exc.returncode, exc.output.replace("\\n", "\n")))
         noext = filename[:filename.rfind('.')]
