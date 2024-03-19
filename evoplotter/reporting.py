@@ -129,17 +129,19 @@ class BlockEnvironment(object):
 
 
 class Section(BlockBundle):
-    def __init__(self, title, contents=None):
+    def __init__(self, title, contents=None, label=None):
         if contents is None:
             contents = []
         assert isinstance(contents, list)
         BlockBundle.__init__(self, contents)
         self.title = title
+        self.label = label
         self.level = 0
         self.cmd = "section"
 
     def getText(self, opts):
-        text = "\\" + self.cmd + "{" + self.title + "}\n"
+        text = "\\" + self.cmd + "{" + self.title + "}"
+        text += r"\label{" + self.label + "}\n" if self.label is not None else "\n"
         opts["section_level"] = self.level + 1 # to pass deeper
         text += self.merge_items(opts=opts)
         opts["section_level"] = self.level  # retract for the other cmds on the same level
@@ -152,20 +154,22 @@ class SectionRelative(BlockBundle):
     
     move argument in constructor defines, on which level relative to the current
     """
-    def __init__(self, title, contents=None, move=0):
+    def __init__(self, title, contents=None, move=0, label=None):
         if contents is None:
             contents = []
         assert isinstance(contents, list)
         BlockBundle.__init__(self, contents)
         self.title = title
         self.move = move
+        self.label = label
 
     def getText(self, opts):
         opts["section_level"] = opts.get("section_level", 0) + self.move
         sect_level = opts["section_level"]  # remember current section level
         assert sect_level <= 2, "Latex supports nested sections only up to subsubsection."
         subs = "sub" * opts["section_level"]
-        text = "\\" + subs + "section{" + self.title + "}\n"
+        text = "\\" + subs + "section{" + self.title + "}"
+        text += r"\label{" + self.label + "}\n" if self.label is not None else "\n"
         opts["section_level"] += 1  # to pass deeper
         text += self.merge_items(opts)
         opts["section_level"] = sect_level  # retract for the other cmds on the same level
@@ -173,21 +177,21 @@ class SectionRelative(BlockBundle):
 
 
 class Subsection(Section):
-    def __init__(self, title, contents=None):
+    def __init__(self, title, contents=None, label=None):
         if contents is None:
             contents = []
         assert isinstance(contents, list)
-        Section.__init__(self, title, contents)
+        Section.__init__(self, title, contents, label=label)
         self.level = 1
         self.cmd = "subsection"
 
 
 class Subsubsection(Section):
-    def __init__(self, title, contents=None):
+    def __init__(self, title, contents=None, label=None):
         if contents is None:
             contents = []
         assert isinstance(contents, list)
-        Section.__init__(self, title, contents)
+        Section.__init__(self, title, contents, label=label)
         self.level = 2
         self.cmd = "subsubsection"
 
